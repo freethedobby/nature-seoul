@@ -34,15 +34,14 @@ export default function Home() {
   const AuthButtons = () => {
     if (loading) {
       return (
-        <div className="bg-gray-200 animate-pulse h-8 w-16 rounded-lg"></div>
+        <div className="animate-pulse bg-gray-200 h-8 w-16 rounded-lg"></div>
       );
     }
 
     if (!user) {
       return (
         <Link href="/login">
-          <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-            <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          <Button className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
             <div className="relative flex items-center space-x-2">
               <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -60,8 +59,7 @@ export default function Home() {
           <Link
             href={user.email === "admin@naturesemi.com" ? "/admin" : "/user"}
           >
-            <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-              <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+            <Button className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
               <div className="relative flex items-center space-x-2">
                 <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
                   <User className="h-3.5 w-3.5" />
@@ -73,13 +71,12 @@ export default function Home() {
           <Button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300 disabled:transform-none disabled:opacity-50"
+            className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300 disabled:opacity-50"
           >
-            <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
             <div className="relative flex items-center space-x-2">
               {isLoggingOut ? (
                 <>
-                  <Loader2 className="animate-spin h-3.5 w-3.5" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   <span>로그아웃 중...</span>
                 </>
               ) : (
@@ -97,7 +94,7 @@ export default function Home() {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-3 py-2 text-sm font-medium text-white transition-all duration-300">
+              <Button className="bg-black hover:bg-neutral-800 group relative transform px-3 py-2 text-sm font-medium text-white transition-all duration-300">
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -187,22 +184,19 @@ export default function Home() {
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-full"></div>
                 ) : user ? (
                   <Link href="/kyc">
-                    <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
-                      <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                    <Button className="text-base bg-black hover:bg-neutral-800 group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
                       <span>예약하기</span>
                     </Button>
                   </Link>
                 ) : (
                   <Link href="/login">
-                    <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
-                      <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                    <Button className="text-base bg-black hover:bg-neutral-800 group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
                       <span>로그인</span>
                     </Button>
                   </Link>
                 )}
                 <Link href="/kyc">
-                  <Button className="bg-gradient-to-r hover:from-gray-50 hover:to-gray-50 text-black border-black/10 hover:border-black/20 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform border from-white to-white px-8 py-3 font-medium transition-all duration-300">
-                    <div className="bg-gradient-to-r via-black/5 absolute inset-0 rounded-md from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                  <Button className="border-black/10 text-base text-black hover:bg-gray-50 hover:border-black/20 group relative transform border bg-white px-8 py-3 font-medium transition-all duration-300">
                     <span>상담 신청</span>
                   </Button>
                 </Link>
