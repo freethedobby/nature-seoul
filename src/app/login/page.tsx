@@ -42,6 +42,15 @@ export default function LoginPage() {
         error.message?.includes("Firebase is not configured")
       ) {
         setError("Firebase 설정이 필요합니다. 환경 변수를 설정해주세요.");
+      } else if (
+        error instanceof Error &&
+        error.message?.includes("auth/unauthorized-domain")
+      ) {
+        setError(
+          "도메인이 승인되지 않았습니다. Firebase Console에서 도메인을 추가해주세요."
+        );
+      } else if (error instanceof Error) {
+        setError(`로그인 오류: ${error.message}`);
       } else {
         setError("로그인에 실패했습니다. 다시 시도해주세요.");
       }
