@@ -54,7 +54,6 @@ export default function Home() {
       );
     }
 
-    // Desktop view
     return (
       <>
         <div className="hidden items-center space-x-3 md:flex">
@@ -95,7 +94,6 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Mobile view */}
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -141,7 +139,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky Header */}
       <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/90 px-4 py-4 backdrop-blur-sm">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
@@ -161,9 +158,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section with Background Image */}
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        {/* Background Image */}
         <div className="bottom-48 absolute right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
           <img
             src="/eyebrow_example.jpg"
@@ -172,10 +167,8 @@ export default function Home() {
           />
         </div>
 
-        {/* Content Overlay */}
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-2 md:py-8">
           <div className="grid min-h-[90vh] items-start gap-4 pt-2 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
-            {/* Left Content */}
             <div className="text-black space-y-4 md:space-y-8">
               <div className="space-y-4 md:space-y-6">
                 <h2 className="text-4xl font-bold leading-tight tracking-tight drop-shadow-2xl md:text-6xl lg:text-7xl">
@@ -193,11 +186,7 @@ export default function Home() {
                 {loading ? (
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-full"></div>
                 ) : user ? (
-                  <Link
-                    href={
-                      user.email === "admin@naturesemi.com" ? "/admin" : "/kyc"
-                    }
-                  >
+                  <Link href="/kyc">
                     <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
                       <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                       <span>예약하기</span>
@@ -228,7 +217,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-gray-200 border-t py-8">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
