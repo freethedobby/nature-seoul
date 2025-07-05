@@ -1,63 +1,31 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getAnalytics } from 'firebase/analytics';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:123456789:web:abcdef',
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-XXXXXXXXXX',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDHZOmC3wqbu6oRePHDVlxDWKB8mxvZoGQ',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'nature-seoul.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'nature-seoul',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'nature-seoul.appspot.com',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '497352133199',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:497352133199:web:c9c5c6e0941f3f3f7d0c89',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-K7XKXF0TQD',
 };
 
-// Check if we're in development mode and Firebase is not configured
-const isFirebaseConfigured = process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-                             process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const googleProvider = new GoogleAuthProvider();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let app: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let auth: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let analytics: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let googleProvider: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let db: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let storage: any = null;
-
-if (isFirebaseConfigured) {
-  // Initialize Firebase only if properly configured
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  
-  // Initialize Analytics (only in browser environment)
-  if (typeof window !== 'undefined') {
-    analytics = getAnalytics(app);
-  }
-  
-  // Google OAuth provider
-  googleProvider = new GoogleAuthProvider();
-  googleProvider.setCustomParameters({
-    prompt: 'select_account',
-  });
-} else {
-  console.warn('Firebase is not configured. Please set up environment variables.');
-}
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
 
 // Auth functions with error handling
 export const signInWithGoogle = async () => {
-  if (!auth || !googleProvider) {
-    throw new Error('Firebase is not configured. Please set up your environment variables.');
-  }
-  
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
@@ -68,10 +36,6 @@ export const signInWithGoogle = async () => {
 };
 
 export const signOutUser = async () => {
-  if (!auth) {
-    throw new Error('Firebase is not configured. Please set up your environment variables.');
-  }
-  
   try {
     await signOut(auth);
   } catch (error) {
@@ -80,15 +44,5 @@ export const signOutUser = async () => {
   }
 };
 
-export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  if (!auth) {
-    console.warn('Firebase is not configured. Auth state changes will not be tracked.');
-    callback(null);
-    return () => {}; // Return empty unsubscribe function
-  }
-  
-  return onAuthStateChanged(auth, callback);
-};
-
-export { auth, googleProvider, analytics, db, storage };
+export { auth, db, storage };
 export default app; 

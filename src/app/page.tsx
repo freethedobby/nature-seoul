@@ -34,21 +34,15 @@ export default function Home() {
   const AuthButtons = () => {
     if (loading) {
       return (
-        <div className="animate-pulse bg-gray-200 h-8 w-16 rounded-lg"></div>
+        <div className="animate-pulse bg-gray-200 h-8 w-16 rounded-md"></div>
       );
     }
 
     if (!user) {
       return (
         <Link href="/login">
-          <Button
-            variant="default"
-            size="default"
-            className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
-          >
-            <div className="rounded bg-white/10 p-1">
-              <ArrowRight className="h-3.5 w-3.5" />
-            </div>
+          <Button className="bg-black hover:bg-neutral-800 text-white">
+            <ArrowRight className="mr-2 h-4 w-4" />
             로그인
           </Button>
         </Link>
@@ -61,35 +55,25 @@ export default function Home() {
           <Link
             href={user.email === "admin@naturesemi.com" ? "/admin" : "/user"}
           >
-            <Button
-              variant="default"
-              size="default"
-              className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
-            >
-              <div className="rounded bg-white/10 p-1">
-                <User className="h-3.5 w-3.5" />
-              </div>
+            <Button className="bg-black hover:bg-neutral-800 text-white">
+              <User className="mr-2 h-4 w-4" />
               대시보드
             </Button>
           </Link>
           <Button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            variant="default"
-            size="default"
-            className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
+            className="bg-black hover:bg-neutral-800 text-white"
           >
             {isLoggingOut ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>로그아웃 중...</span>
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                로그아웃 중...
               </>
             ) : (
               <>
-                <div className="rounded bg-white/10 p-1">
-                  <LogOut className="h-3.5 w-3.5" />
-                </div>
-                <span>로그아웃</span>
+                <LogOut className="mr-2 h-4 w-4" />
+                로그아웃
               </>
             )}
           </Button>
@@ -98,11 +82,7 @@ export default function Home() {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="default"
-                size="default"
-                className="bg-black hover:bg-neutral-800 text-white"
-              >
+              <Button className="bg-black hover:bg-neutral-800 text-white">
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
