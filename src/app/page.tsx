@@ -123,46 +123,62 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-start space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-                {loading ? (
-                  <div className="w-40 animate-pulse bg-black/20 h-14 rounded-full"></div>
-                ) : user ? (
-                  <Link
-                    href={
-                      user.email === "admin@naturesemi.com" ? "/admin" : "/user"
-                    }
-                  >
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-xl hover:shadow-2xl group relative w-full transform rounded-full px-8 py-4 text-lg font-semibold text-white transition-all duration-500 hover:-translate-y-1 hover:scale-105 sm:w-auto md:px-10 md:py-5 md:text-xl"
+              <div className="flex flex-col items-start space-y-4 sm:flex-row sm:items-start sm:space-y-0 sm:space-x-4">
+                <div className="flex flex-col space-y-4">
+                  {loading ? (
+                    <div className="w-40 animate-pulse bg-black/20 h-14 rounded-full"></div>
+                  ) : user ? (
+                    <Link
+                      href={
+                        user.email === "admin@naturesemi.com"
+                          ? "/admin"
+                          : "/user"
+                      }
                     >
-                      <div className="bg-gradient-to-r absolute inset-0 rounded-full from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-                      <div className="relative flex items-center">
-                        <span>대시보드로 이동</span>
-                        <div className="p-1.5 ml-3 rounded-full bg-white/10 transition-colors duration-300 group-hover:bg-white/20">
-                          <ArrowRight className="group-hover:translate-x-0.5 h-5 w-5 transition-transform duration-300 md:h-6 md:w-6" />
+                      <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-xl hover:shadow-2xl group relative w-full transform rounded-full px-8 py-4 text-lg font-semibold text-white transition-all duration-500 hover:-translate-y-1 hover:scale-105 sm:w-auto md:px-10 md:py-5 md:text-xl"
+                      >
+                        <div className="bg-gradient-to-r absolute inset-0 rounded-full from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+                        <div className="relative flex items-center">
+                          <span>대시보드로 이동</span>
+                          <div className="p-1.5 ml-3 rounded-full bg-white/10 transition-colors duration-300 group-hover:bg-white/20">
+                            <ArrowRight className="group-hover:translate-x-0.5 h-5 w-5 transition-transform duration-300 md:h-6 md:w-6" />
+                          </div>
                         </div>
-                      </div>
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/login">
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-xl hover:shadow-2xl group relative w-full transform rounded-full px-8 py-4 text-lg font-semibold text-white transition-all duration-500 hover:-translate-y-1 hover:scale-105 sm:w-auto md:px-10 md:py-5 md:text-xl"
-                    >
-                      <div className="bg-gradient-to-r absolute inset-0 rounded-full from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-                      <div className="relative flex items-center">
-                        <span>예약하기</span>
-                        <div className="p-1.5 ml-3 rounded-full bg-white/10 transition-colors duration-300 group-hover:bg-white/20">
-                          <ArrowRight className="group-hover:translate-x-0.5 h-5 w-5 transition-transform duration-300 md:h-6 md:w-6" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/login">
+                      <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-xl hover:shadow-2xl group relative w-full transform rounded-full px-8 py-4 text-lg font-semibold text-white transition-all duration-500 hover:-translate-y-1 hover:scale-105 sm:w-auto md:px-10 md:py-5 md:text-xl"
+                      >
+                        <div className="bg-gradient-to-r absolute inset-0 rounded-full from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+                        <div className="relative flex items-center">
+                          <span>예약하기</span>
+                          <div className="p-1.5 ml-3 rounded-full bg-white/10 transition-colors duration-300 group-hover:bg-white/20">
+                            <ArrowRight className="group-hover:translate-x-0.5 h-5 w-5 transition-transform duration-300 md:h-6 md:w-6" />
+                          </div>
                         </div>
-                      </div>
-                    </Button>
-                  </Link>
-                )}
+                      </Button>
+                    </Link>
+                  )}
 
-                <div className="text-black space-y-3 text-sm">
+                  {/* Instagram Link - Moved below button */}
+                  <a
+                    href="https://www.instagram.com/blacksheepwall.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-600 hover:text-gray-900 group inline-flex items-center self-start transition-colors duration-300"
+                  >
+                    <div className="bg-gray-100 group-hover:bg-gray-200 rounded-full p-3 transition-colors duration-300">
+                      <Instagram className="h-5 w-5" />
+                    </div>
+                  </a>
+                </div>
+
+                <div className="text-black text-sm">
                   <div className="space-y-1.5">
                     <p className="text-gray-800 text-sm font-light tracking-wider">
                       yongsan premium studio
@@ -175,18 +191,6 @@ export default function Home() {
                       <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
                     </div>
                   </div>
-
-                  {/* Instagram Link */}
-                  <a
-                    href="https://www.instagram.com/blacksheepwall.xyz/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-900 group inline-flex items-center transition-colors duration-300"
-                  >
-                    <div className="bg-gray-100 group-hover:bg-gray-200 rounded-full p-2 transition-colors duration-300">
-                      <Instagram className="h-4 w-4" />
-                    </div>
-                  </a>
                 </div>
               </div>
             </div>
