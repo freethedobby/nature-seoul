@@ -41,7 +41,7 @@ export default function Home() {
     if (!user) {
       return (
         <Link href="/login">
-          <Button className="bg-black hover:bg-neutral-800 text-white">
+          <Button variant="ghost" className="text-gray-600 hover:text-black">
             <ArrowRight className="mr-2 h-4 w-4" />
             로그인
           </Button>
@@ -51,11 +51,9 @@ export default function Home() {
 
     return (
       <>
-        <div className="hidden items-center space-x-3 md:flex">
-          <Link
-            href={user.email === "admin@naturesemi.com" ? "/admin" : "/user"}
-          >
-            <Button className="bg-black hover:bg-neutral-800 text-white">
+        <div className="hidden items-center space-x-6 md:flex">
+          <Link href="/dashboard">
+            <Button variant="ghost" className="text-gray-600 hover:text-black">
               <User className="mr-2 h-4 w-4" />
               대시보드
             </Button>
@@ -63,7 +61,8 @@ export default function Home() {
           <Button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="bg-black hover:bg-neutral-800 text-white"
+            variant="ghost"
+            className="text-gray-600 hover:text-black"
           >
             {isLoggingOut ? (
               <>
@@ -82,18 +81,16 @@ export default function Home() {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="bg-black hover:bg-neutral-800 text-white">
+              <Button
+                variant="ghost"
+                className="text-gray-600 hover:text-black"
+              >
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link
-                  href={
-                    user.email === "admin@naturesemi.com" ? "/admin" : "/user"
-                  }
-                  className="flex items-center gap-2"
-                >
+                <Link href="/dashboard" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>대시보드</span>
                 </Link>
@@ -170,34 +167,17 @@ export default function Home() {
               <div className="flex flex-col items-start space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
                 {loading ? (
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-md"></div>
-                ) : user ? (
-                  <Link href="/kyc">
+                ) : (
+                  <Link href={user ? "/kyc" : "/login"}>
                     <Button
+                      variant="outline"
                       size="lg"
-                      className="bg-black hover:bg-neutral-800 w-full text-white sm:w-auto"
+                      className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 w-full bg-white sm:w-auto"
                     >
                       예약하기
                     </Button>
                   </Link>
-                ) : (
-                  <Link href="/login">
-                    <Button
-                      size="lg"
-                      className="bg-black hover:bg-neutral-800 w-full text-white sm:w-auto"
-                    >
-                      로그인
-                    </Button>
-                  </Link>
                 )}
-                <Link href="/kyc">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 w-full bg-white sm:w-auto"
-                  >
-                    상담 신청
-                  </Button>
-                </Link>
               </div>
 
               <div className="text-black text-sm">

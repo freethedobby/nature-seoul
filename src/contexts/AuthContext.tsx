@@ -8,56 +8,36 @@ import {
   ReactNode,
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 
 interface AuthContextType {
-  user: (User & { nickname?: string }) | null;
+  user: User | null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: false, // Changed initial loading state to false
+  loading: true,
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<(User & { nickname?: string }) | null>(null);
-  const [loading, setLoading] = useState(false); // Changed initial loading state to false
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    console.log("Setting up auth state listener");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed:", user?.email);
+      setUser(user);
       setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          // Fetch user profile from Firestore
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          const userData = userDoc.data();
-
-          // Merge Firebase user with Firestore data
-          setUser({
-            ...firebaseUser,
-            nickname: userData?.nickname || "고객님",
-          });
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log("Cleaning up auth state listener");
+      unsubscribe();
+    };
   }, []);
 
   return (
