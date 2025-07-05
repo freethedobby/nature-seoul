@@ -181,14 +181,11 @@ export default function Home() {
                     href="https://www.instagram.com/blacksheepwall.xyz/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-900 group inline-flex items-center space-x-2 transition-colors duration-300"
+                    className="text-gray-600 hover:text-gray-900 group inline-flex items-center transition-colors duration-300"
                   >
-                    <div className="p-1.5 bg-gray-100 group-hover:bg-gray-200 rounded-full transition-colors duration-300">
-                      <Instagram className="h-3.5 w-3.5" />
+                    <div className="bg-gray-100 group-hover:bg-gray-200 rounded-full p-2 transition-colors duration-300">
+                      <Instagram className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-light tracking-wide">
-                      @blacksheepwall.xyz
-                    </span>
                   </a>
                 </div>
               </div>
@@ -208,10 +205,10 @@ export default function Home() {
           <div className="flex items-center justify-center space-x-4">
             <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
             <div className="space-y-1">
-              <p className="text-gray-800 text-sm font-light uppercase tracking-wider">
+              <p className="text-gray-800 text-sm font-light tracking-wider">
                 nature.seoul
               </p>
-              <p className="text-gray-400 text-[10px] font-light uppercase tracking-widest">
+              <p className="text-gray-400 text-[10px] font-light tracking-widest">
                 yongsan premium studio
               </p>
             </div>
