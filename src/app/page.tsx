@@ -41,13 +41,15 @@ export default function Home() {
     if (!user) {
       return (
         <Link href="/login">
-          <Button className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-            <div className="relative flex items-center space-x-2">
-              <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
-                <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-              <span>로그인</span>
+          <Button
+            variant="default"
+            size="default"
+            className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
+          >
+            <div className="rounded bg-white/10 p-1">
+              <ArrowRight className="h-3.5 w-3.5" />
             </div>
+            로그인
           </Button>
         </Link>
       );
@@ -59,42 +61,48 @@ export default function Home() {
           <Link
             href={user.email === "admin@naturesemi.com" ? "/admin" : "/user"}
           >
-            <Button className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-              <div className="relative flex items-center space-x-2">
-                <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
-                  <User className="h-3.5 w-3.5" />
-                </div>
-                <span>대시보드</span>
+            <Button
+              variant="default"
+              size="default"
+              className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
+            >
+              <div className="rounded bg-white/10 p-1">
+                <User className="h-3.5 w-3.5" />
               </div>
+              대시보드
             </Button>
           </Link>
           <Button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="bg-black hover:bg-neutral-800 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300 disabled:opacity-50"
+            variant="default"
+            size="default"
+            className="bg-black hover:bg-neutral-800 flex items-center gap-2 text-white"
           >
-            <div className="relative flex items-center space-x-2">
-              {isLoggingOut ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>로그아웃 중...</span>
-                </>
-              ) : (
-                <>
-                  <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
-                    <LogOut className="h-3.5 w-3.5" />
-                  </div>
-                  <span>로그아웃</span>
-                </>
-              )}
-            </div>
+            {isLoggingOut ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>로그아웃 중...</span>
+              </>
+            ) : (
+              <>
+                <div className="rounded bg-white/10 p-1">
+                  <LogOut className="h-3.5 w-3.5" />
+                </div>
+                <span>로그아웃</span>
+              </>
+            )}
           </Button>
         </div>
 
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="bg-black hover:bg-neutral-800 group relative transform px-3 py-2 text-sm font-medium text-white transition-all duration-300">
+              <Button
+                variant="default"
+                size="default"
+                className="bg-black hover:bg-neutral-800 text-white"
+              >
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -104,7 +112,7 @@ export default function Home() {
                   href={
                     user.email === "admin@naturesemi.com" ? "/admin" : "/user"
                   }
-                  className="flex items-center space-x-2"
+                  className="flex items-center gap-2"
                 >
                   <User className="h-4 w-4" />
                   <span>대시보드</span>
@@ -113,7 +121,7 @@ export default function Home() {
               <DropdownMenuItem
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="text-red-600 focus:text-red-600 flex items-center space-x-2"
+                className="text-red-600 focus:text-red-600 flex items-center gap-2"
               >
                 {isLoggingOut ? (
                   <>
@@ -184,20 +192,32 @@ export default function Home() {
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-full"></div>
                 ) : user ? (
                   <Link href="/kyc">
-                    <Button className="text-base bg-black hover:bg-neutral-800 group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
-                      <span>예약하기</span>
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="bg-black hover:bg-neutral-800 text-white"
+                    >
+                      예약하기
                     </Button>
                   </Link>
                 ) : (
                   <Link href="/login">
-                    <Button className="text-base bg-black hover:bg-neutral-800 group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
-                      <span>로그인</span>
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="bg-black hover:bg-neutral-800 text-white"
+                    >
+                      로그인
                     </Button>
                   </Link>
                 )}
                 <Link href="/kyc">
-                  <Button className="border-black/10 text-base text-black hover:bg-gray-50 hover:border-black/20 group relative transform border bg-white px-8 py-3 font-medium transition-all duration-300">
-                    <span>상담 신청</span>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 bg-white"
+                  >
+                    상담 신청
                   </Button>
                 </Link>
               </div>
