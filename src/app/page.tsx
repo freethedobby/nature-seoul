@@ -189,13 +189,12 @@ export default function Home() {
 
               <div className="flex flex-col items-start space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
                 {loading ? (
-                  <div className="w-32 animate-pulse bg-black/20 h-12 rounded-full"></div>
+                  <div className="w-32 animate-pulse bg-black/20 h-12 rounded-md"></div>
                 ) : user ? (
                   <Link href="/kyc">
                     <Button
-                      variant="default"
                       size="lg"
-                      className="bg-black hover:bg-neutral-800 text-white"
+                      className="bg-black hover:bg-neutral-800 w-full text-white sm:w-auto"
                     >
                       예약하기
                     </Button>
@@ -203,9 +202,8 @@ export default function Home() {
                 ) : (
                   <Link href="/login">
                     <Button
-                      variant="default"
                       size="lg"
-                      className="bg-black hover:bg-neutral-800 text-white"
+                      className="bg-black hover:bg-neutral-800 w-full text-white sm:w-auto"
                     >
                       로그인
                     </Button>
@@ -215,7 +213,7 @@ export default function Home() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 bg-white"
+                    className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 w-full bg-white sm:w-auto"
                   >
                     상담 신청
                   </Button>
