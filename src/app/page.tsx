@@ -163,7 +163,7 @@ export default function Home() {
 
       {/* Hero Section with Background Image */}
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        {/* Background Image - Small on mobile, positioned on desktop */}
+        {/* Background Image */}
         <div className="bottom-48 absolute right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
           <img
             src="/eyebrow_example.jpg"
@@ -195,61 +195,58 @@ export default function Home() {
                 ) : user ? (
                   <Link
                     href={
-                      user.email === "admin@naturesemi.com" ? "/admin" : "/user"
+                      user.email === "admin@naturesemi.com" ? "/admin" : "/kyc"
                     }
                   >
-                    <Button
-                      size="lg"
-                      className="hover:bg-gray-800 text-base shadow-lg bg-black w-full rounded-full px-6 py-3 font-medium text-white transition-all duration-300 sm:w-auto md:px-8 md:py-4 md:text-lg"
-                    >
-                      대시보드로 이동
-                      <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                    <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
+                      <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                      <span>예약하기</span>
                     </Button>
                   </Link>
                 ) : (
                   <Link href="/login">
-                    <Button
-                      size="lg"
-                      className="hover:bg-gray-800 text-base shadow-lg bg-black w-full rounded-full px-6 py-3 font-medium text-white transition-all duration-300 sm:w-auto md:px-8 md:py-4 md:text-lg"
-                    >
-                      예약하기
-                      <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                    <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform px-8 py-3 font-medium text-white transition-all duration-300">
+                      <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                      <span>로그인</span>
                     </Button>
                   </Link>
                 )}
-
-                <div className="text-black text-sm">
-                  <p className="font-bold">용산 스튜디오</p>
-                  <p className="text-xs font-semibold">완전 예약제</p>
-                </div>
+                <Link href="/kyc">
+                  <Button className="bg-gradient-to-r hover:from-gray-50 hover:to-gray-50 text-black border-black/10 hover:border-black/20 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-base group relative transform border from-white to-white px-8 py-3 font-medium transition-all duration-300">
+                    <div className="bg-gradient-to-r via-black/5 absolute inset-0 rounded-md from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                    <span>상담 신청</span>
+                  </Button>
+                </Link>
               </div>
-            </div>
 
-            {/* Right Content - Empty space for image on desktop */}
-            <div className="hidden md:block">
-              {/* This space showcases the background image */}
+              <div className="text-black text-sm">
+                <p className="font-light">용산 스튜디오</p>
+                <p className="text-gray-500 text-xs">예약제</p>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-gray-200 mt-8 border-t bg-white px-4 py-6 md:mt-16">
-        <div className="container mx-auto max-w-6xl space-y-2 text-center">
-          <p className="text-gray-500 text-sm font-light">
-            © 2024 nature.seoul. 용산구 프리미엄 아이브로우 스튜디오
-          </p>
-          <p className="text-gray-400 text-xs font-light">
-            designed by{" "}
-            <a
-              href="https://blacksheepwall.xyz"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-600 underline decoration-dotted underline-offset-2 transition-colors duration-300"
-            >
-              blacksheepwall
-            </a>
-          </p>
+      <footer className="border-gray-200 border-t py-8">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+            <div className="text-center md:text-left">
+              <p className="text-black text-sm font-light">nature.seoul</p>
+              <p className="text-gray-400 text-xs">
+                designed by{" "}
+                <a
+                  href="https://blacksheepwall.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-600 underline"
+                >
+                  blacksheepwall
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
