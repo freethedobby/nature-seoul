@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, User, LogOut, Loader2 } from "lucide-react";
+import { ArrowRight, User, LogOut, Loader2, Instagram } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOutUser } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
@@ -98,7 +98,7 @@ export default function Home() {
       {/* Hero Section with Background Image */}
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden">
         {/* Background Image - Small on mobile, positioned on desktop */}
-        <div className="bottom-48 absolute right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
+        <div className="bottom-32 absolute right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
           <img
             src="/eyebrow_example.jpg"
             alt="Beautiful Woman Illustration"
@@ -108,7 +108,7 @@ export default function Home() {
 
         {/* Content Overlay */}
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-2 md:py-8">
-          <div className="grid min-h-[90vh] items-start gap-4 pt-2 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
+          <div className="grid min-h-[75vh] items-start gap-4 pt-2 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
             {/* Left Content */}
             <div className="text-black space-y-4 md:space-y-8">
               <div className="space-y-4 md:space-y-6">
@@ -162,7 +162,7 @@ export default function Home() {
                   </Link>
                 )}
 
-                <div className="text-black text-sm">
+                <div className="text-black space-y-3 text-sm">
                   <div className="space-y-1">
                     <p className="text-gray-800 text-sm font-light uppercase tracking-wider">
                       yongsan premium studio
@@ -175,6 +175,21 @@ export default function Home() {
                       <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
                     </div>
                   </div>
+
+                  {/* Instagram Link */}
+                  <a
+                    href="https://www.instagram.com/blacksheepwall.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-600 hover:text-gray-900 group inline-flex items-center space-x-2 transition-colors duration-300"
+                  >
+                    <div className="p-1.5 bg-gray-100 group-hover:bg-gray-200 rounded-full transition-colors duration-300">
+                      <Instagram className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-xs font-light tracking-wide">
+                      @blacksheepwall.xyz
+                    </span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -188,7 +203,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-gray-200 mt-8 border-t bg-white px-4 py-8 md:mt-16">
+      <footer className="border-gray-200 mt-4 border-t bg-white px-4 py-6 md:mt-16 md:py-8">
         <div className="container mx-auto max-w-6xl space-y-4 text-center">
           <div className="flex items-center justify-center space-x-4">
             <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
