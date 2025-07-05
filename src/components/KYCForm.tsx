@@ -15,11 +15,15 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  ImagePlus,
+  Image,
+  X,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 // Form validation schema
 const kycSchema = z.object({
@@ -46,6 +50,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     "idle" | "success" | "error"
   >("idle");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const {
     register,
@@ -64,6 +70,47 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       setValue("eyebrowPhoto", file);
 
       // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle file drop
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setValue("eyebrowPhoto", file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle drag over
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  // Handle drag leave
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Handle file change (for drag and drop)
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setValue("eyebrowPhoto", file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewImage(e.target?.result as string);
@@ -195,9 +242,21 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             </Label>
             <Input
               id="contact"
-              {...register("contact")}
-              placeholder="전화번호 또는 이메일"
+              {...register("contact", {
+                required: "연락처를 입력해주세요",
+                pattern: {
+                  value: /^[0-9]{10,11}$/,
+                  message: "올바른 연락처 형식이 아닙니다",
+                },
+                onChange: (e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, "");
+                  e.target.value = value.slice(0, 11);
+                },
+              })}
+              placeholder="01012345678"
               className="text-base h-12"
+              maxLength={11}
+              type="tel"
             />
             {errors.contact && (
               <p className="text-red-500 text-sm">{errors.contact.message}</p>
@@ -262,42 +321,68 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Camera Capture */}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="camera-input"
-                  />
-                  <Label
-                    htmlFor="camera-input"
-                    className="border-gray-300 hover:border-gray-400 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed transition-colors"
+              <div className="space-y-2">
+                <div className="flex flex-col gap-4">
+                  <div
+                    className={cn(
+                      "relative flex flex-col items-center justify-center rounded-lg border border-dashed bg-white p-6",
+                      isDragging && "border-blue-500 bg-blue-50"
+                    )}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                   >
-                    <Camera className="mr-2 h-5 w-5" />
-                    <span className="text-base">카메라로 촬영</span>
-                  </Label>
-                </div>
-
-                {/* File Upload */}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="file-input"
-                  />
-                  <Label
-                    htmlFor="file-input"
-                    className="border-gray-300 hover:border-gray-400 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed transition-colors"
-                  >
-                    <Upload className="mr-2 h-5 w-5" />
-                    <span className="text-base">갤러리에서 선택</span>
-                  </Label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      required
+                    />
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <ImagePlus className="text-gray-400 h-8 w-8" />
+                      <div>
+                        <p className="text-gray-600 text-sm">
+                          클릭하여 파일 선택 또는 드래그하여 업로드
+                        </p>
+                        <p className="text-gray-500 mt-1 text-xs">
+                          시술받고자 하는 눈썹 정면 사진을 업로드해 주세요
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          JPG, PNG 파일 (최대 5MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {selectedFile && (
+                    <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+                      <Image className="text-blue-500 h-5 w-5" />
+                      <span className="text-gray-600 flex-1 truncate text-sm">
+                        {selectedFile.name}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-500 hover:text-red-500 h-8 w-8"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPreviewImage(null);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {previewImage && (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
+                      <img
+                        src={previewImage}
+                        alt="미리보기"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}

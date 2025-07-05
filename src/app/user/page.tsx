@@ -1,25 +1,22 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, User, Calendar, ChevronDown } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOutUser } from "@/lib/firebase";
+import { MembershipBadge } from "@/components/MembershipBadge";
 
-export default function UserDashboard() {
+export default function UserPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -27,22 +24,10 @@ export default function UserDashboard() {
     }
   }, [user, loading, router]);
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await signOutUser();
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-32 w-32 animate-spin border-gray-900 rounded-full border-b-2"></div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="animate-spin border-black h-8 w-8 rounded-full border-b-2"></div>
       </div>
     );
   }
@@ -53,140 +38,86 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky Header */}
-      <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/90 px-4 py-4 backdrop-blur-sm">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="transition-opacity hover:opacity-80">
-              <div>
-                <h1 className="text-black text-xl font-light tracking-wide">
-                  nature.seoul
-                </h1>
-                <p className="text-gray-400 text-[10px] tracking-wide">
-                  premium studio
-                </p>
-              </div>
-            </Link>
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-gray-500 hover:text-gray-900 inline-flex items-center text-sm"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            홈으로 돌아가기
+          </Link>
+          <div className="text-right">
+            <h2 className="text-gray-900 text-sm font-medium">{user.email}</h2>
+            <p className="text-gray-500 text-sm">회원</p>
+          </div>
+        </div>
 
-            {/* Desktop view */}
-            <div className="hidden items-center space-x-3 md:flex">
-              <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-                <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                <div className="relative flex items-center space-x-2">
-                  <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
-                    <Calendar className="h-3.5 w-3.5" />
-                  </div>
-                  <span>예약하기</span>
-                </div>
-              </Button>
+        <div className="mb-6">
+          <h1 className="mb-2 text-2xl font-bold">마이페이지</h1>
+          <p className="text-gray-600 mb-4">
+            예약 및 상담 내역을 확인하실 수 있습니다.
+          </p>
+          <MembershipBadge
+            kycStatus={user.kycStatus || "none"}
+            treatmentDone={user.treatmentDone || false}
+          />
+        </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-4 py-2 text-sm font-medium text-white transition-all duration-300">
-                    <div className="bg-gradient-to-r absolute inset-0 rounded-md from-transparent via-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                    <div className="relative flex items-center space-x-2">
-                      <div className="rounded bg-white/10 p-1 transition-colors duration-300 group-hover:bg-white/20">
-                        <User className="h-3.5 w-3.5" />
-                      </div>
-                      <span>프로필</span>
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{user.nickname}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/kyc" className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>예약 내역</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600 flex items-center space-x-2"
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                  >
-                    {isLoggingOut ? (
-                      <>
-                        <LogOut className="animate-spin h-4 w-4" />
-                        <span>로그아웃 중...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogOut className="h-4 w-4" />
-                        <span>로그아웃</span>
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="bg-gray-50 rounded-lg p-6">
+            <div className="mb-4 flex items-center">
+              <Calendar className="text-gray-700 mr-2 h-5 w-5" />
+              <h3 className="text-lg font-medium">예약 현황</h3>
             </div>
+            <div className="space-y-4">
+              <p className="text-gray-600">아직 예약 내역이 없습니다.</p>
+              <Link href="/kyc">
+                <Button className="bg-black hover:bg-neutral-800 w-full text-white">
+                  예약하기
+                </Button>
+              </Link>
+            </div>
+          </div>
 
-            {/* Mobile view */}
-            <div className="md:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="bg-gradient-to-r from-black to-black hover:from-neutral-800 hover:to-neutral-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform px-3 py-2 text-sm font-medium text-white transition-all duration-300">
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                  <DropdownMenuItem className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{user.nickname}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/kyc" className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>예약하기</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/kyc" className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>예약 내역</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600 flex items-center space-x-2"
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                  >
-                    {isLoggingOut ? (
-                      <>
-                        <LogOut className="animate-spin h-4 w-4" />
-                        <span>로그아웃 중...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogOut className="h-4 w-4" />
-                        <span>로그아웃</span>
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          <div className="bg-gray-50 rounded-lg p-6">
+            <div className="mb-4 flex items-center">
+              <Clock className="text-gray-700 mr-2 h-5 w-5" />
+              <h3 className="text-lg font-medium">상담 내역</h3>
+            </div>
+            <div className="space-y-4">
+              <p className="text-gray-600">아직 상담 내역이 없습니다.</p>
+              <Link href="/kyc">
+                <Button className="bg-black hover:bg-neutral-800 w-full text-white">
+                  상담 신청
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto max-w-6xl px-4 py-8">
-        <h2 className="text-2xl font-medium">안녕하세요, {user.nickname}님</h2>
-        <p className="text-gray-600 mt-2">
-          예약 및 프로필 관리는 상단 메뉴에서 가능합니다.
-        </p>
-      </main>
+        <div className="mt-8">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full">
+                계정 관리
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span>{user.email}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/kyc" className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>예약 관리</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </div>
   );
 }
