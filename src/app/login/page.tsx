@@ -98,16 +98,13 @@ export default function LoginPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             돌아가기
           </Button>
-          <div className="flex items-center space-x-3">
-            <div className="bg-black flex h-8 w-8 items-center justify-center rounded-full">
-              <span className="text-xs font-bold text-white">N</span>
-            </div>
+          <div>
             <h1 className="text-black text-xl font-light tracking-wide">
-              NATURE
+              nature.seoul
             </h1>
-            <span className="text-gray-500 text-xs font-light tracking-widest">
-              PREMIUM
-            </span>
+            <p className="text-gray-400 text-[10px] tracking-wide">
+              premium studio
+            </p>
           </div>
         </div>
       </header>
@@ -260,7 +257,7 @@ export default function LoginPage() {
       {/* Footer */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 transform text-center">
         <p className="text-gray-500 text-xs font-light">
-          © 2024 Nature Premium • 강남 프리미엄 스튜디오
+          © 2024 nature.seoul • 강남 프리미엄 스튜디오
         </p>
       </div>
     </div>

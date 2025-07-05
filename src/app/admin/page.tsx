@@ -51,8 +51,13 @@ export default function AdminPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <div className="bg-black animate-pulse mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-            <span className="text-lg font-bold text-white">N</span>
+          <div className="mx-auto mb-4">
+            <h1 className="text-black animate-pulse text-2xl font-light tracking-wide">
+              nature.seoul
+            </h1>
+            <p className="text-gray-400 text-xs tracking-wide">
+              premium studio
+            </p>
           </div>
           <p className="text-gray-600 text-lg font-light">Loading...</p>
         </div>
@@ -72,18 +77,14 @@ export default function AdminPage() {
       {/* Sticky Header */}
       <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/80 px-6 py-6 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex cursor-pointer items-center space-x-3 transition-opacity hover:opacity-80"
-          >
-            <div className="bg-black flex h-10 w-10 items-center justify-center rounded-full">
-              <span className="text-sm font-bold text-white">N</span>
-            </div>
+          <Link href="/" className="transition-opacity hover:opacity-80">
             <div>
               <h1 className="text-black text-xl font-light tracking-wide">
-                NATURE
+                nature.seoul
               </h1>
-              <p className="text-gray-500 text-xs tracking-widest">PREMIUM</p>
+              <p className="text-gray-400 text-[10px] tracking-wide">
+                premium studio
+              </p>
             </div>
           </Link>
 
