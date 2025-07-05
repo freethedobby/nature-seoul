@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Sticky Header */}
-      <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/90 px-4 py-4 backdrop-blur-sm">
+      <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/90 px-4 py-3 backdrop-blur-sm md:py-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
             <Link href="/" className="transition-opacity hover:opacity-80">
@@ -107,7 +107,7 @@ export default function Home() {
         </div>
 
         {/* Content Overlay */}
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-2 md:py-8">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-1 md:py-8">
           <div className="grid min-h-[75vh] items-start gap-4 pt-2 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
             {/* Left Content */}
             <div className="text-black space-y-4 md:space-y-8">
@@ -200,8 +200,8 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-gray-200 mt-4 border-t bg-white px-4 py-6 md:mt-16 md:py-8">
-        <div className="container mx-auto max-w-6xl space-y-4 text-center">
+      <footer className="border-gray-200 mt-2 border-t bg-white px-4 py-4 md:mt-16 md:py-8">
+        <div className="container mx-auto max-w-6xl space-y-3 text-center md:space-y-4">
           <div className="flex items-center justify-center space-x-4">
             <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
             <div className="space-y-1">
