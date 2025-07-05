@@ -1,62 +1,56 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { User } from "firebase/auth";
-import { onAuthStateChange } from "@/lib/firebase";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 interface AuthContextType {
-  user: User | null;
+  user: (User & { nickname?: string }) | null;
   loading: boolean;
-  isFirebaseConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  isFirebaseConfigured: false,
 });
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<(User & { nickname?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if Firebase is configured
-  const isFirebaseConfigured = !!(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  );
-
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      // If Firebase is not configured, set loading to false and user to null
-      setLoading(false);
-      setUser(null);
-      return;
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user profile from Firestore
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        const userData = userDoc.data();
 
-    const unsubscribe = onAuthStateChange((user) => {
-      setUser(user);
+        // Merge Firebase user with Firestore data
+        setUser({
+          ...firebaseUser,
+          nickname: userData?.nickname || "고객님",
+        });
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isFirebaseConfigured]);
+  }, []);
 
-  const value = {
-    user,
-    loading,
-    isFirebaseConfigured,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

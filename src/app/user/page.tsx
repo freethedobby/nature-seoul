@@ -98,7 +98,7 @@ export default function UserDashboard() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    <span>{user.email}</span>
+                    <span>{user.nickname}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/kyc" className="flex items-center space-x-2">
@@ -140,7 +140,7 @@ export default function UserDashboard() {
                   <DropdownMenuLabel>내 계정</DropdownMenuLabel>
                   <DropdownMenuItem className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    <span>{user.email}</span>
+                    <span>{user.nickname}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -182,7 +182,7 @@ export default function UserDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto max-w-6xl px-4 py-8">
-        <h2 className="text-2xl font-medium">안녕하세요, {user.email}님</h2>
+        <h2 className="text-2xl font-medium">안녕하세요, {user.nickname}님</h2>
         <p className="text-gray-600 mt-2">
           예약 및 프로필 관리는 상단 메뉴에서 가능합니다.
         </p>
