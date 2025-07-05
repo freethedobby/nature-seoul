@@ -279,9 +279,18 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 transform text-center">
-        <p className="text-gray-500 text-xs font-light">
-          © 2024 nature.seoul • 용산 프리미엄 스튜디오
-        </p>
+        <div className="space-y-2 text-center">
+          <p className="text-gray-500 text-xs font-light tracking-wide">
+            © 2024 nature.seoul
+          </p>
+          <div className="flex items-center justify-center space-x-3">
+            <div className="h-px bg-gradient-to-r via-gray-300 w-8 from-transparent to-transparent"></div>
+            <p className="text-gray-400 text-[10px] font-light uppercase tracking-widest">
+              yongsan premium studio
+            </p>
+            <div className="h-px bg-gradient-to-r via-gray-300 w-8 from-transparent to-transparent"></div>
+          </div>
+        </div>
       </div>
     </div>
   );

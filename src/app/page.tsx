@@ -163,8 +163,18 @@ export default function Home() {
                 )}
 
                 <div className="text-black text-sm">
-                  <p className="font-bold">용산 프리미엄 스튜디오</p>
-                  <p className="text-xs font-semibold">완전 예약제</p>
+                  <div className="space-y-1">
+                    <p className="text-gray-800 text-sm font-light uppercase tracking-wider">
+                      yongsan premium studio
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
+                      <p className="text-gray-600 text-xs font-light uppercase tracking-wide">
+                        by appointment only
+                      </p>
+                      <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,10 +188,22 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-gray-200 mt-8 border-t bg-white px-4 py-6 md:mt-16">
-        <div className="container mx-auto max-w-6xl text-center">
-          <p className="text-gray-500 text-sm font-light">
-            © 2024 Nature Premium. 용산구 프리미엄 아이브로우 스튜디오
+      <footer className="border-gray-200 mt-8 border-t bg-white px-4 py-8 md:mt-16">
+        <div className="container mx-auto max-w-6xl space-y-4 text-center">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
+            <div className="space-y-1">
+              <p className="text-gray-800 text-sm font-light uppercase tracking-wider">
+                nature.seoul
+              </p>
+              <p className="text-gray-400 text-[10px] font-light uppercase tracking-widest">
+                yongsan premium studio
+              </p>
+            </div>
+            <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
+          </div>
+          <p className="text-gray-500 text-xs font-light tracking-wide">
+            © 2024 Premium Eyebrow Artistry • Yongsan-gu, Seoul
           </p>
         </div>
       </footer>
