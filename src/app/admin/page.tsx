@@ -20,6 +20,7 @@ import {
   BarChart3,
   Star,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
@@ -98,11 +99,24 @@ export default function AdminPage() {
             <Button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 border font-light"
+              className="bg-gradient-to-r from-gray-50 to-gray-50 hover:from-gray-100 hover:via-gray-50 hover:to-gray-100 text-gray-700 hover:text-gray-900 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative transform border via-white font-light transition-all duration-300 disabled:opacity-50"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+              <div className="bg-gradient-to-r via-gray-900/5 absolute inset-0 from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+              <div className="relative flex items-center">
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    <span>로그아웃 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-gray-100 group-hover:bg-gray-200 mr-2 rounded p-1 transition-colors duration-300">
+                      <LogOut className="h-3.5 w-3.5" />
+                    </div>
+                    <span>로그아웃</span>
+                  </>
+                )}
+              </div>
             </Button>
           </div>
         </div>
@@ -188,8 +202,9 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="bg-black hover:bg-gray-800 w-full font-light text-white">
-                예약 관리하기
+              <Button className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-12 w-full transform rounded-lg font-medium text-white transition-all duration-300">
+                <div className="bg-gradient-to-r absolute inset-0 from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                <span className="relative">예약 관리하기</span>
               </Button>
             </CardContent>
           </Card>
@@ -205,8 +220,9 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="bg-black hover:bg-gray-800 w-full font-light text-white">
-                고객 관리하기
+              <Button className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-12 w-full transform rounded-lg font-medium text-white transition-all duration-300">
+                <div className="bg-gradient-to-r absolute inset-0 from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                <span className="relative">고객 관리하기</span>
               </Button>
             </CardContent>
           </Card>
@@ -222,8 +238,9 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="bg-black hover:bg-gray-800 w-full font-light text-white">
-                설정 관리하기
+              <Button className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-12 w-full transform rounded-lg font-medium text-white transition-all duration-300">
+                <div className="bg-gradient-to-r absolute inset-0 from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                <span className="relative">설정 관리하기</span>
               </Button>
             </CardContent>
           </Card>

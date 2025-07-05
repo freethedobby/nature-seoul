@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
@@ -24,11 +26,17 @@ let auth: any = null;
 let analytics: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let googleProvider: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let db: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let storage: any = null;
 
 if (isFirebaseConfigured) {
   // Initialize Firebase only if properly configured
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
   
   // Initialize Analytics (only in browser environment)
   if (typeof window !== 'undefined') {
@@ -82,5 +90,5 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
 
-export { auth, googleProvider, analytics };
+export { auth, googleProvider, analytics, db, storage };
 export default app; 
