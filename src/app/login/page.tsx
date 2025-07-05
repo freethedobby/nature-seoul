@@ -279,7 +279,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 transform text-center">
-        <div className="space-y-2 text-center">
+        <div className="space-y-3 text-center">
           <p className="text-gray-500 text-xs font-light tracking-wide">
             © 2024 nature.seoul
           </p>
@@ -290,6 +290,17 @@ export default function LoginPage() {
             </p>
             <div className="h-px bg-gradient-to-r via-gray-300 w-8 from-transparent to-transparent"></div>
           </div>
+          <p className="text-gray-400 text-[9px] font-light">
+            designed by{" "}
+            <a
+              href="https://blacksheepwall.xyz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-gray-600 underline decoration-dotted underline-offset-1 transition-colors duration-300"
+            >
+              blacksheepwall
+            </a>
+          </p>
         </div>
       </div>
     </div>

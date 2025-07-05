@@ -202,9 +202,22 @@ export default function Home() {
             </div>
             <div className="h-px bg-gradient-to-r via-gray-300 w-12 from-transparent to-transparent"></div>
           </div>
-          <p className="text-gray-500 text-xs font-light tracking-wide">
-            © 2024 Premium Eyebrow Artistry • Yongsan-gu, Seoul
-          </p>
+          <div className="space-y-2">
+            <p className="text-gray-500 text-xs font-light tracking-wide">
+              © 2024 Premium Eyebrow Artistry • Yongsan-gu, Seoul
+            </p>
+            <p className="text-gray-400 text-[10px] font-light">
+              designed by{" "}
+              <a
+                href="https://blacksheepwall.xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-gray-600 underline decoration-dotted underline-offset-2 transition-colors duration-300"
+              >
+                blacksheepwall
+              </a>
+            </p>
+          </div>
         </div>
       </footer>
     </div>
