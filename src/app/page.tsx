@@ -163,13 +163,13 @@ export default function Home() {
                 )}
 
                 <div className="text-black space-y-3 text-sm">
-                  <div className="space-y-1">
-                    <p className="text-gray-800 text-sm font-light uppercase tracking-wider">
+                  <div className="space-y-1.5">
+                    <p className="text-gray-800 text-sm font-light tracking-wider">
                       yongsan premium studio
                     </p>
                     <div className="flex items-center space-x-2">
                       <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
-                      <p className="text-gray-600 text-xs font-light uppercase tracking-wide">
+                      <p className="text-gray-600 text-xs font-light tracking-wide">
                         by appointment only
                       </p>
                       <div className="bg-gray-400 h-1 w-1 rounded-full"></div>
