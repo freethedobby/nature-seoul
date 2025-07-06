@@ -1,13 +1,20 @@
-import { db } from '@/lib/firebase-admin';
-import { ref, set } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function addAdmin(email: string) {
-  const adminRef = ref(db, `admins/${email.replace(/\./g, ',')}`);
-  await set(adminRef, {
-    email: email,
-    role: 'admin',
-    createdAt: new Date().toISOString()
-  });
+  try {
+    const adminDoc = {
+      email,
+      isActive: true,
+      createdAt: serverTimestamp(),
+    };
+    
+    await addDoc(collection(db, "admins"), adminDoc);
+    return true;
+  } catch (error) {
+    console.error("Error adding admin:", error);
+    return false;
+  }
 }
 
 // Add the new admin
