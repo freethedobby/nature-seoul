@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     await addAdmin(email);
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to add admin' }, { status: 500 });
   }
 } 
