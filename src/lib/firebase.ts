@@ -1,6 +1,6 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -41,6 +41,63 @@ export const signOutUser = async () => {
   } catch (error) {
     console.error("Sign out error:", error);
     throw error;
+  }
+};
+
+// Admin role management
+export const isAdmin = async (email: string) => {
+  if (!email) return false;
+  
+  try {
+    const adminQuery = query(
+      collection(db, "admins"),
+      where("email", "==", email),
+      where("isActive", "==", true)
+    );
+    
+    const snapshot = await getDocs(adminQuery);
+    return !snapshot.empty;
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return false;
+  }
+};
+
+export const addAdmin = async (email: string) => {
+  try {
+    const adminDoc = {
+      email,
+      isActive: true,
+      createdAt: serverTimestamp(),
+    };
+    
+    await addDoc(collection(db, "admins"), adminDoc);
+    return true;
+  } catch (error) {
+    console.error("Error adding admin:", error);
+    return false;
+  }
+};
+
+export const removeAdmin = async (email: string) => {
+  try {
+    const adminQuery = query(
+      collection(db, "admins"),
+      where("email", "==", email)
+    );
+    
+    const snapshot = await getDocs(adminQuery);
+    if (!snapshot.empty) {
+      const adminDoc = snapshot.docs[0];
+      await updateDoc(doc(db, "admins", adminDoc.id), {
+        isActive: false,
+        updatedAt: serverTimestamp(),
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error("Error removing admin:", error);
+    return false;
   }
 };
 

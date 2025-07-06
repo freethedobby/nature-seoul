@@ -19,22 +19,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
   query,
   where,
-  getDocs,
   updateDoc,
   doc,
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
+import Image from "next/image";
+import { isAdmin } from "@/lib/firebase";
 
 interface UserData {
   id: string;
@@ -44,7 +44,7 @@ interface UserData {
   photoURL: string;
   kycStatus: string;
   rejectReason?: string;
-  createdAt: any;
+  createdAt: Date;
 }
 
 interface ReservationData {
@@ -54,12 +54,13 @@ interface ReservationData {
   date: string;
   time: string;
   status: string;
-  createdAt: any;
+  createdAt: Date;
 }
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
@@ -68,9 +69,19 @@ export default function AdminDashboard() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && (!user || !user.email?.endsWith("@admin.com"))) {
-      router.push("/");
-    }
+    const checkAdminStatus = async () => {
+      if (!loading && user?.email) {
+        const adminStatus = await isAdmin(user.email);
+        setIsAuthorized(adminStatus);
+        if (!adminStatus) {
+          router.push("/");
+        }
+      } else if (!loading && !user) {
+        router.push("/");
+      }
+    };
+
+    checkAdminStatus();
   }, [user, loading, router]);
 
   useEffect(() => {
@@ -163,7 +174,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!user || !user.email?.endsWith("@admin.com")) {
+  if (!isAuthorized) {
     return null;
   }
 
@@ -173,7 +184,7 @@ export default function AdminDashboard() {
         <h1 className="mb-6 text-2xl font-bold">관리자 대시보드</h1>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="pending">
               KYC 대기 ({pendingUsers.length})
             </TabsTrigger>
@@ -182,6 +193,12 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="reservations">
               예약 내역 ({reservations.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="admins"
+              onClick={() => router.push("/admin/admins")}
+            >
+              관리자 관리
             </TabsTrigger>
           </TabsList>
 
@@ -220,10 +237,11 @@ export default function AdminDashboard() {
                 <CardContent>
                   {user.photoURL && (
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                      <img
+                      <Image
                         src={user.photoURL}
                         alt="시술 부위 사진"
-                        className="h-full w-full object-contain"
+                        fill
+                        className="object-contain"
                       />
                     </div>
                   )}
@@ -259,11 +277,11 @@ export default function AdminDashboard() {
                       <CardTitle>{reservation.userName}</CardTitle>
                       <CardDescription className="flex items-center gap-4">
                         <span className="flex items-center">
-                          <Calendar className="mr-1 h-4 w-4" />
+                          {/* <Calendar className="mr-1 h-4 w-4" /> */}
                           {reservation.date}
                         </span>
                         <span className="flex items-center">
-                          <Clock className="mr-1 h-4 w-4" />
+                          {/* <Clock className="mr-1 h-4 w-4" /> */}
                           {reservation.time}
                         </span>
                       </CardDescription>

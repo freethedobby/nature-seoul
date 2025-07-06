@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, User, LogOut, Loader2, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,19 +141,23 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        <div className="bottom-48 absolute right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
-          <img
-            src="/eyebrow_example.jpg"
-            alt="Beautiful Woman Illustration"
-            className="h-full w-full object-cover object-center"
-          />
+      <main className="relative flex min-h-[90vh] items-start justify-center overflow-hidden md:min-h-screen md:items-center">
+        <div className="absolute bottom-16 right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">
+          <div className="relative h-full w-full">
+            <Image
+              src="/eyebrow_example.jpg"
+              alt="Beautiful Woman Illustration"
+              fill
+              className="object-cover object-center"
+              priority
+            />
+          </div>
         </div>
 
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-2 md:py-8">
-          <div className="grid min-h-[90vh] items-start gap-4 pt-2 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
-            <div className="text-black space-y-4 md:space-y-8">
-              <div className="space-y-4 md:space-y-6">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-1 md:py-8">
+          <div className="grid min-h-[40vh] items-start gap-1 pt-12 md:min-h-[70vh] md:grid-cols-2 md:items-center md:gap-8 md:pt-0">
+            <div className="text-black space-y-2 md:space-y-8">
+              <div className="space-y-2 md:space-y-6">
                 <h2 className="text-4xl font-bold leading-tight tracking-tight drop-shadow-2xl md:text-6xl lg:text-7xl">
                   당신의 눈썹을
                   <br />
@@ -164,7 +169,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-start space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+              <div className="flex flex-col items-start space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
                 {loading ? (
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-md"></div>
                 ) : (

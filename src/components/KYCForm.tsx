@@ -10,13 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
-  Camera,
-  Upload,
   Loader2,
   CheckCircle,
   AlertCircle,
   ImagePlus,
-  Image,
+  Image as ImageIcon,
   X,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
@@ -24,6 +22,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 // Form validation schema
 const kycSchema = z.object({
@@ -63,13 +62,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     resolver: zodResolver(kycSchema),
   });
 
-  // Handle file selection
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file change (for drag and drop)
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       setValue("eyebrowPhoto", file);
-
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewImage(e.target?.result as string);
@@ -103,20 +101,6 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   // Handle drag leave
   const handleDragLeave = () => {
     setIsDragging(false);
-  };
-
-  // Handle file change (for drag and drop)
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setValue("eyebrowPhoto", file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   // Upload image to Firebase Storage
@@ -301,9 +285,11 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             {previewImage ? (
               <div className="space-y-3">
                 <div className="relative">
-                  <img
+                  <Image
                     src={previewImage}
                     alt="눈썹 미리보기"
+                    width={600}
+                    height={400}
                     className="h-48 w-full rounded-lg border object-cover"
                   />
                   <Button
@@ -356,7 +342,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   </div>
                   {selectedFile && (
                     <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-                      <Image className="text-blue-500 h-5 w-5" />
+                      <ImageIcon className="text-blue-500 h-5 w-5" />
                       <span className="text-gray-600 flex-1 truncate text-sm">
                         {selectedFile.name}
                       </span>
@@ -374,13 +360,25 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       </Button>
                     </div>
                   )}
+                  {/* Image Preview */}
                   {previewImage && (
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                      <img
+                      <Image
                         src={previewImage}
-                        alt="미리보기"
-                        className="h-full w-full object-contain"
+                        alt="눈썹 사진 미리보기"
+                        fill
+                        className="object-contain"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewImage(null);
+                          setSelectedFile(null);
+                        }}
+                        className="shadow-md hover:bg-gray-100 absolute right-2 top-2 rounded-full bg-white p-1"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   )}
                 </div>
