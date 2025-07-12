@@ -55,16 +55,20 @@ export default function Home() {
                 className="flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">계정</span>
+                <span className="hidden sm:inline">{user.email}</span>
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {/* Show email as first item, disabled, for mobile */}
+              <DropdownMenuItem
+                disabled
+                className="cursor-default opacity-100 sm:hidden"
+              >
+                {user.email}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/dashboard")}>
                 대시보드
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/user")}>
-                내 정보
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleLogout}
