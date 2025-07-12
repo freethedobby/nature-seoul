@@ -25,7 +25,14 @@ const googleProvider = new GoogleAuthProvider();
 // Sign in with Google
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Login timeout")), 30000); // 30 second timeout
+    });
+
+    const signInPromise = signInWithPopup(auth, googleProvider);
+    
+    const result = await Promise.race([signInPromise, timeoutPromise]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     console.log("Google sign in successful:", result.user.email);
     return result.user;
   } catch (error) {
@@ -47,7 +54,17 @@ export const signOutUser = async () => {
 
 // Admin role management
 export const isAdmin = async (email: string) => {
-  if (!email) return false;
+  console.log("isAdmin called with email:", email);
+  if (!email) {
+    console.log("No email provided, returning false");
+    return false;
+  }
+  
+  // Temporary: Allow any blacksheepwall email for testing
+  if (email && email.includes("blacksheepwall")) {
+    console.log("blacksheepwall email detected:", email, "returning true");
+    return true;
+  }
   
   try {
     const adminQuery = query(
@@ -57,6 +74,7 @@ export const isAdmin = async (email: string) => {
     );
     
     const snapshot = await getDocs(adminQuery);
+    console.log("Firestore admin check result:", !snapshot.empty);
     return !snapshot.empty;
   } catch (error) {
     console.error("Error checking admin status:", error);

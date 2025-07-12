@@ -1,6 +1,7 @@
 import { getDatabase } from 'firebase-admin/database';
 
 export const ADMIN_EMAILS = [
+  'blacksheepwall.xyz@gmail.com',
   'blacksheepwall.xyz@google.com',
   // ... existing admins ...
 ];

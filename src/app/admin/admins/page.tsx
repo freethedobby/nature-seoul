@@ -52,16 +52,18 @@ export default function AdminManagement() {
   useEffect(() => {
     if (!isAuthorized) return;
 
-    const adminsQuery = query(
-      collection(db, "admins"),
-      orderBy("createdAt", "desc")
-    );
+    const adminsQuery = query(collection(db, "admins"));
 
     const unsubscribe = onSnapshot(adminsQuery, (snapshot) => {
       const adminUsers: AdminUser[] = [];
       snapshot.forEach((doc) => {
         adminUsers.push({ id: doc.id, ...doc.data() } as AdminUser);
       });
+      // Sort client-side to avoid composite index requirement
+      adminUsers.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setAdmins(adminUsers);
     });
 
@@ -138,40 +140,89 @@ export default function AdminManagement() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {admins.map((admin) => (
-            <Card key={admin.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">{admin.email}</CardTitle>
-                    <CardDescription>
-                      {new Date(admin.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant={admin.isActive ? "default" : "secondary"}
-                      className={admin.isActive ? "bg-green-100" : ""}
-                    >
-                      {admin.isActive ? "활성" : "비활성"}
-                    </Badge>
-                    {admin.isActive && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleRemoveAdmin(admin.email)}
+        <Card>
+          <CardHeader>
+            <CardTitle>관리자 목록</CardTitle>
+            <CardDescription>
+              현재 등록된 관리자 목록입니다. 총 {admins.length}명의 관리자가
+              있습니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {admins.length === 0 ? (
+              <div className="text-gray-500 py-8 text-center">
+                <p>등록된 관리자가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {admins.map((admin) => (
+                  <div
+                    key={admin.id}
+                    className="hover:bg-gray-50 flex items-center justify-between rounded-lg border p-4 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gray-200 flex h-8 w-8 items-center justify-center rounded-full">
+                          <span className="text-gray-600 text-sm font-medium">
+                            {admin.email.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {admin.email}
+                          </p>
+                          <p className="text-gray-500 text-sm">
+                            등록일:{" "}
+                            {new Date(admin.createdAt).toLocaleDateString(
+                              "ko-KR",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={admin.isActive ? "default" : "secondary"}
+                        className={
+                          admin.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                        {admin.isActive ? "활성" : "비활성"}
+                      </Badge>
+                      {admin.isActive && admin.email !== user?.email && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleRemoveAdmin(admin.email)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {admin.email === user?.email && (
+                        <Badge
+                          variant="outline"
+                          className="text-blue-600 border-blue-200"
+                        >
+                          현재 사용자
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

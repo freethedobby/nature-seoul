@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLayout({
   children,
@@ -13,13 +13,19 @@ export default function AdminLayout({
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.email !== "blacksheepwall.xyz@google.com") {
-      router.push("/login");
-    }
+    // Let the page component handle admin authorization
+    // This layout just provides the container
   }, [user, router]);
 
-  if (!user || user.email !== "blacksheepwall.xyz@google.com") {
-    return null;
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin border-black mb-4 h-8 w-8 rounded-full border-b-2"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
