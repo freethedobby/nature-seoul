@@ -32,7 +32,6 @@ import {
   updateDoc,
   doc,
   onSnapshot,
-  orderBy,
 } from "firebase/firestore";
 import Image from "next/image";
 import { isAdmin, addAdmin, removeAdmin } from "@/lib/firebase";

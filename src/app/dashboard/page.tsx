@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, Clock, Lock } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
-import { setDoc, doc } from "firebase/firestore";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();

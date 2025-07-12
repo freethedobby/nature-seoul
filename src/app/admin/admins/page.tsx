@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Trash2 } from "lucide-react";
 import { db, isAdmin, addAdmin, removeAdmin } from "@/lib/firebase";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot } from "firebase/firestore";
 
 interface AdminUser {
   id: string;

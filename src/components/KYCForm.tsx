@@ -19,8 +19,6 @@ import {
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import {
-  collection,
-  addDoc,
   serverTimestamp,
   setDoc,
   doc as firestoreDoc,
