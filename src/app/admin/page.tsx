@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, UserPlus, Trash2, Eye } from "lucide-react";
 import { db } from "@/lib/firebase";
@@ -32,9 +32,12 @@ import {
   updateDoc,
   doc,
   onSnapshot,
+  addDoc,
+  deleteDoc,
+  getDocs,
+  Timestamp,
 } from "firebase/firestore";
 import Image from "next/image";
-import { isAdmin, addAdmin, removeAdmin } from "@/lib/firebase";
 
 interface UserData {
   id: string;
@@ -65,12 +68,29 @@ interface AdminUser {
   createdAt: Date;
 }
 
+interface SlotData {
+  id: string;
+  start: Date;
+  end: Date;
+  type: "recurring" | "custom";
+  recurrence?: {
+    daysOfWeek: number[];
+    startTime: string;
+    endTime: string;
+    intervalMinutes: number;
+  };
+  status: "available" | "booked";
+  createdBy: string;
+  createdAt: Date;
+}
+
 export default function AdminDashboard() {
   const { user, loading, isAdminMode, setIsAdminMode } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
+  const [rejectedUsers, setRejectedUsers] = useState<UserData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -78,13 +98,43 @@ export default function AdminDashboard() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slots, setSlots] = useState<SlotData[]>([]);
+  const [showSlotDialog, setShowSlotDialog] = useState(false);
+  const [slotType, setSlotType] = useState<"recurring" | "custom">("custom");
+  const [customSlot, setCustomSlot] = useState({ start: "", end: "" });
+  const [recurringSlot, setRecurringSlot] = useState<{
+    daysOfWeek: number[];
+    startTime: string;
+    endTime: string;
+    intervalMinutes: number;
+  }>({ daysOfWeek: [], startTime: "", endTime: "", intervalMinutes: 120 });
+  const [isSlotSubmitting, setIsSlotSubmitting] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!loading && user?.email) {
-        const adminStatus = await isAdmin(user.email);
-        setIsAuthorized(adminStatus);
-        if (!adminStatus) {
+        try {
+          const response = await fetch("/api/admin/check", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: user.email }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setIsAuthorized(data.isAdmin);
+            if (!data.isAdmin) {
+              router.push("/login?redirectTo=/admin");
+            }
+          } else {
+            setIsAuthorized(false);
+            router.push("/login?redirectTo=/admin");
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setIsAuthorized(false);
           router.push("/login?redirectTo=/admin");
         }
       } else if (!loading && !user) {
@@ -136,6 +186,25 @@ export default function AdminDashboard() {
       setApprovedUsers(users);
     });
 
+    // Subscribe to rejected users
+    const rejectedQuery = query(
+      collection(db, "users"),
+      where("kycStatus", "==", "rejected")
+    );
+
+    const unsubRejected = onSnapshot(rejectedQuery, (snapshot) => {
+      const users: UserData[] = [];
+      snapshot.forEach((doc) => {
+        users.push({ id: doc.id, ...doc.data() } as UserData);
+      });
+      // Sort client-side to avoid composite index requirement
+      users.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setRejectedUsers(users);
+    });
+
     // Subscribe to reservations
     const reservationsQuery = query(collection(db, "reservations"));
 
@@ -167,26 +236,42 @@ export default function AdminDashboard() {
       setAdmins(adminUsers);
     });
 
+    // Fetch slots
+    const slotsQuery = query(collection(db, "slots"));
+    const unsubSlots = onSnapshot(slotsQuery, (snapshot) => {
+      const slotList: SlotData[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        slotList.push({
+          id: doc.id,
+          start: data.start.toDate(),
+          end: data.end.toDate(),
+          type: data.type,
+          recurrence: data.recurrence,
+          status: data.status,
+          createdBy: data.createdBy,
+          createdAt: data.createdAt.toDate(),
+        });
+      });
+      setSlots(slotList);
+    });
+
     return () => {
       unsubPending();
       unsubApproved();
+      unsubRejected();
       unsubReservations();
       unsubAdmins();
+      unsubSlots();
     };
   }, [user, isAuthorized]);
 
-  // Handle admin mode redirect
-  useEffect(() => {
-    if (isAuthorized && !isAdminMode) {
-      router.push("/dashboard");
-    }
-  }, [isAuthorized, isAdminMode, router]);
-
   const handleApprove = async (userId: string) => {
     try {
-      await updateDoc(doc(db, "users", userId), {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
         kycStatus: "approved",
-        updatedAt: new Date(),
+        approvedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error("Error approving user:", error);
@@ -194,14 +279,16 @@ export default function AdminDashboard() {
   };
 
   const handleReject = async () => {
-    if (!selectedUserId || !rejectReason) return;
+    if (!selectedUserId || !rejectReason.trim()) return;
 
     try {
-      await updateDoc(doc(db, "users", selectedUserId), {
+      const userRef = doc(db, "users", selectedUserId);
+      await updateDoc(userRef, {
         kycStatus: "rejected",
-        rejectReason,
-        updatedAt: new Date(),
+        rejectReason: rejectReason.trim(),
+        rejectedAt: Timestamp.now(),
       });
+
       setIsRejectDialogOpen(false);
       setRejectReason("");
       setSelectedUserId(null);
@@ -216,8 +303,19 @@ export default function AdminDashboard() {
 
     setIsSubmitting(true);
     try {
-      await addAdmin(newAdminEmail);
-      setNewAdminEmail("");
+      const response = await fetch("/api/admin/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: newAdminEmail.trim() }),
+      });
+
+      if (response.ok) {
+        setNewAdminEmail("");
+      } else {
+        console.error("Failed to add admin");
+      }
     } catch (error) {
       console.error("Error adding admin:", error);
     } finally {
@@ -227,38 +325,123 @@ export default function AdminDashboard() {
 
   const handleRemoveAdmin = async (email: string) => {
     try {
-      await removeAdmin(email);
+      const response = await fetch("/api/admin/remove", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to remove admin");
+      }
     } catch (error) {
       console.error("Error removing admin:", error);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="animate-spin border-black h-8 w-8 rounded-full border-b-2"></div>
-      </div>
-    );
-  }
+  const handleCreateSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSlotSubmitting(true);
 
-  if (!isAuthorized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin border-black mb-4 h-8 w-8 rounded-full border-b-2"></div>
-          <p>Checking authorization...</p>
-        </div>
-      </div>
-    );
-  }
+    try {
+      if (slotType === "custom") {
+        const startDate = new Date(customSlot.start);
+        const endDate = new Date(customSlot.end);
 
-  // If not in admin mode, show loading while redirecting
-  if (isAuthorized && !isAdminMode) {
+        await addDoc(collection(db, "slots"), {
+          start: Timestamp.fromDate(startDate),
+          end: Timestamp.fromDate(endDate),
+          type: "custom",
+          status: "available",
+          createdBy: user?.email,
+          createdAt: Timestamp.now(),
+        });
+      } else {
+        // For recurring slots, create multiple slots based on the pattern
+        const startTime = recurringSlot.startTime;
+        const endTime = recurringSlot.endTime;
+        const intervalMinutes = recurringSlot.intervalMinutes;
+
+        // Create slots for the next 4 weeks
+        const now = new Date();
+        const endDate = new Date(now.getTime() + 4 * 7 * 24 * 60 * 60 * 1000); // 4 weeks from now
+
+        for (
+          let date = new Date(now);
+          date <= endDate;
+          date.setDate(date.getDate() + 1)
+        ) {
+          if (recurringSlot.daysOfWeek.includes(date.getDay())) {
+            const [startHour, startMinute] = startTime.split(":").map(Number);
+            const [endHour, endMinute] = endTime.split(":").map(Number);
+
+            let currentTime = new Date(date);
+            currentTime.setHours(startHour, startMinute, 0, 0);
+
+            const endTimeOfDay = new Date(date);
+            endTimeOfDay.setHours(endHour, endMinute, 0, 0);
+
+            while (currentTime < endTimeOfDay) {
+              const slotEnd = new Date(
+                currentTime.getTime() + intervalMinutes * 60 * 1000
+              );
+
+              if (slotEnd <= endTimeOfDay) {
+                await addDoc(collection(db, "slots"), {
+                  start: Timestamp.fromDate(currentTime),
+                  end: Timestamp.fromDate(slotEnd),
+                  type: "recurring",
+                  recurrence: {
+                    daysOfWeek: recurringSlot.daysOfWeek,
+                    startTime: recurringSlot.startTime,
+                    endTime: recurringSlot.endTime,
+                    intervalMinutes: recurringSlot.intervalMinutes,
+                  },
+                  status: "available",
+                  createdBy: user?.email,
+                  createdAt: Timestamp.now(),
+                });
+              }
+
+              currentTime = slotEnd;
+            }
+          }
+        }
+      }
+
+      setShowSlotDialog(false);
+      setCustomSlot({ start: "", end: "" });
+      setRecurringSlot({
+        daysOfWeek: [],
+        startTime: "",
+        endTime: "",
+        intervalMinutes: 120,
+      });
+    } catch (error) {
+      console.error("Error creating slot:", error);
+    } finally {
+      setIsSlotSubmitting(false);
+    }
+  };
+
+  const handleDeleteSlot = async (slotId: string) => {
+    try {
+      await deleteDoc(doc(db, "slots", slotId));
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+    }
+  };
+
+  if (loading || !isAuthorized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin border-black mb-4 h-8 w-8 rounded-full border-b-2"></div>
-          <p>Redirecting to dashboard...</p>
+      <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center">
+            <div className="animate-spin border-black mb-4 h-8 w-8 rounded-full border-b-2"></div>
+            <p>Redirecting to dashboard...</p>
+          </div>
         </div>
       </div>
     );
@@ -287,259 +470,149 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList
-            className="
-              bg-gray-100 mb-4 flex w-full scroll-px-3 flex-nowrap gap-x-2 overflow-x-auto rounded-lg
-              p-1 pl-3 pr-3
-              sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0
-            "
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card
+            className="hover:shadow-lg cursor-pointer transition-shadow"
+            onClick={() => router.push("/admin/kyc")}
           >
-            <TabsTrigger
-              value="pending"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
-            >
-              KYC ({pendingUsers.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="approved"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
-            >
-              승인 ({approvedUsers.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="reservations"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
-            >
-              예약 ({reservations.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="admins"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
-            >
-              관리자 ({admins.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending" className="space-y-4">
-            {pendingUsers.map((user) => (
-              <Card key={user.id}>
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{user.name}</CardTitle>
-                      <CardDescription>{user.contact}</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleApprove(user.id)}
-                      >
-                        <CheckCircle className="mr-1 h-4 w-4" />
-                        승인
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setSelectedUserId(user.id);
-                          setIsRejectDialogOpen(true);
-                        }}
-                      >
-                        <XCircle className="mr-1 h-4 w-4" />
-                        반려
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {user.photoURL && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                      <Image
-                        src={user.photoURL}
-                        alt="시술 부위 사진"
-                        fill
-                        className="object-contain"
-                        unoptimized={user.photoURL.startsWith("data:")}
-                        onError={(e) => {
-                          console.error("Failed to load image:", user.photoURL);
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                      {user.photoType === "base64" && (
-                        <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                          Base64
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="approved" className="space-y-4">
-            {approvedUsers.map((user) => (
-              <Card key={user.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{user.name}</CardTitle>
-                      <CardDescription>{user.contact}</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="bg-green-50">
-                      승인됨
-                    </Badge>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="reservations" className="space-y-4">
-            {reservations.map((reservation) => (
-              <Card key={reservation.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{reservation.userName}</CardTitle>
-                      <CardDescription className="flex items-center gap-4">
-                        <span className="flex items-center">
-                          {reservation.date}
-                        </span>
-                        <span className="flex items-center">
-                          {reservation.time}
-                        </span>
-                      </CardDescription>
-                    </div>
-                    <Badge
-                      variant={
-                        reservation.status === "confirmed"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {reservation.status === "confirmed" ? "확정" : "대기"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="admins" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>새 관리자 추가</CardTitle>
-                <CardDescription>
-                  새로운 관리자의 이메일 주소를 입력하세요
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddAdmin} className="flex gap-4">
-                  <div className="flex-1">
-                    <Input
-                      type="email"
-                      placeholder="관리자 이메일 주소"
-                      value={newAdminEmail}
-                      onChange={(e) => setNewAdminEmail(e.target.value)}
-                      required
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="bg-blue-100 rounded-lg p-2">
+                  <svg
+                    className="text-blue-600 h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
-                  </div>
-                  <Button type="submit" disabled={isSubmitting}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    추가
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                  </svg>
+                </div>
+                KYC 관리
+              </CardTitle>
+              <CardDescription>KYC 승인, 반려, 예약 관리</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500 text-sm">
+                  대기: {pendingUsers.length} | 승인: {approvedUsers.length} |
+                  반려: {rejectedUsers?.length || 0}
+                </div>
+                <svg
+                  className="text-gray-400 h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>관리자 목록</CardTitle>
-                <CardDescription>
-                  현재 등록된 관리자 목록입니다. 총 {admins.length}명의 관리자가
-                  있습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {admins.length === 0 ? (
-                  <div className="text-gray-500 py-8 text-center">
-                    <p>등록된 관리자가 없습니다.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {admins.map((admin) => (
-                      <div
-                        key={admin.id}
-                        className="hover:bg-gray-50 flex items-center justify-between rounded-lg border p-4 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-gray-200 flex h-8 w-8 items-center justify-center rounded-full">
-                              <span className="text-gray-600 text-sm font-medium">
-                                {admin.email.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-gray-900 font-medium">
-                                {admin.email}
-                              </p>
-                              <p className="text-gray-500 text-sm">
-                                등록일:{" "}
-                                {new Date(admin.createdAt).toLocaleDateString(
-                                  "ko-KR",
-                                  {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge
-                            variant={admin.isActive ? "default" : "secondary"}
-                            className={
-                              admin.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-600"
-                            }
-                          >
-                            {admin.isActive ? "활성" : "비활성"}
-                          </Badge>
-                          {admin.isActive && admin.email !== user?.email && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleRemoveAdmin(admin.email)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {admin.email === user?.email && (
-                            <Badge
-                              variant="outline"
-                              className="text-blue-600 border-blue-200"
-                            >
-                              현재 사용자
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          <Card
+            className="hover:shadow-lg cursor-pointer transition-shadow"
+            onClick={() => router.push("/admin/slots")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="bg-green-100 rounded-lg p-2">
+                  <svg
+                    className="text-green-600 h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                예약 슬롯 관리
+              </CardTitle>
+              <CardDescription>예약 가능한 시간대 관리</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500 text-sm">
+                  총 {slots.length}개 슬롯
+                </div>
+                <svg
+                  className="text-gray-400 h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-lg cursor-pointer transition-shadow"
+            onClick={() => router.push("/admin/admins")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="bg-purple-100 rounded-lg p-2">
+                  <svg
+                    className="text-purple-600 h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                  </svg>
+                </div>
+                관리자 관리
+              </CardTitle>
+              <CardDescription>관리자 계정 관리</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500 text-sm">
+                  총 {admins.length}명의 관리자
+                </div>
+                <svg
+                  className="text-gray-400 h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>

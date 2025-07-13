@@ -24,4 +24,16 @@ export async function addAdmin(email: string) {
   if (!ADMIN_EMAILS.includes(email)) {
     ADMIN_EMAILS.push(email);
   }
+}
+
+export async function removeAdmin(email: string) {
+  const db = getDatabase();
+  const adminRef = db.ref(`admins/${email.replace(/\./g, ',')}`);
+  await adminRef.remove();
+  
+  // Remove from allowed emails
+  const index = ADMIN_EMAILS.indexOf(email);
+  if (index > -1) {
+    ADMIN_EMAILS.splice(index, 1);
+  }
 } 
