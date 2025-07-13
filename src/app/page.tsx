@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import AdminModeToggle from "@/components/AdminModeToggle";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -35,94 +36,80 @@ export default function Home() {
   const AuthButtons = () => {
     if (loading) {
       return (
-        <div className="animate-pulse bg-gray-200 h-8 w-16 rounded-md"></div>
-      );
-    }
-
-    if (!user) {
-      return (
-        <Link href="/login">
-          <Button variant="ghost" className="text-gray-600 hover:text-black">
-            <ArrowRight className="mr-2 h-4 w-4" />
-            로그인
-          </Button>
-        </Link>
-      );
-    }
-
-    return (
-      <>
-        <div className="hidden items-center space-x-6 md:flex">
-          <Link href="/dashboard">
-            <Button variant="ghost" className="text-gray-600 hover:text-black">
-              <User className="mr-2 h-4 w-4" />
-              대시보드
-            </Button>
-          </Link>
-          <Button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            variant="ghost"
-            className="text-gray-600 hover:text-black"
-          >
-            {isLoggingOut ? (
-              <>
-                <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                로그아웃 중...
-              </>
-            ) : (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                로그아웃
-              </>
-            )}
-          </Button>
+        <div className="flex items-center space-x-4">
+          <div className="animate-pulse bg-gray-200 w-24 h-10 rounded-xl"></div>
+          <div className="animate-pulse bg-gray-200 w-24 h-10 rounded-xl"></div>
         </div>
+      );
+    }
 
-        <div className="md:hidden">
+    if (user) {
+      return (
+        <div className="flex items-center space-x-3">
+          <AdminModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                className="text-gray-600 hover:text-black"
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
               >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">{user.email}</span>
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>대시보드</span>
-                </Link>
+              {/* Show email as first item, disabled, for mobile */}
+              <DropdownMenuItem
+                disabled
+                className="cursor-default opacity-100 sm:hidden"
+              >
+                {user.email}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                대시보드
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                className="text-red-600 focus:text-red-600"
               >
                 {isLoggingOut ? (
                   <>
-                    <Loader2 className="animate-spin h-4 w-4" />
-                    <span>로그아웃 중...</span>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    로그아웃 중...
                   </>
                 ) : (
                   <>
-                    <LogOut className="h-4 w-4" />
-                    <span>로그아웃</span>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    로그아웃
                   </>
                 )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </>
+      );
+    }
+
+    return (
+      <div className="flex items-center space-x-3">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/login")}
+          className="hidden sm:flex"
+        >
+          로그인
+        </Button>
+        <Button onClick={() => router.push("/login")}>시작하기</Button>
+      </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-gray-200 sticky top-0 z-50 border-b bg-white/90 px-4 py-4 backdrop-blur-sm">
+    <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white">
+      <header className="border-gray-100 sticky top-0 z-50 border-b bg-white/80 px-4 py-4 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
             <Link href="/" className="transition-opacity hover:opacity-80">
@@ -148,9 +135,10 @@ export default function Home() {
               src="/eyebrow_example.jpg"
               alt="Beautiful Woman Illustration"
               fill
-              className="object-cover object-center"
+              className="rounded-2xl object-cover object-center"
               priority
             />
+            <div className="bg-gradient-to-r absolute inset-0 rounded-2xl from-white/20 to-transparent"></div>
           </div>
         </div>
 
@@ -164,22 +152,25 @@ export default function Home() {
                   <span className="font-bold">더 아름답게</span>
                 </h2>
 
-                <p className="text-lg font-bold leading-relaxed drop-shadow-xl md:text-xl">
+                <p className="text-gray-600 text-lg font-medium leading-relaxed drop-shadow-xl md:text-xl">
                   개인 맞춤형 디자인으로 당신만의 완벽한 눈썹을 만들어드립니다.
                 </p>
               </div>
 
               <div className="flex flex-col items-start space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
                 {loading ? (
-                  <div className="w-32 animate-pulse bg-black/20 h-12 rounded-md"></div>
+                  <div className="w-32 animate-pulse bg-black/20 h-12 rounded-xl"></div>
                 ) : (
                   <Link href={user ? "/kyc" : "/login"}>
                     <Button
-                      variant="outline"
                       size="lg"
-                      className="border-black/10 text-black hover:border-black/20 hover:bg-gray-50 w-full bg-white sm:w-auto"
+                      className="bg-black shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-14 w-full transform text-white transition-all duration-300 sm:w-auto"
                     >
-                      예약하기
+                      <div className="bg-gradient-to-r absolute inset-0 rounded-xl from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                      <div className="relative flex items-center justify-center">
+                        <ArrowRight className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                        <span>예약하기</span>
+                      </div>
                     </Button>
                   </Link>
                 )}
@@ -194,7 +185,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="border-gray-200 border-t py-8">
+      <footer className="border-gray-100 border-t py-8">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="text-center md:text-left">
@@ -205,7 +196,7 @@ export default function Home() {
                   href="https://blacksheepwall.xyz"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-gray-600 underline"
+                  className="hover:text-gray-600 underline transition-colors"
                 >
                   blacksheepwall
                 </a>

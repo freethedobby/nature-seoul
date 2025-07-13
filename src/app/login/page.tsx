@@ -1,16 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { signInWithGoogle } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  console.log(
+    "LoginPage render - user:",
+    user?.email,
+    "authLoading:",
+    authLoading,
+    "pathname:",
+    typeof window !== "undefined" ? window.location.pathname : "Unknown"
+  );
+
+  // Get the original destination from URL parameters or default to dashboard
+  const getRedirectPath = () => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get("redirectTo");
+      console.log("Login page - redirectTo from URL:", redirectTo);
+      return redirectTo || "/dashboard";
+    }
+    return "/dashboard";
+  };
+
+  // Redirect to original destination if user is already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      const redirectPath = getRedirectPath();
+      router.push(redirectPath);
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="bg-gradient-to-br from-gray-50 flex min-h-screen items-center justify-center to-white">
+        <div className="animate-spin border-black h-8 w-8 rounded-full border-b-2"></div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is already authenticated
+  if (user) {
+    return null;
+  }
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -18,8 +62,9 @@ export default function LoginPage() {
 
     try {
       await signInWithGoogle();
-      console.log("Redirecting to dashboard after successful login");
-      router.push("/dashboard");
+      const redirectPath = getRedirectPath();
+      console.log("Redirecting to", redirectPath, "after successful login");
+      router.push(redirectPath);
     } catch (err) {
       console.error("Login error:", err);
       setError("로그인에 실패했습니다. 다시 시도해주세요.");
@@ -29,12 +74,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="bg-gradient-to-br from-gray-50 flex min-h-screen flex-col to-white">
       <div className="flex-grow">
         <div className="container mx-auto max-w-6xl px-4 py-8">
           <Link
             href="/"
-            className="text-gray-500 hover:text-gray-900 mb-8 inline-flex items-center text-sm"
+            className="text-gray-500 hover:text-gray-900 mb-8 inline-flex items-center text-sm transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             홈으로 돌아가기
@@ -50,7 +95,7 @@ export default function LoginPage() {
 
             <div className="space-y-6">
               {error && (
-                <div className="text-red-500 bg-red-50 rounded-lg p-3 text-center text-sm">
+                <div className="text-red-500 bg-red-50 border-red-100 rounded-xl border p-4 text-center text-sm">
                   {error}
                 </div>
               )}
@@ -58,7 +103,7 @@ export default function LoginPage() {
               <Button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="hover:bg-gray-50 text-gray-900 border-gray-300 relative h-14 w-full border bg-white"
+                className="text-gray-900 border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 group relative h-14 w-full transform border bg-white transition-all duration-300"
               >
                 <div className="absolute left-4 flex items-center justify-center">
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -92,7 +137,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <footer className="border-gray-200 border-t py-8">
+      <footer className="border-gray-100 border-t py-8">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="text-center md:text-left">
@@ -103,7 +148,7 @@ export default function LoginPage() {
                   href="https://blacksheepwall.xyz"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-gray-600 underline"
+                  className="hover:text-gray-600 underline transition-colors"
                 >
                   blacksheepwall
                 </a>

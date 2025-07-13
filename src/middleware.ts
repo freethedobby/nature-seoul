@@ -1,20 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Get the pathname
-  const path = request.nextUrl.pathname;
-
-  // Check if it's an admin route
-  if (path.startsWith('/admin')) {
-    const session = request.cookies.get('session');
-    
-    // If no session, redirect to login
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-  }
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function middleware(_request: NextRequest) {
+  // For admin routes, let the client-side handle authentication
+  // Firebase auth uses JWT tokens in localStorage, not session cookies
   return NextResponse.next();
 }
 

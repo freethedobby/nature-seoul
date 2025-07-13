@@ -18,7 +18,11 @@ import {
   X,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  serverTimestamp,
+  setDoc,
+  doc as firestoreDoc,
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -31,9 +35,7 @@ const kycSchema = z.object({
   hasPreviousTreatment: z.enum(["yes", "no"], {
     required_error: "기존 시술 여부를 선택해주세요",
   }),
-  eyebrowPhoto: z
-    .instanceof(File)
-    .refine((file) => file instanceof File, "눈썹 사진을 업로드해주세요"),
+  eyebrowPhoto: z.any(), // Temporarily simplify to debug
 });
 
 type KYCFormData = z.infer<typeof kycSchema>;
@@ -52,15 +54,30 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  console.log(
+    "KYCForm rendered - user:",
+    user?.email,
+    "isSubmitting:",
+    isSubmitting
+  );
+
   const {
     register,
     handleSubmit,
     setValue,
     formState: { errors },
     reset,
+    watch,
   } = useForm<KYCFormData>({
     resolver: zodResolver(kycSchema),
   });
+
+  // Watch form values for debugging (only in development)
+  if (process.env.NODE_ENV === "development") {
+    const watchedValues = watch();
+    console.log("Form values:", watchedValues);
+    console.log("Form errors:", errors);
+  }
 
   // Handle file change (for drag and drop)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,69 +122,159 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
   // Upload image to Firebase Storage
   const uploadImage = async (file: File): Promise<string> => {
+    console.log("=== UPLOAD IMAGE START ===");
+    console.log("File:", file.name, file.size, file.type);
+    console.log("User:", user?.email);
+
     if (!user) throw new Error("User not authenticated");
 
-    const timestamp = Date.now();
-    const fileName = `kyc/${user.uid}/${timestamp}_${file.name}`;
-    const storageRef = ref(storage, fileName);
+    // For development, skip Firebase Storage and use base64 directly
+    if (
+      process.env.NODE_ENV === "development" ||
+      window.location.hostname === "localhost"
+    ) {
+      console.log("Development mode detected, using base64 storage directly");
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = reader.result as string;
+          console.log(
+            "Base64 conversion successful, length:",
+            base64String.length
+          );
+          resolve(base64String);
+        };
+        reader.onerror = (error) => {
+          console.error("FileReader error:", error);
+          reject(error);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    try {
+      console.log("Attempting Firebase Storage upload...");
+      const timestamp = Date.now();
+      const fileName = `kyc/${user.uid}/${timestamp}_${file.name}`;
+      const storageRef = ref(storage, fileName);
 
-    return downloadURL;
+      console.log("Uploading bytes...");
+      const snapshot = await uploadBytes(storageRef, file);
+      console.log("Bytes uploaded, getting download URL...");
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      console.log("Firebase Storage upload successful:", downloadURL);
+
+      return downloadURL;
+    } catch (error) {
+      console.error("=== FIREBASE STORAGE UPLOAD FAILED ===");
+      console.error("Error:", error);
+
+      // Fallback: convert file to base64 and store in Firestore
+      console.log("Falling back to base64 storage");
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = reader.result as string;
+          console.log(
+            "Base64 conversion successful, length:",
+            base64String.length
+          );
+          resolve(base64String);
+        };
+        reader.onerror = (error) => {
+          console.error("FileReader error:", error);
+          reject(error);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
   };
 
   // Submit form
   const onSubmit = async (data: KYCFormData) => {
+    console.log("=== KYC FORM SUBMISSION START ===");
+    console.log("Form data:", data);
+    console.log("User:", user?.email);
+    console.log("Firebase db available:", !!db);
+    console.log("Firebase storage available:", !!storage);
+
     if (!user) {
+      console.error("No user found");
       setSubmitStatus("error");
       return;
     }
 
+    console.log("Setting isSubmitting to true");
     setIsSubmitting(true);
     setSubmitStatus("idle");
 
     try {
       // Check if Firebase is properly configured
-      if (!db || !storage) {
+      if (!db) {
+        console.log("Firebase not configured, running in development mode");
         // Development mode - just show success
         console.log("Development mode - KYC form data:", {
           name: data.name,
           contact: data.contact,
           hasPreviousTreatment: data.hasPreviousTreatment === "yes",
-          photoFileName: data.eyebrowPhoto.name,
+          photoFileName: data.eyebrowPhoto?.name || "No file",
         });
 
+        console.log("Setting success status");
         setSubmitStatus("success");
         reset();
         setPreviewImage(null);
+        setSelectedFile(null);
         onSuccess?.();
         return;
       }
 
-      // Upload image
+      console.log("Starting image upload...");
+      // Upload image (with fallback to base64 if Firebase Storage fails)
       const imageUrl = await uploadImage(data.eyebrowPhoto);
+      console.log(
+        "Image processed successfully, URL type:",
+        imageUrl.startsWith("data:") ? "base64" : "firebase-storage"
+      );
 
-      // Save to Firestore
-      await addDoc(collection(db, "kyc_applications"), {
+      // Save to Firestore in users collection
+      const userData = {
         userId: user.uid,
-        userEmail: user.email,
+        email: user.email,
         name: data.name,
         contact: data.contact,
+        photoURL: imageUrl,
+        photoType: imageUrl.startsWith("data:") ? "base64" : "firebase-storage",
+        kycStatus: "pending",
         hasPreviousTreatment: data.hasPreviousTreatment === "yes",
-        eyebrowPhotoUrl: imageUrl,
-        status: "pending",
         createdAt: serverTimestamp(),
-      });
+        submittedAt: serverTimestamp(),
+      };
 
+      console.log("Saving user data to Firestore...");
+      await setDoc(firestoreDoc(db, "users", user.uid), userData, {
+        merge: true,
+      });
+      console.log("User data saved successfully with UID as doc ID");
+
+      console.log("Setting final success status");
       setSubmitStatus("success");
       reset();
       setPreviewImage(null);
+      setSelectedFile(null);
       onSuccess?.();
     } catch (error) {
-      console.error("KYC submission error:", error);
+      console.error("=== KYC SUBMISSION ERROR ===");
+      console.error("Error:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        user: user?.email,
+        formData: data,
+      });
       setSubmitStatus("error");
     } finally {
+      console.log("Setting isSubmitting to false");
       setIsSubmitting(false);
     }
   };
@@ -202,7 +309,15 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            console.log("Form submit event triggered");
+            console.log("Form validation errors:", errors);
+            console.log("Form is valid:", Object.keys(errors).length === 0);
+            handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-6"
+        >
           {/* Name Input */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
@@ -387,7 +502,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {errors.eyebrowPhoto && (
               <p className="text-red-500 text-sm">
-                {errors.eyebrowPhoto.message}
+                {errors.eyebrowPhoto.message?.toString()}
               </p>
             )}
           </div>
@@ -396,9 +511,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-gradient-to-r from-gray-900 via-black to-gray-900 hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-14 w-full transform text-lg font-medium text-white transition-all duration-300 disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-black shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-14 w-full transform text-white transition-all duration-300 disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <div className="bg-gradient-to-r absolute inset-0 from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+            <div className="bg-gradient-to-r absolute inset-0 rounded-xl from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
             <div className="relative flex items-center justify-center">
               {isSubmitting ? (
                 <>
@@ -429,7 +544,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
           </Button>
 
           {submitStatus === "error" && (
-            <div className="text-red-600 bg-red-50 flex items-center space-x-2 rounded-lg p-3">
+            <div className="text-red-600 bg-red-50 border-red-100 flex items-center space-x-2 rounded-xl border p-4">
               <AlertCircle className="h-5 w-5" />
               <span className="text-sm">
                 신청 중 오류가 발생했습니다. 다시 시도해주세요.
