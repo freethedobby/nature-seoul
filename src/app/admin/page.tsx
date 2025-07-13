@@ -29,8 +29,6 @@ import {
   updateDoc,
   doc,
   onSnapshot,
-  addDoc,
-  deleteDoc,
   Timestamp,
 } from "firebase/firestore";
 
@@ -43,16 +41,6 @@ interface UserData {
   photoType?: "base64" | "firebase-storage";
   kycStatus: string;
   rejectReason?: string;
-  createdAt: Date;
-}
-
-interface ReservationData {
-  id: string;
-  userId: string;
-  userName: string;
-  date: string;
-  time: string;
-  status: string;
   createdAt: Date;
 }
 
@@ -80,26 +68,17 @@ interface SlotData {
 }
 
 export default function AdminDashboard() {
-  const { user, loading, isAdminMode, setIsAdminMode } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<UserData[]>([]);
-  const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [newAdminEmail, setNewAdminEmail] = useState("");
   const [slots, setSlots] = useState<SlotData[]>([]);
-  const [customSlot, setCustomSlot] = useState({ start: "", end: "" });
-  const [recurringSlot, setRecurringSlot] = useState<{
-    daysOfWeek: number[];
-    startTime: string;
-    endTime: string;
-    intervalMinutes: number;
-  }>({ daysOfWeek: [], startTime: "", endTime: "", intervalMinutes: 120 });
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -196,21 +175,6 @@ export default function AdminDashboard() {
       setRejectedUsers(users);
     });
 
-    // Subscribe to reservations
-    const reservationsQuery = query(collection(db, "reservations"));
-
-    const unsubReservations = onSnapshot(reservationsQuery, (snapshot) => {
-      const reservs: ReservationData[] = [];
-      snapshot.forEach((doc) => {
-        reservs.push({ id: doc.id, ...doc.data() } as ReservationData);
-      });
-      // Sort client-side to avoid composite index requirement
-      reservs.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setReservations(reservs);
-    });
-
     // Subscribe to admins
     const adminsQuery = query(collection(db, "admins"));
 
@@ -251,7 +215,6 @@ export default function AdminDashboard() {
       unsubPending();
       unsubApproved();
       unsubRejected();
-      unsubReservations();
       unsubAdmins();
       unsubSlots();
     };
@@ -302,7 +265,6 @@ export default function AdminDashboard() {
           <Button
             variant="outline"
             onClick={() => {
-              setIsAdminMode(false);
               router.push("/dashboard");
             }}
             className="flex items-center gap-2"
