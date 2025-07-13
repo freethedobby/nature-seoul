@@ -206,7 +206,6 @@ export default function AdminManagement() {
                 관리자 관리
               </h1>
             </div>
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mt-1 mb-2 h-1 w-16 rounded-full opacity-70"></div>
           </div>
           <Button
             variant="outline"

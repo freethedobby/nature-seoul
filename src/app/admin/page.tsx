@@ -252,6 +252,28 @@ export default function AdminDashboard() {
     );
   }
 
+  // Combine Firestore admins and hardcoded admins for accurate count
+  const hardcodedAdmins = [
+    {
+      id: "blacksheepwall-xyz",
+      email: "blacksheepwall.xyz@gmail.com",
+      isActive: true,
+      createdAt: new Date("2024-01-01"),
+    },
+    {
+      id: "blacksheepwall-google",
+      email: "blacksheepwall.xyz@google.com",
+      isActive: true,
+      createdAt: new Date("2024-01-01"),
+    },
+  ];
+  const allAdmins = [...admins];
+  hardcodedAdmins.forEach((hardcodedAdmin) => {
+    if (!allAdmins.some((admin) => admin.email === hardcodedAdmin.email)) {
+      allAdmins.push(hardcodedAdmin);
+    }
+  });
+
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
       <div className="container mx-auto max-w-7xl">
@@ -459,7 +481,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-gray-500 text-sm">
-                  총 {admins.length}명의 관리자
+                  총 {allAdmins.length}명의 관리자
                 </div>
                 <svg
                   className="text-gray-400 h-5 w-5"

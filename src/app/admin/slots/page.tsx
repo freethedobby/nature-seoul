@@ -22,6 +22,9 @@ import {
   onSnapshot,
   Timestamp,
   query,
+  where,
+  getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { ko } from "date-fns/locale";
 import { DayPicker, DateRange } from "react-day-picker";
@@ -41,6 +44,15 @@ interface SlotData {
   };
   status: "available" | "booked";
   createdBy: string;
+  createdAt: Date;
+}
+
+interface ReservationData {
+  id: string;
+  slotId: string;
+  userId: string;
+  userEmail: string;
+  userName?: string;
   createdAt: Date;
 }
 
@@ -123,6 +135,31 @@ export default function SlotManagement() {
   // Add state for range mode:
   const [isRangeMode, setIsRangeMode] = useState(false);
 
+  // Add state for popover
+  const [popoverOpenSlotId, setPopoverOpenSlotId] = useState<string | null>(
+    null
+  );
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  // Click-away handler for popover
+  useEffect(() => {
+    if (!popoverOpenSlotId) return;
+    function handleClickAway(e: MouseEvent | TouchEvent) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setPopoverOpenSlotId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickAway);
+    document.addEventListener("touchstart", handleClickAway);
+    return () => {
+      document.removeEventListener("mousedown", handleClickAway);
+      document.removeEventListener("touchstart", handleClickAway);
+    };
+  }, [popoverOpenSlotId]);
+
   // Function to handle calendar double-tap
   const handleCalendarDoubleTap = (dateAttr: string) => {
     const date = new Date(dateAttr);
@@ -204,6 +241,89 @@ export default function SlotManagement() {
       unsubSlots();
     };
   }, [user, isAuthorized]);
+
+  // Filter slots for the selected day
+  const slotsForSelectedDay = slots.filter((slot) => {
+    if (!selectedDate) return false;
+    const slotDate = new Date(slot.start);
+    const matches =
+      slotDate.getFullYear() === selectedDate.getFullYear() &&
+      slotDate.getMonth() === selectedDate.getMonth() &&
+      slotDate.getDate() === selectedDate.getDate();
+    return matches;
+  });
+  // Sort by start time
+  slotsForSelectedDay.sort(
+    (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+  );
+
+  const [reservations, setReservations] = useState<ReservationData[]>([]);
+  const [kycNames, setKycNames] = useState<Record<string, string>>({}); // userId -> KYC name
+
+  // Fetch reservations for slots of the selected day
+  useEffect(() => {
+    // Calculate slots for the selected day inside the effect
+    const slotsForSelectedDayLocal = slots.filter((slot) => {
+      if (!selectedDate) return false;
+      const slotDate = new Date(slot.start);
+      return (
+        slotDate.getFullYear() === selectedDate.getFullYear() &&
+        slotDate.getMonth() === selectedDate.getMonth() &&
+        slotDate.getDate() === selectedDate.getDate()
+      );
+    });
+
+    if (!selectedDate || slotsForSelectedDayLocal.length === 0) {
+      setReservations([]);
+      setKycNames({});
+      return;
+    }
+    const slotIds = slotsForSelectedDayLocal.map((slot) => slot.id);
+    if (slotIds.length === 0) {
+      setReservations([]);
+      setKycNames({});
+      return;
+    }
+    const q = query(
+      collection(db, "reservations"),
+      where("slotId", "in", slotIds)
+    );
+    getDocs(q).then(async (snap) => {
+      const resList: ReservationData[] = [];
+      const userIds = new Set<string>();
+      snap.forEach((docData) => {
+        const data = docData.data();
+        resList.push({
+          id: docData.id,
+          slotId: data.slotId,
+          userId: data.userId,
+          userEmail: data.userEmail,
+          userName: data.userName,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        });
+        if (data.userId) userIds.add(data.userId);
+      });
+      setReservations(resList);
+      // Fetch KYC names for all userIds
+      const kycNameMap: Record<string, string> = {};
+      await Promise.all(
+        Array.from(userIds).map(async (uid) => {
+          try {
+            const userDoc = await getDoc(doc(db, "users", uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData && userData.name) {
+                kycNameMap[uid] = userData.name;
+              }
+            }
+          } catch (e) {
+            // ignore
+          }
+        })
+      );
+      setKycNames(kycNameMap);
+    });
+  }, [selectedDate, slots]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -311,21 +431,6 @@ export default function SlotManagement() {
     }
   };
 
-  // Filter slots for the selected day
-  const slotsForSelectedDay = slots.filter((slot) => {
-    if (!selectedDate) return false;
-    const slotDate = new Date(slot.start);
-    const matches =
-      slotDate.getFullYear() === selectedDate.getFullYear() &&
-      slotDate.getMonth() === selectedDate.getMonth() &&
-      slotDate.getDate() === selectedDate.getDate();
-    return matches;
-  });
-  // Sort by start time
-  slotsForSelectedDay.sort(
-    (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
-  );
-
   // Calendar event handlers
   const handleSingleClickSlot = (slot: SlotData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event from bubbling up to calendar
@@ -416,7 +521,6 @@ export default function SlotManagement() {
                 예약 슬롯 관리
               </h1>
             </div>
-            <div className="bg-gradient-to-r from-green-400 to-emerald-600 mt-1 mb-2 h-1 w-12 rounded-full opacity-70 sm:w-16"></div>
           </div>
         </div>
         {/* Center calendar on desktop */}
@@ -585,52 +689,115 @@ export default function SlotManagement() {
               ) : (
                 <div className="flex flex-wrap justify-center gap-2">
                   {slotsForSelectedDay.map((slot) => {
+                    const reservation = reservations.find(
+                      (r) => r.slotId === slot.id
+                    );
                     return (
-                      <button
+                      <div
                         key={slot.id}
-                        className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
-                        onClick={(event) => {
-                          handleSingleClickSlot(slot, event);
-                        }}
-                        onDoubleClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          console.log(
-                            "Native double-click detected for slot:",
-                            slot.id
-                          );
-                          if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
-                            handleDeleteSlot(slot.id);
-                          }
-                        }}
-                        onTouchStart={(event) => {
-                          // Handle touch events for mobile
-                          const now = Date.now();
-                          const lastTouch = slotTouchRef.current[slot.id];
-
-                          if (lastTouch && now - lastTouch < 300) {
-                            // Double tap detected
+                        className="relative flex min-w-[110px] flex-col items-center"
+                      >
+                        <button
+                          className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
+                          onClick={(event) => {
+                            handleSingleClickSlot(slot, event);
+                          }}
+                          onDoubleClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            console.log(
-                              "Double tap detected for slot:",
-                              slot.id
-                            );
                             if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
                               handleDeleteSlot(slot.id);
                             }
-                            slotTouchRef.current[slot.id] = 0; // Reset
-                          } else {
-                            slotTouchRef.current[slot.id] = now;
-                          }
-                        }}
-                        title="더블클릭/더블탭하여 삭제"
-                      >
-                        {new Date(slot.start).toLocaleTimeString("ko-KR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </button>
+                          }}
+                          onTouchStart={(event) => {
+                            const now = Date.now();
+                            const lastTouch = slotTouchRef.current[slot.id];
+                            if (lastTouch && now - lastTouch < 300) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              if (
+                                window.confirm("이 슬롯을 삭제하시겠습니까?")
+                              ) {
+                                handleDeleteSlot(slot.id);
+                              }
+                              slotTouchRef.current[slot.id] = 0;
+                            } else {
+                              slotTouchRef.current[slot.id] = now;
+                            }
+                          }}
+                          title="더블클릭/더블탭하여 삭제"
+                        >
+                          {new Date(slot.start).toLocaleTimeString("ko-KR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </button>
+                        {/* 예약자 이름 badge below the button */}
+                        {slot.status === "booked" && reservation && (
+                          <>
+                            <span
+                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                              onClick={() => setPopoverOpenSlotId(slot.id)}
+                              tabIndex={0}
+                              role="button"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ")
+                                  setPopoverOpenSlotId(slot.id);
+                              }}
+                            >
+                              {kycNames[reservation.userId] ||
+                                reservation.userName ||
+                                "-"}
+                            </span>
+                            {popoverOpenSlotId === slot.id && (
+                              <div
+                                ref={popoverRef}
+                                className="w-72 border-green-200 shadow-xl absolute left-1/2 z-20 mt-2 flex -translate-x-1/2 flex-col items-center rounded-xl border bg-white p-4"
+                                style={{ minWidth: 260 }}
+                              >
+                                <div className="text-green-700 mb-1 text-lg font-bold">
+                                  {kycNames[reservation.userId] ||
+                                    reservation.userName ||
+                                    "-"}
+                                </div>
+                                <div className="text-green-600 mb-1 break-all text-sm">
+                                  {reservation.userEmail}
+                                </div>
+                                <div className="text-gray-500 mb-1 text-xs">
+                                  KYC 제출일:{" "}
+                                  {(() => {
+                                    const kycUser =
+                                      reservation.userId &&
+                                      kycNames[reservation.userId]
+                                        ? reservation.userId
+                                        : null;
+                                    // We don't have KYC submit date in kycNames, so fallback to '-'
+                                    return "-";
+                                  })()}
+                                </div>
+                                <div className="text-gray-500 mb-1 text-xs">
+                                  예약일:{" "}
+                                  {reservation.createdAt
+                                    ? new Date(
+                                        reservation.createdAt
+                                      ).toLocaleString("ko-KR", {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "-"}
+                                </div>
+                                {/* Eyebrow photo */}
+                                {reservation.userId && (
+                                  <KycPhoto userId={reservation.userId} />
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -649,22 +816,33 @@ export default function SlotManagement() {
                 className="w-full max-w-full space-y-4"
               >
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={slotType === "custom"}
-                      onChange={() => setSlotType("custom")}
-                    />
-                    맞춤 슬롯
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={slotType === "recurring"}
-                      onChange={() => setSlotType("recurring")}
-                    />
-                    반복 슬롯
-                  </label>
+                  {/* Custom Toggle Switch for Slot Type */}
+                  <div className="bg-gray-100 flex items-center rounded-full p-1">
+                    <button
+                      type="button"
+                      className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
+                        slotType === "custom"
+                          ? "bg-green-500 shadow text-white"
+                          : "text-gray-700 hover:bg-gray-200"
+                      }`}
+                      onClick={() => setSlotType("custom")}
+                      aria-pressed={slotType === "custom"}
+                    >
+                      맞춤 슬롯
+                    </button>
+                    <button
+                      type="button"
+                      className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
+                        slotType === "recurring"
+                          ? "bg-green-500 shadow text-white"
+                          : "text-gray-700 hover:bg-gray-200"
+                      }`}
+                      onClick={() => setSlotType("recurring")}
+                      aria-pressed={slotType === "recurring"}
+                    >
+                      반복 슬롯
+                    </button>
+                  </div>
                 </div>
                 {slotType === "custom" ? (
                   <div className="flex flex-col gap-4">
@@ -735,7 +913,7 @@ export default function SlotManagement() {
                           }
                           className={
                             customSlot.duration === option.value
-                              ? "bg-blue-500 text-white"
+                              ? "bg-green-500 text-white"
                               : ""
                           }
                           onClick={() =>
@@ -762,7 +940,7 @@ export default function SlotManagement() {
                           }
                           className={
                             customSlot.numberOfSlots === num
-                              ? "bg-blue-500 text-white"
+                              ? "bg-green-500 text-white"
                               : ""
                           }
                           onClick={() =>
@@ -813,7 +991,7 @@ export default function SlotManagement() {
                             }
                             className={
                               recurringSlot.daysOfWeek.includes(idx)
-                                ? "bg-blue-500 text-white"
+                                ? "bg-green-500 text-white"
                                 : ""
                             }
                             onClick={() => {
@@ -884,7 +1062,7 @@ export default function SlotManagement() {
                           }
                           className={
                             recurringSlot.intervalMinutes === option.value
-                              ? "bg-blue-500 text-white"
+                              ? "bg-green-500 text-white"
                               : ""
                           }
                           onClick={() =>
@@ -912,7 +1090,7 @@ export default function SlotManagement() {
                           }
                           className={
                             recurringSlot.numberOfSlots === num
-                              ? "bg-blue-500 text-white"
+                              ? "bg-green-500 text-white"
                               : ""
                           }
                           onClick={() =>
@@ -968,5 +1146,35 @@ export default function SlotManagement() {
         )}
       </div>
     </div>
+  );
+}
+
+function KycPhoto({ userId }: { userId: string }) {
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData && userData.photoURL) {
+            if (!ignore) setPhotoUrl(userData.photoURL);
+          }
+        }
+      } catch {}
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [userId]);
+  if (!photoUrl) return null;
+  return (
+    <img
+      src={photoUrl}
+      alt="KYC Eyebrow"
+      className="max-h-32 bg-gray-50 mt-2 w-full rounded-lg border object-contain"
+      style={{ maxWidth: 200 }}
+    />
   );
 }
