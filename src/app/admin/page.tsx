@@ -330,7 +330,7 @@ export default function AdminDashboard() {
                   d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                 />
               </svg>
-              사용자 페이지로
+              사용자 모드
             </Button>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                KYC 관리
+                KYC
               </CardTitle>
               <CardDescription>KYC 승인, 반려, 예약 관리</CardDescription>
             </CardHeader>
@@ -405,7 +405,7 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                예약 슬롯 관리
+                Schedule
               </CardTitle>
               <CardDescription>예약 가능한 시간대 관리</CardDescription>
             </CardHeader>
@@ -452,7 +452,7 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                관리자 관리
+                Admin
               </CardTitle>
               <CardDescription>관리자 계정 관리</CardDescription>
             </CardHeader>

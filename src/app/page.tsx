@@ -161,7 +161,7 @@ export default function Home() {
                 {loading ? (
                   <div className="w-32 animate-pulse bg-black/20 h-12 rounded-xl"></div>
                 ) : (
-                  <Link href={user ? "/kyc" : "/login"}>
+                  <Link href={user ? "/dashboard" : "/login"}>
                     <Button
                       size="lg"
                       className="bg-black shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-14 w-full transform text-white transition-all duration-300 sm:w-auto"

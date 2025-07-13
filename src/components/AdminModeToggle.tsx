@@ -70,7 +70,7 @@ export default function AdminModeToggle() {
             </>
           ) : (
             <>
-              <Shield className="mr-2 h-4 w-4" /> 관리자 보기
+              <Shield className="mr-2 h-4 w-4" /> 관리자
             </>
           )}
         </Button>

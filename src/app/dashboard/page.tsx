@@ -151,17 +151,21 @@ export default function DashboardPage() {
                     ? "상담 신청 후 예약이 가능합니다."
                     : "상담 승인 후 예약이 가능합니다."}
                 </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={isLocked || user.kycStatus !== "approved"}
+                <Link
+                  href={user.kycStatus === "approved" ? "/user/reserve" : "#"}
                 >
-                  {isLocked
-                    ? "상담 신청 필요"
-                    : user.kycStatus === "approved"
-                    ? "예약하기"
-                    : "승인 대기 중"}
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={isLocked || user.kycStatus !== "approved"}
+                  >
+                    {isLocked
+                      ? "상담 신청 필요"
+                      : user.kycStatus === "approved"
+                      ? "예약하기"
+                      : "승인 대기 중"}
+                  </Button>
+                </Link>
               </div>
             </div>
 

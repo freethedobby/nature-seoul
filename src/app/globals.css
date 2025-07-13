@@ -181,3 +181,203 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }
+
+/* Minimal DayPicker theme */
+.rdp {
+  background: #fff !important;
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+  border: 1px solid #eee !important;
+}
+
+.rdp-caption_label {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #222 !important;
+}
+
+.rdp-head_cell {
+  color: #888 !important;
+  font-weight: 400 !important;
+}
+
+.rdp-day,
+.rdp-day--selected,
+.rdp-day--today {
+  border-radius: 0.5rem !important;
+  color: #222 !important;
+  background: none !important;
+  border: none !important;
+}
+
+.rdp-day_selected,
+.rdp-day--selected,
+.rdp-day_selected:focus,
+.rdp-day--selected:focus {
+  background: #16a34a !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+}
+
+.rdp-day_today,
+.rdp-day--today {
+  color: #16a34a !important;
+  font-weight: 600 !important;
+}
+
+/* DayPicker navigation arrows: white background, green icon */
+.rdp-nav button,
+.rdp-nav_button,
+.rdp-button[aria-label*="month"] {
+  background: #fff !important;
+  color: #16a34a !important;
+  border-radius: 9999px !important;
+  width: 2.2rem !important;
+  height: 2.2rem !important;
+  font-size: 1.2rem !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background 0.2s, color 0.2s;
+}
+.rdp-nav button:hover,
+.rdp-nav_button:hover,
+.rdp-button[aria-label*="month"]:hover {
+  background: #f0fdf4 !important; /* very light green */
+  color: #16a34a !important;
+}
+
+/* Style disabled days in DayPicker as gray and unclickable */
+.rdp-day_disabled, .rdp-day:disabled {
+  color: #bbb !important;
+  background: #f3f4f6 !important;
+  pointer-events: none !important;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+
+/* Minimal DayPicker theme for button-based days */
+.rdp-day_button {
+  cursor: pointer;
+  font: inherit;
+  color: #222 !important;
+  width: 2.2rem !important;
+  height: 2.2rem !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: none !important;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  transition: background 0.2s;
+}
+
+/* Selected day */
+.rdp-day_button[aria-selected="true"],
+.rdp-day_button--selected {
+  background: #16a34a !important;
+  color: #fff !important;
+}
+
+/* Today */
+.rdp-day_button--today,
+.rdp-day_button[aria-label*="오늘"] {
+  color: #16a34a !important;
+  font-weight: 600 !important;
+}
+
+/* Disabled day */
+.rdp-day_button[aria-disabled="true"],
+.rdp-day_button--disabled {
+  color: #bbb !important;
+  background: #f3f4f6 !important;
+  pointer-events: none !important;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+
+body .rdp-day_button[aria-selected="true"] {
+  background: #16a34a !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+}
+
+/* Remove all border/background from <td> for today/selected */
+.rdp-day.rdp-day--today,
+.rdp-day[data-today="true"],
+.rdp-day.rdp-day--selected,
+.rdp-day[data-selected="true"] {
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* TODAY: green border and text on the button (strongest, always last) */
+.rdp-day_button[aria-label*="Today"],
+.rdp-day_button[aria-label*="오늘"] {
+  color: #16a34a !important;
+  font-weight: 700 !important;
+  border: 2px solid #16a34a !important;
+  background: #fff !important;
+  border-radius: 0.75rem !important;
+}
+
+/* SELECTED: green border, white text, green background on the button */
+.rdp-day_button[aria-selected="true"] {
+  background: #16a34a !important;
+  color: #fff !important;
+  border: 2px solid #16a34a !important;
+  border-radius: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+/* TODAY + SELECTED: same as selected (overrides today) */
+.rdp-day[data-today="true"] .rdp-day_button[aria-selected="true"],
+.rdp-day.rdp-day--today .rdp-day_button[aria-selected="true"] {
+  background: #16a34a !important;
+  color: #fff !important;
+  border: 2px solid #16a34a !important;
+  border-radius: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+/* Selected day (fix for aria-label containing 'selected') */
+.rdp-day_button[aria-label*="selected"] {
+  background: #16a34a !important;
+  color: #fff !important;
+  border: 2px solid #16a34a !important;
+  border-radius: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+/* DayPicker navigation arrow SVGs: force green arrow icon */
+.rdp-nav_button svg,
+.rdp-nav button svg {
+  stroke: #16a34a !important;
+  fill: #16a34a !important;
+}
+.rdp-nav_button svg *,
+.rdp-nav button svg * {
+  stroke: #16a34a !important;
+  fill: #16a34a !important;
+}
+
+/* Show a small green dot for days with available slots */
+.rdp-day.has-slots {
+  position: relative;
+}
+.rdp-day.has-slots > .rdp-day_button::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  display: inline-block;
+  pointer-events: none;
+  z-index: 2;
+}

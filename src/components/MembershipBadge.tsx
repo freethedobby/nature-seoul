@@ -19,7 +19,7 @@ interface MembershipBadgeProps {
 const MEMBERSHIP_INFO = {
   traveler: {
     icon: "🔓",
-    label: "뷰티 트래블러",
+    label: "미인증 고객",
     description: "인증 완료 후 예약이 가능해요.",
     variant: "secondary" as const,
   },
