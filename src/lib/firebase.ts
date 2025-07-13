@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -37,6 +37,25 @@ export const signInWithGoogle = async () => {
     return result.user;
   } catch (error) {
     console.error("Google sign in error:", error);
+    throw error;
+  }
+};
+
+// Sign in with email and password
+export const signInWithEmailAndPassword = async (email: string, password: string) => {
+  try {
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Login timeout")), 30000); // 30 second timeout
+    });
+
+    const signInPromise = firebaseSignInWithEmailAndPassword(auth, email, password);
+    
+    const result = await Promise.race([signInPromise, timeoutPromise]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.log("Email sign in successful:", result.user.email);
+    return result.user;
+  } catch (error) {
+    console.error("Email sign in error:", error);
     throw error;
   }
 };

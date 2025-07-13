@@ -48,19 +48,19 @@ export default function AdminManagement() {
             const data = await response.json();
             setIsAuthorized(data.isAdmin);
             if (!data.isAdmin) {
-              router.push("/login?redirectTo=/admin/admins");
+              router.push("/admin/login");
             }
           } else {
             setIsAuthorized(false);
-            router.push("/login?redirectTo=/admin/admins");
+            router.push("/admin/login");
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
           setIsAuthorized(false);
-          router.push("/login?redirectTo=/admin/admins");
+          router.push("/admin/login");
         }
       } else if (!loading && !user) {
-        router.push("/login?redirectTo=/admin/admins");
+        router.push("/admin/login");
       }
     };
 
@@ -78,11 +78,36 @@ export default function AdminManagement() {
       snapshot.forEach((doc) => {
         adminData.push({ id: doc.id, ...doc.data() } as AdminUser);
       });
-      adminData.sort(
+
+      // Add hardcoded admins (blacksheepwall emails)
+      const hardcodedAdmins: AdminUser[] = [
+        {
+          id: "blacksheepwall-xyz",
+          email: "blacksheepwall.xyz@gmail.com",
+          isActive: true,
+          createdAt: new Date("2024-01-01"), // Default date for hardcoded admins
+        },
+        {
+          id: "blacksheepwall-google",
+          email: "blacksheepwall.xyz@google.com",
+          isActive: true,
+          createdAt: new Date("2024-01-01"), // Default date for hardcoded admins
+        },
+      ];
+
+      // Combine Firestore admins with hardcoded admins, avoiding duplicates
+      const allAdmins = [...adminData];
+      hardcodedAdmins.forEach((hardcodedAdmin) => {
+        if (!allAdmins.some((admin) => admin.email === hardcodedAdmin.email)) {
+          allAdmins.push(hardcodedAdmin);
+        }
+      });
+
+      allAdmins.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      setAdmins(adminData);
+      setAdmins(allAdmins);
     });
 
     return () => {
@@ -119,6 +144,12 @@ export default function AdminManagement() {
   };
 
   const handleRemoveAdmin = async (email: string) => {
+    // Prevent removal of hardcoded blacksheepwall admins
+    if (email.includes("blacksheepwall")) {
+      alert("blacksheepwall 관리자는 제거할 수 없습니다.");
+      return;
+    }
+
     if (!confirm(`정말로 ${email}을(를) 관리자에서 제거하시겠습니까?`)) {
       return;
     }
@@ -221,6 +252,13 @@ export default function AdminManagement() {
               <CardDescription>
                 현재 등록된 관리자 목록입니다. 총 {admins.length}명의 관리자가
                 있습니다.
+                {admins.some((admin) =>
+                  admin.email.includes("blacksheepwall")
+                ) && (
+                  <span className="text-purple-600 mt-1 block text-xs">
+                    * 시스템 관리자는 제거할 수 없습니다.
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -273,15 +311,25 @@ export default function AdminManagement() {
                         >
                           {admin.isActive ? "활성" : "비활성"}
                         </Badge>
-                        {admin.isActive && admin.email !== user?.email && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleRemoveAdmin(admin.email)}
+                        {admin.isActive &&
+                          admin.email !== user?.email &&
+                          !admin.email.includes("blacksheepwall") && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleRemoveAdmin(admin.email)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        {admin.email.includes("blacksheepwall") && (
+                          <Badge
+                            variant="outline"
+                            className="text-purple-600 border-purple-200"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            시스템 관리자
+                          </Badge>
                         )}
                         {admin.email === user?.email && (
                           <Badge

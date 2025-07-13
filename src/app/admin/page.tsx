@@ -96,19 +96,19 @@ export default function AdminDashboard() {
             const data = await response.json();
             setIsAuthorized(data.isAdmin);
             if (!data.isAdmin) {
-              router.push("/login?redirectTo=/admin");
+              router.push("/admin/login");
             }
           } else {
             setIsAuthorized(false);
-            router.push("/login?redirectTo=/admin");
+            router.push("/admin/login");
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
           setIsAuthorized(false);
-          router.push("/login?redirectTo=/admin");
+          router.push("/admin/login");
         }
       } else if (!loading && !user) {
-        router.push("/login?redirectTo=/admin");
+        router.push("/admin/login");
       }
     };
 
@@ -256,21 +256,83 @@ export default function AdminDashboard() {
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
       <div className="container mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-gray-900 font-sans text-3xl font-extrabold tracking-tight">
+          <div className="flex items-center gap-4">
+            {/* Nature Seoul Logo */}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <h1 className="text-black text-xl font-light tracking-wide">
+                  nature.seoul
+                </h1>
+                <p className="text-gray-400 text-[10px] tracking-wide">
+                  premium studio
+                </p>
+              </div>
+            </div>
+
+            {/* Admin Badge */}
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 shadow-md hidden items-center gap-2 rounded-full px-3 py-1 text-sm font-medium text-white sm:flex">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
               Admin
-            </h1>
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mt-1 mb-2 h-1 w-16 rounded-full opacity-70"></div>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              router.push("/dashboard");
-            }}
-            className="flex items-center gap-2"
-          >
-            사용자 페이지로
-          </Button>
+
+          <div className="flex items-center gap-3">
+            {/* User Info */}
+            <div className="shadow-sm border-gray-200 hidden items-center gap-2 rounded-lg border bg-white px-3 py-2 sm:flex">
+              <div className="bg-gradient-to-br from-blue-400 to-purple-500 flex h-8 w-8 items-center justify-center rounded-full">
+                <span className="text-sm font-medium text-white">
+                  {user?.email?.charAt(0).toUpperCase() || "A"}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-900 text-sm font-medium">
+                  관리자
+                </span>
+                <span className="text-gray-500 text-xs">{user?.email}</span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                router.push("/dashboard");
+              }}
+              className="hover:bg-gray-50 border-gray-200 flex items-center gap-2 bg-white"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              사용자 페이지로
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

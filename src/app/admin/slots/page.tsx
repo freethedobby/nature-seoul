@@ -31,6 +31,9 @@ import {
   Timestamp,
   query,
 } from "firebase/firestore";
+import { ko } from "date-fns/locale";
+import { DayPicker, DateRange } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 
 interface SlotData {
   id: string;
@@ -61,8 +64,34 @@ export default function SlotManagement() {
     startTime: string;
     endTime: string;
     intervalMinutes: number;
-  }>({ daysOfWeek: [], startTime: "", endTime: "", intervalMinutes: 120 });
+    startDate: string;
+    endDate: string;
+  }>({
+    daysOfWeek: [],
+    startTime: "",
+    endTime: "",
+    intervalMinutes: 120,
+    startDate: "",
+    endDate: "",
+  });
   const [isSlotSubmitting, setIsSlotSubmitting] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  // Remove unused date picker state since we're not using it anymore
+  // const [openDatePicker, setOpenDatePicker] = useState<"start" | "end" | null>(
+  //   null
+  // );
+  // Remove range state since we're changing to single mode
+  // const [range, setRange] = useState<DateRange | undefined>(undefined);
+
+  // Add state to handle click vs double-click
+  const [clickTimeout, setClickTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [clickCount, setClickCount] = useState(0);
+  const [lastClickedSlotId, setLastClickedSlotId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -80,19 +109,19 @@ export default function SlotManagement() {
             const data = await response.json();
             setIsAuthorized(data.isAdmin);
             if (!data.isAdmin) {
-              router.push("/login?redirectTo=/admin/slots");
+              router.push("/admin/login");
             }
           } else {
             setIsAuthorized(false);
-            router.push("/login?redirectTo=/admin/slots");
+            router.push("/admin/login");
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
           setIsAuthorized(false);
-          router.push("/login?redirectTo=/admin/slots");
+          router.push("/admin/login");
         }
       } else if (!loading && !user) {
-        router.push("/login?redirectTo=/admin/slots");
+        router.push("/admin/login");
       }
     };
 
@@ -108,7 +137,18 @@ export default function SlotManagement() {
     const unsubSlots = onSnapshot(slotsQuery, (snapshot) => {
       const slotData: SlotData[] = [];
       snapshot.forEach((doc) => {
-        slotData.push({ id: doc.id, ...doc.data() } as SlotData);
+        const data = doc.data();
+        const slot = {
+          id: doc.id,
+          start: data.start.toDate(), // Convert Firestore Timestamp to Date
+          end: data.end.toDate(), // Convert Firestore Timestamp to Date
+          type: data.type,
+          recurrence: data.recurrence,
+          status: data.status,
+          createdBy: data.createdBy,
+          createdAt: data.createdAt.toDate(), // Convert Firestore Timestamp to Date
+        } as SlotData;
+        slotData.push(slot);
       });
       slotData.sort(
         (a, b) =>
@@ -121,6 +161,18 @@ export default function SlotManagement() {
       unsubSlots();
     };
   }, [user, isAuthorized]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+      }
+      // Reset click counters
+      setClickCount(0);
+      setLastClickedSlotId(null);
+    };
+  }, [clickTimeout]);
 
   const handleCreateSlot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,6 +234,8 @@ export default function SlotManagement() {
         startTime: "",
         endTime: "",
         intervalMinutes: 120,
+        startDate: "",
+        endDate: "",
       });
     } catch (error) {
       console.error("Error creating slot:", error);
@@ -198,6 +252,81 @@ export default function SlotManagement() {
     }
   };
 
+  // Filter slots for the selected day
+  const slotsForSelectedDay = slots.filter((slot) => {
+    if (!selectedDate) return false;
+    const slotDate = new Date(slot.start);
+    const matches =
+      slotDate.getFullYear() === selectedDate.getFullYear() &&
+      slotDate.getMonth() === selectedDate.getMonth() &&
+      slotDate.getDate() === selectedDate.getDate();
+    return matches;
+  });
+  // Sort by start time
+  slotsForSelectedDay.sort(
+    (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+  );
+
+  // Calendar event handlers
+  const handleSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
+    setSlotType("custom");
+    setCustomSlot({
+      start: start.toISOString().slice(0, 16),
+      end: end.toISOString().slice(0, 16),
+    });
+    setShowSlotDialog(true);
+  };
+
+  const handleSelectEvent = (event: any) => {
+    // Show dialog to edit/delete slot (for now, just delete)
+    if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
+      handleDeleteSlot(event.id);
+    }
+  };
+
+  // Add single-click handler for slots
+  const handleSingleClickSlot = (slot: SlotData, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent event from bubbling up to calendar
+
+    // Check if this is the same slot as last click
+    if (lastClickedSlotId === slot.id) {
+      setClickCount((prev) => prev + 1);
+    } else {
+      setClickCount(1);
+      setLastClickedSlotId(slot.id);
+    }
+
+    // Clear any existing timeout
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+    }
+
+    // Set a timeout to handle the click
+    const timeout = setTimeout(() => {
+      if (clickCount === 1) {
+        // Single click - delete slot
+        if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
+          handleDeleteSlot(slot.id);
+        }
+      } else if (clickCount >= 2 && slot.type === "custom") {
+        // Double click on custom slot - open recurring dialog
+        setSlotType("recurring");
+        setRecurringSlot((prev) => ({
+          ...prev,
+          startDate: new Date(slot.start).toISOString().slice(0, 10),
+          endDate: new Date(slot.end).toISOString().slice(0, 10),
+        }));
+        setShowSlotDialog(true);
+      }
+
+      // Reset counters
+      setClickCount(0);
+      setLastClickedSlotId(null);
+    }, 300);
+
+    setClickTimeout(timeout);
+  };
+
   if (loading || !isAuthorized) {
     return (
       <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
@@ -212,11 +341,11 @@ export default function SlotManagement() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
+    <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
       <div className="container mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button
                 variant="ghost"
                 onClick={() => router.push("/admin")}
@@ -225,88 +354,125 @@ export default function SlotManagement() {
                 <ArrowLeft className="h-4 w-4" />
                 뒤로
               </Button>
-              <h1 className="text-gray-900 font-sans text-3xl font-extrabold tracking-tight">
+              <h1 className="text-gray-900 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
                 예약 슬롯 관리
               </h1>
             </div>
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mt-1 mb-2 h-1 w-16 rounded-full opacity-70"></div>
+            <div className="bg-gradient-to-r from-green-400 to-emerald-600 mt-1 mb-2 h-1 w-12 rounded-full opacity-70 sm:w-16"></div>
           </div>
           <Button
             variant="outline"
             onClick={() => {
-              router.push("/dashboard");
+              setSlotType("custom");
+              setShowSlotDialog(true);
             }}
             className="flex items-center gap-2"
           >
-            사용자 페이지로
+            <Plus className="h-4 w-4" />
+            슬롯 추가
           </Button>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">슬롯 목록</h2>
-            <Button onClick={() => setShowSlotDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />새 슬롯 추가
-            </Button>
+        {/* Sleek Mobile Calendar UI */}
+        <div className="shadow flex flex-col items-center rounded-xl bg-white p-4">
+          <div className="mb-2 flex w-full justify-end">
+            <button
+              className="bg-green-100 text-green-700 hover:bg-green-200 rounded-full px-4 py-1 text-sm font-semibold transition"
+              onClick={() => setSelectedDate(new Date())}
+              type="button"
+            >
+              오늘
+            </button>
           </div>
-
-          {slots.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-gray-500">등록된 슬롯이 없습니다.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {slots.map((slot) => (
-                <Card key={slot.id}>
-                  <CardHeader>
-                    <CardTitle>
-                      {slot.type === "recurring" ? "정기 슬롯" : "커스텀 슬롯"}
-                    </CardTitle>
-                    <CardDescription>
-                      {slot.type === "custom" ? (
-                        <>
-                          {new Date(slot.start).toLocaleString()} ~{" "}
-                          {new Date(slot.end).toLocaleString()}
-                        </>
-                      ) : (
-                        <>
-                          {slot.recurrence?.daysOfWeek
-                            .map(
-                              (day) =>
-                                ["일", "월", "화", "수", "목", "금", "토"][day]
-                            )
-                            .join(", ")}{" "}
-                          {slot.recurrence?.startTime} ~{" "}
-                          {slot.recurrence?.endTime}
-                        </>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Badge
-                      variant={
-                        slot.status === "available" ? "default" : "secondary"
+          {/* Main calendar (DayPicker): */}
+          <div
+            onDoubleClick={(event) => {
+              // Find the clicked date element
+              const target = event.target as HTMLElement;
+              const dateElement = target.closest("[data-day]");
+              if (dateElement) {
+                const dateAttr = dateElement.getAttribute("data-day");
+                if (dateAttr) {
+                  const date = new Date(dateAttr);
+                  setSlotType("recurring");
+                  setRecurringSlot((prev) => ({
+                    ...prev,
+                    startDate: date.toISOString().slice(0, 10),
+                    endDate: date.toISOString().slice(0, 10),
+                  }));
+                  setShowSlotDialog(true);
+                }
+              }
+            }}
+          >
+            <DayPicker
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date: Date | undefined) => {
+                setSelectedDate(date);
+              }}
+              locale={ko}
+              weekStartsOn={0}
+              modifiersClassNames={{
+                selected: "bg-green-500 text-white rounded-lg",
+                today: "text-green-600 font-bold",
+              }}
+              className="mx-auto w-full max-w-xs sm:max-w-md"
+              styles={{
+                caption: {
+                  textAlign: "center",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  marginBottom: "1rem",
+                },
+                head_row: { fontWeight: 500, color: "#888" },
+                cell: { padding: "0.5rem" },
+              }}
+              showOutsideDays={false}
+              required={false}
+            />
+          </div>
+          {/* Time slots for selected day */}
+          <div className="mt-6 w-full">
+            <div className="text-gray-700 mb-2 text-sm font-semibold">
+              예약 슬롯
+            </div>
+            <div className="text-gray-500 mb-3 text-xs">
+              맞춤 슬롯을 더블클릭하면 반복 슬롯을 생성할 수 있습니다.
+            </div>
+            {slotsForSelectedDay.length === 0 ? (
+              <div className="text-gray-400 py-4 text-center">
+                이 날에는 예약 슬롯이 없습니다.
+              </div>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-2">
+                {slotsForSelectedDay.map((slot) => {
+                  return (
+                    <button
+                      key={slot.id}
+                      className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
+                      onClick={(event) => {
+                        handleSingleClickSlot(slot, event);
+                      }}
+                      title={
+                        slot.type === "custom"
+                          ? "더블클릭하여 반복 슬롯 생성"
+                          : ""
                       }
                     >
-                      {slot.status === "available" ? "예약 가능" : "예약됨"}
-                    </Badge>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteSlot(slot.id)}
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      삭제
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                      {new Date(slot.start).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* Slot Dialog (existing code) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
           <DialogContent>
             <DialogHeader>
@@ -314,50 +480,70 @@ export default function SlotManagement() {
             </DialogHeader>
             <form onSubmit={handleCreateSlot} className="space-y-4">
               <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant={slotType === "custom" ? "default" : "outline"}
-                  onClick={() => setSlotType("custom")}
-                >
-                  커스텀
-                </Button>
-                <Button
-                  type="button"
-                  variant={slotType === "recurring" ? "default" : "outline"}
-                  onClick={() => setSlotType("recurring")}
-                >
-                  정기
-                </Button>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={slotType === "custom"}
+                    onChange={() => setSlotType("custom")}
+                  />
+                  맞춤 슬롯
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={slotType === "recurring"}
+                    onChange={() => setSlotType("recurring")}
+                  />
+                  반복 슬롯
+                </label>
               </div>
-
               {slotType === "custom" ? (
-                <div className="space-y-2">
-                  <label>시작 시간</label>
-                  <Input
-                    type="datetime-local"
-                    value={customSlot.start}
-                    onChange={(e) =>
-                      setCustomSlot({
-                        ...customSlot,
-                        start: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  <label>종료 시간</label>
-                  <Input
-                    type="datetime-local"
-                    value={customSlot.end}
-                    onChange={(e) =>
-                      setCustomSlot({ ...customSlot, end: e.target.value })
-                    }
-                    required
-                  />
+                <div className="flex flex-col gap-2">
+                  <label>
+                    시작 시간
+                    <Input
+                      type="datetime-local"
+                      value={customSlot.start}
+                      onChange={(e) =>
+                        setCustomSlot({ ...customSlot, start: e.target.value })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    종료 시간
+                    <Input
+                      type="datetime-local"
+                      value={customSlot.end}
+                      onChange={(e) =>
+                        setCustomSlot({ ...customSlot, end: e.target.value })
+                      }
+                      required
+                    />
+                  </label>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <label>요일 선택 (여러 개 가능)</label>
-                  <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
+                  {/* 날짜 범위 표시 (읽기 전용) */}
+                  {recurringSlot.startDate && recurringSlot.endDate && (
+                    <div className="mb-2 flex items-end gap-2">
+                      <div className="flex flex-col text-xs font-medium">
+                        <span>시작일</span>
+                        <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
+                          {recurringSlot.startDate}
+                        </div>
+                      </div>
+                      <div className="flex flex-col text-xs font-medium">
+                        <span>종료일</span>
+                        <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
+                          {recurringSlot.endDate}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* 요일 선택 */}
+                  <label className="font-medium">요일 선택</label>
+                  <div className="mb-2 flex gap-2">
                     {["일", "월", "화", "수", "목", "금", "토"].map(
                       (day, idx) => (
                         <Button
@@ -368,71 +554,96 @@ export default function SlotManagement() {
                               ? "default"
                               : "outline"
                           }
-                          onClick={() =>
+                          className={
+                            recurringSlot.daysOfWeek.includes(idx)
+                              ? "bg-blue-500 text-white"
+                              : ""
+                          }
+                          onClick={() => {
                             setRecurringSlot((prev) => ({
                               ...prev,
                               daysOfWeek: prev.daysOfWeek.includes(idx)
                                 ? prev.daysOfWeek.filter((d) => d !== idx)
                                 : [...prev.daysOfWeek, idx],
-                            }))
-                          }
+                            }));
+                          }}
                         >
                           {day}
                         </Button>
                       )
                     )}
                   </div>
-                  <label>시작 시간 (예: 16:00)</label>
-                  <Input
-                    type="time"
-                    value={recurringSlot.startTime}
-                    onChange={(e) =>
-                      setRecurringSlot({
-                        ...recurringSlot,
-                        startTime: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  <label>종료 시간 (예: 20:00)</label>
-                  <Input
-                    type="time"
-                    value={recurringSlot.endTime}
-                    onChange={(e) =>
-                      setRecurringSlot({
-                        ...recurringSlot,
-                        endTime: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  <label>슬롯 간격 (분)</label>
-                  <Input
-                    type="number"
-                    value={recurringSlot.intervalMinutes}
-                    onChange={(e) =>
-                      setRecurringSlot({
-                        ...recurringSlot,
-                        intervalMinutes: Number(e.target.value),
-                      })
-                    }
-                    min={15}
-                    step={15}
-                    required
-                  />
+                  {/* 시작/종료 시간 */}
+                  <label>
+                    시작 시간 (HH:MM)
+                    <Input
+                      type="time"
+                      value={recurringSlot.startTime}
+                      onChange={(e) =>
+                        setRecurringSlot({
+                          ...recurringSlot,
+                          startTime: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    종료 시간 (HH:MM)
+                    <Input
+                      type="time"
+                      value={recurringSlot.endTime}
+                      onChange={(e) =>
+                        setRecurringSlot({
+                          ...recurringSlot,
+                          endTime: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  {/* 간격 선택 */}
+                  <label className="font-medium">간격</label>
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {[
+                      { label: "30분", value: 30 },
+                      { label: "1시간", value: 60 },
+                      { label: "1.5시간", value: 90 },
+                      { label: "2시간", value: 120 },
+                      { label: "2.5시간", value: 150 },
+                      { label: "3시간", value: 180 },
+                      { label: "3.5시간", value: 210 },
+                      { label: "4시간", value: 240 },
+                    ].map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={
+                          recurringSlot.intervalMinutes === option.value
+                            ? "default"
+                            : "outline"
+                        }
+                        className={
+                          recurringSlot.intervalMinutes === option.value
+                            ? "bg-blue-500 text-white"
+                            : ""
+                        }
+                        onClick={() =>
+                          setRecurringSlot({
+                            ...recurringSlot,
+                            intervalMinutes: option.value,
+                          })
+                        }
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               )}
-
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowSlotDialog(false)}
-                >
-                  취소
-                </Button>
                 <Button type="submit" disabled={isSlotSubmitting}>
-                  {isSlotSubmitting ? "저장 중..." : "저장"}
+                  추가
                 </Button>
               </DialogFooter>
             </form>
