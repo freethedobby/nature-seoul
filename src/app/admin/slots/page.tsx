@@ -371,6 +371,20 @@ export default function SlotManagement() {
     setClickTimeout(timeout);
   };
 
+  // Map: yyyy-mm-dd string -> count of available slots (use local date)
+  const slotCountByDate: Record<string, number> = {};
+  slots.forEach((slot) => {
+    if (slot.status !== "available") return;
+    const d = slot.start;
+    const key =
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0");
+    slotCountByDate[key] = (slotCountByDate[key] || 0) + 1;
+  });
+
   if (loading || !isAuthorized) {
     return (
       <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
@@ -404,6 +418,9 @@ export default function SlotManagement() {
             </div>
             <div className="bg-gradient-to-r from-green-400 to-emerald-600 mt-1 mb-2 h-1 w-12 rounded-full opacity-70 sm:w-16"></div>
           </div>
+        </div>
+        {/* Center calendar on desktop */}
+        <div className="flex w-full flex-col items-center sm:flex-row sm:justify-center">
           {/* Sleek Mobile Calendar UI */}
           <div className="shadow flex flex-col items-center rounded-xl bg-white p-4">
             <div className="mb-2 flex w-full justify-end gap-2">
@@ -486,12 +503,18 @@ export default function SlotManagement() {
                     onSelect={setSelectedRange}
                     locale={ko}
                     weekStartsOn={0}
+                    modifiers={{
+                      hasSlots: Object.keys(slotCountByDate).map(
+                        (d) => new Date(d)
+                      ),
+                    }}
                     modifiersClassNames={{
                       selected: "bg-black text-white",
                       today: "text-green-600 font-bold",
                       range_start: "bg-black text-white",
                       range_end: "bg-black text-white",
                       range_middle: "bg-black text-white opacity-80",
+                      hasSlots: "has-slots",
                     }}
                     className="mx-auto w-full max-w-xs sm:max-w-md"
                     styles={{
@@ -517,9 +540,15 @@ export default function SlotManagement() {
                     onSelect={(date: Date | undefined) => setSelectedDate(date)}
                     locale={ko}
                     weekStartsOn={0}
+                    modifiers={{
+                      hasSlots: Object.keys(slotCountByDate).map(
+                        (d) => new Date(d)
+                      ),
+                    }}
                     modifiersClassNames={{
                       selected: "bg-green-500 text-white rounded-lg",
                       today: "text-green-600 font-bold",
+                      hasSlots: "has-slots",
                     }}
                     className="mx-auto w-full max-w-xs sm:max-w-md"
                     styles={{
