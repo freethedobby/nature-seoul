@@ -7,7 +7,6 @@ import { ko } from "date-fns/locale";
 import { db } from "@/lib/firebase";
 import {
   collection,
-  getDocs,
   doc,
   updateDoc,
   addDoc,
@@ -94,8 +93,8 @@ export default function UserReservePage() {
       } else {
         const docData = snap.docs[0];
         setReservation({
+          ...(docData.data() as ReservationData),
           id: docData.id,
-          ...(docData.data() as any),
           createdAt: docData.data().createdAt?.toDate?.() || new Date(),
         });
       }
@@ -156,7 +155,7 @@ export default function UserReservePage() {
         createdAt: new Date(),
       });
       setShowReserveBtn(null);
-    } catch (e) {
+    } catch {
       alert("예약에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setReserving(false);
@@ -174,7 +173,7 @@ export default function UserReservePage() {
       });
       // Delete reservation
       await deleteDoc(doc(db, "reservations", reservation.id));
-    } catch (e) {
+    } catch {
       alert("예약 취소에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setCanceling(false);

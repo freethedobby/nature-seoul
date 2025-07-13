@@ -740,8 +740,8 @@ export default function SlotManagement() {
                               onClick={() => setPopoverOpenSlotId(slot.id)}
                               tabIndex={0}
                               role="button"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ")
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ")
                                   setPopoverOpenSlotId(slot.id);
                               }}
                             >
@@ -764,16 +764,7 @@ export default function SlotManagement() {
                                   {reservation.userEmail}
                                 </div>
                                 <div className="text-gray-500 mb-1 text-xs">
-                                  KYC 제출일:{" "}
-                                  {(() => {
-                                    const kycUser =
-                                      reservation.userId &&
-                                      kycNames[reservation.userId]
-                                        ? reservation.userId
-                                        : null;
-                                    // We don't have KYC submit date in kycNames, so fallback to '-'
-                                    return "-";
-                                  })()}
+                                  KYC 제출일: -
                                 </div>
                                 <div className="text-gray-500 mb-1 text-xs">
                                   예약일:{" "}
