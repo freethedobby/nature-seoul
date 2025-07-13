@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -22,8 +21,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, UserPlus, Trash2, Eye } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -34,10 +31,8 @@ import {
   onSnapshot,
   addDoc,
   deleteDoc,
-  getDocs,
   Timestamp,
 } from "firebase/firestore";
-import Image from "next/image";
 
 interface UserData {
   id: string;
@@ -97,10 +92,7 @@ export default function AdminDashboard() {
   const [rejectReason, setRejectReason] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [slots, setSlots] = useState<SlotData[]>([]);
-  const [showSlotDialog, setShowSlotDialog] = useState(false);
-  const [slotType, setSlotType] = useState<"recurring" | "custom">("custom");
   const [customSlot, setCustomSlot] = useState({ start: "", end: "" });
   const [recurringSlot, setRecurringSlot] = useState<{
     daysOfWeek: number[];
@@ -108,7 +100,6 @@ export default function AdminDashboard() {
     endTime: string;
     intervalMinutes: number;
   }>({ daysOfWeek: [], startTime: "", endTime: "", intervalMinutes: 120 });
-  const [isSlotSubmitting, setIsSlotSubmitting] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -266,18 +257,6 @@ export default function AdminDashboard() {
     };
   }, [user, isAuthorized]);
 
-  const handleApprove = async (userId: string) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, {
-        kycStatus: "approved",
-        approvedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error("Error approving user:", error);
-    }
-  };
-
   const handleReject = async () => {
     if (!selectedUserId || !rejectReason.trim()) return;
 
@@ -294,143 +273,6 @@ export default function AdminDashboard() {
       setSelectedUserId(null);
     } catch (error) {
       console.error("Error rejecting user:", error);
-    }
-  };
-
-  const handleAddAdmin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!newAdminEmail.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/admin/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: newAdminEmail.trim() }),
-      });
-
-      if (response.ok) {
-        setNewAdminEmail("");
-      } else {
-        console.error("Failed to add admin");
-      }
-    } catch (error) {
-      console.error("Error adding admin:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRemoveAdmin = async (email: string) => {
-    try {
-      const response = await fetch("/api/admin/remove", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        console.error("Failed to remove admin");
-      }
-    } catch (error) {
-      console.error("Error removing admin:", error);
-    }
-  };
-
-  const handleCreateSlot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSlotSubmitting(true);
-
-    try {
-      if (slotType === "custom") {
-        const startDate = new Date(customSlot.start);
-        const endDate = new Date(customSlot.end);
-
-        await addDoc(collection(db, "slots"), {
-          start: Timestamp.fromDate(startDate),
-          end: Timestamp.fromDate(endDate),
-          type: "custom",
-          status: "available",
-          createdBy: user?.email,
-          createdAt: Timestamp.now(),
-        });
-      } else {
-        // For recurring slots, create multiple slots based on the pattern
-        const startTime = recurringSlot.startTime;
-        const endTime = recurringSlot.endTime;
-        const intervalMinutes = recurringSlot.intervalMinutes;
-
-        // Create slots for the next 4 weeks
-        const now = new Date();
-        const endDate = new Date(now.getTime() + 4 * 7 * 24 * 60 * 60 * 1000); // 4 weeks from now
-
-        for (
-          let date = new Date(now);
-          date <= endDate;
-          date.setDate(date.getDate() + 1)
-        ) {
-          if (recurringSlot.daysOfWeek.includes(date.getDay())) {
-            const [startHour, startMinute] = startTime.split(":").map(Number);
-            const [endHour, endMinute] = endTime.split(":").map(Number);
-
-            let currentTime = new Date(date);
-            currentTime.setHours(startHour, startMinute, 0, 0);
-
-            const endTimeOfDay = new Date(date);
-            endTimeOfDay.setHours(endHour, endMinute, 0, 0);
-
-            while (currentTime < endTimeOfDay) {
-              const slotEnd = new Date(
-                currentTime.getTime() + intervalMinutes * 60 * 1000
-              );
-
-              if (slotEnd <= endTimeOfDay) {
-                await addDoc(collection(db, "slots"), {
-                  start: Timestamp.fromDate(currentTime),
-                  end: Timestamp.fromDate(slotEnd),
-                  type: "recurring",
-                  recurrence: {
-                    daysOfWeek: recurringSlot.daysOfWeek,
-                    startTime: recurringSlot.startTime,
-                    endTime: recurringSlot.endTime,
-                    intervalMinutes: recurringSlot.intervalMinutes,
-                  },
-                  status: "available",
-                  createdBy: user?.email,
-                  createdAt: Timestamp.now(),
-                });
-              }
-
-              currentTime = slotEnd;
-            }
-          }
-        }
-      }
-
-      setShowSlotDialog(false);
-      setCustomSlot({ start: "", end: "" });
-      setRecurringSlot({
-        daysOfWeek: [],
-        startTime: "",
-        endTime: "",
-        intervalMinutes: 120,
-      });
-    } catch (error) {
-      console.error("Error creating slot:", error);
-    } finally {
-      setIsSlotSubmitting(false);
-    }
-  };
-
-  const handleDeleteSlot = async (slotId: string) => {
-    try {
-      await deleteDoc(doc(db, "slots", slotId));
-    } catch (error) {
-      console.error("Error deleting slot:", error);
     }
   };
 
@@ -465,7 +307,6 @@ export default function AdminDashboard() {
             }}
             className="flex items-center gap-2"
           >
-            <Eye className="h-4 w-4" />
             사용자 페이지로
           </Button>
         </div>
