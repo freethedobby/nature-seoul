@@ -741,8 +741,12 @@ export default function SlotManagement() {
                               tabIndex={0}
                               role="button"
                               onKeyDown={(event) => {
-                                if (event.key === "Enter" || event.key === " ")
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
                                   setPopoverOpenSlotId(slot.id);
+                                }
                               }}
                             >
                               {kycNames[reservation.userId] ||
