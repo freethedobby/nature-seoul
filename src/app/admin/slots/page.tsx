@@ -51,6 +51,19 @@ interface SlotData {
   createdAt: Date;
 }
 
+// Custom Day component for DayPicker
+function CustomDay(props: any) {
+  const { date, ...rest } = props;
+  if (!date) {
+    return <td {...rest}></td>;
+  }
+  return (
+    <td data-day={date.toISOString().slice(0, 10)} {...rest}>
+      {date.getDate()}
+    </td>
+  );
+}
+
 export default function SlotManagement() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -387,19 +400,17 @@ export default function SlotManagement() {
           {/* Main calendar (DayPicker): */}
           <div
             onDoubleClick={(event) => {
-              // Find the clicked date element
               const target = event.target as HTMLElement;
               const dateElement = target.closest("[data-day]");
               if (dateElement) {
                 const dateAttr = dateElement.getAttribute("data-day");
                 if (dateAttr) {
                   const date = new Date(dateAttr);
-                  setSlotType("recurring");
-                  setRecurringSlot((prev) => ({
-                    ...prev,
-                    startDate: date.toISOString().slice(0, 10),
-                    endDate: date.toISOString().slice(0, 10),
-                  }));
+                  setSlotType("custom");
+                  setCustomSlot({
+                    start: date.toISOString().slice(0, 16),
+                    end: date.toISOString().slice(0, 16),
+                  });
                   setShowSlotDialog(true);
                 }
               }
@@ -430,6 +441,9 @@ export default function SlotManagement() {
               }}
               showOutsideDays={false}
               required={false}
+              components={{
+                Day: CustomDay,
+              }}
             />
           </div>
           {/* Time slots for selected day */}
@@ -478,7 +492,10 @@ export default function SlotManagement() {
             <DialogHeader>
               <DialogTitle>새 슬롯 추가</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreateSlot} className="space-y-4">
+            <form
+              onSubmit={handleCreateSlot}
+              className="w-full max-w-full space-y-4"
+            >
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -508,6 +525,7 @@ export default function SlotManagement() {
                         setCustomSlot({ ...customSlot, start: e.target.value })
                       }
                       required
+                      className="w-full max-w-full"
                     />
                   </label>
                   <label>
@@ -519,6 +537,7 @@ export default function SlotManagement() {
                         setCustomSlot({ ...customSlot, end: e.target.value })
                       }
                       required
+                      className="w-full max-w-full"
                     />
                   </label>
                 </div>
@@ -543,7 +562,7 @@ export default function SlotManagement() {
                   )}
                   {/* 요일 선택 */}
                   <label className="font-medium">요일 선택</label>
-                  <div className="mb-2 flex gap-2">
+                  <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
                     {["일", "월", "화", "수", "목", "금", "토"].map(
                       (day, idx) => (
                         <Button
@@ -586,6 +605,7 @@ export default function SlotManagement() {
                         })
                       }
                       required
+                      className="w-full max-w-full"
                     />
                   </label>
                   <label>
@@ -600,11 +620,12 @@ export default function SlotManagement() {
                         })
                       }
                       required
+                      className="w-full max-w-full"
                     />
                   </label>
                   {/* 간격 선택 */}
                   <label className="font-medium">간격</label>
-                  <div className="mb-2 flex flex-wrap gap-2">
+                  <div className="mb-2 flex w-full max-w-full flex-wrap flex-wrap justify-center gap-2">
                     {[
                       { label: "30분", value: 30 },
                       { label: "1시간", value: 60 },
