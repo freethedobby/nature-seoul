@@ -316,7 +316,7 @@ export default function SlotManagement() {
                 kycNameMap[uid] = userData.name;
               }
             }
-          } catch (e) {
+          } catch {
             // ignore
           }
         })
