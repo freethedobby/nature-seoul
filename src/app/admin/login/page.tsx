@@ -77,7 +77,7 @@ export default function AdminLoginPage() {
     try {
       await signInWithGoogle();
       // The useEffect will handle the redirect after successful login
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Google login error:", err);
       setError("Google 로그인에 실패했습니다. 다시 시도해주세요.");
     } finally {
@@ -99,14 +99,14 @@ export default function AdminLoginPage() {
     try {
       await signInWithEmailAndPassword(email, password);
       // The useEffect will handle the redirect after successful login
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Email login error:", err);
       if (
-        err.code === "auth/user-not-found" ||
-        err.code === "auth/wrong-password"
+        (err as { code: string }).code === "auth/user-not-found" ||
+        (err as { code: string }).code === "auth/wrong-password"
       ) {
         setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-      } else if (err.code === "auth/too-many-requests") {
+      } else if ((err as { code: string }).code === "auth/too-many-requests") {
         setError(
           "너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요."
         );

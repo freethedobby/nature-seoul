@@ -6,21 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -53,7 +45,9 @@ interface SlotData {
 }
 
 // Custom Day component for DayPicker
-function CustomDay(props: any) {
+function CustomDay(
+  props: React.HTMLAttributes<HTMLTableCellElement> & { date?: Date }
+) {
   const { date, ...rest } = props;
   if (!date) {
     return <td {...rest}></td>;
@@ -103,7 +97,6 @@ export default function SlotManagement() {
   );
   const [customSlotHour, setCustomSlotHour] = useState<number>(0);
   const [customSlotMinute, setCustomSlotMinute] = useState<number>(0);
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   // Remove unused date picker state since we're not using it anymore
   // const [openDatePicker, setOpenDatePicker] = useState<"start" | "end" | null>(
   //   null
@@ -247,9 +240,6 @@ export default function SlotManagement() {
         }
 
         const startDate = new Date(customSlot.start);
-        const endDate = new Date(
-          startDate.getTime() + customSlot.duration * 60 * 1000
-        );
 
         // Create multiple slots if numberOfSlots > 1
         for (let i = 0; i < customSlot.numberOfSlots; i++) {
@@ -337,27 +327,6 @@ export default function SlotManagement() {
   );
 
   // Calendar event handlers
-  const handleSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
-    setSlotType("custom");
-    const duration = Math.round(
-      (end.getTime() - start.getTime()) / (1000 * 60)
-    );
-    setCustomSlot({
-      start: start.toISOString().slice(0, 16),
-      duration: duration,
-      numberOfSlots: 1,
-    });
-    setShowSlotDialog(true);
-  };
-
-  const handleSelectEvent = (event: any) => {
-    // Show dialog to edit/delete slot (for now, just delete)
-    if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
-      handleDeleteSlot(event.id);
-    }
-  };
-
-  // Add single-click handler for slots
   const handleSingleClickSlot = (slot: SlotData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event from bubbling up to calendar
 
@@ -607,7 +576,6 @@ export default function SlotManagement() {
                         }}
                         onTouchStart={(event) => {
                           // Handle touch events for mobile
-                          const touch = event.touches[0];
                           const now = Date.now();
                           const lastTouch = slotTouchRef.current[slot.id];
 
