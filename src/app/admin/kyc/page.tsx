@@ -452,6 +452,20 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
+                      <div className="mt-2 flex gap-2">
+                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                          <Calendar className="text-gray-400 h-4 w-4" />
+                          {user.createdAt
+                            ? user.createdAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </span>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -545,6 +559,32 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
+                      <div className="mt-2 flex gap-2">
+                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                          <Calendar className="text-gray-400 h-4 w-4" />
+                          {user.createdAt
+                            ? user.createdAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </span>
+                        {user.approvedAt && (
+                          <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                            <CheckCircle className="text-green-500 h-4 w-4" />
+                            {user.approvedAt.toLocaleString("ko-KR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -646,6 +686,32 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
+                      <div className="mt-2 flex gap-2">
+                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                          <Calendar className="text-gray-400 h-4 w-4" />
+                          {user.createdAt
+                            ? user.createdAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </span>
+                        {user.rejectedAt && (
+                          <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                            <XCircle className="text-red-500 h-4 w-4" />
+                            {user.rejectedAt.toLocaleString("ko-KR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </CardContent>
                   )}
                 </Card>
