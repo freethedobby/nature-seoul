@@ -70,6 +70,7 @@ export default function KYCDashboard() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -118,7 +119,23 @@ export default function KYCDashboard() {
     const unsubPending = onSnapshot(pendingQuery, (snapshot) => {
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() } as UserData);
+        const data = doc.data();
+        users.push({
+          id: doc.id,
+          ...data,
+          createdAt:
+            data.createdAt && data.createdAt.toDate
+              ? data.createdAt.toDate()
+              : null,
+          approvedAt:
+            data.approvedAt && data.approvedAt.toDate
+              ? data.approvedAt.toDate()
+              : null,
+          rejectedAt:
+            data.rejectedAt && data.rejectedAt.toDate
+              ? data.rejectedAt.toDate()
+              : null,
+        } as UserData);
       });
       users.sort(
         (a, b) =>
@@ -136,7 +153,23 @@ export default function KYCDashboard() {
     const unsubApproved = onSnapshot(approvedQuery, (snapshot) => {
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() } as UserData);
+        const data = doc.data();
+        users.push({
+          id: doc.id,
+          ...data,
+          createdAt:
+            data.createdAt && data.createdAt.toDate
+              ? data.createdAt.toDate()
+              : null,
+          approvedAt:
+            data.approvedAt && data.approvedAt.toDate
+              ? data.approvedAt.toDate()
+              : null,
+          rejectedAt:
+            data.rejectedAt && data.rejectedAt.toDate
+              ? data.rejectedAt.toDate()
+              : null,
+        } as UserData);
       });
       users.sort(
         (a, b) =>
@@ -154,7 +187,23 @@ export default function KYCDashboard() {
     const unsubRejected = onSnapshot(rejectedQuery, (snapshot) => {
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() } as UserData);
+        const data = doc.data();
+        users.push({
+          id: doc.id,
+          ...data,
+          createdAt:
+            data.createdAt && data.createdAt.toDate
+              ? data.createdAt.toDate()
+              : null,
+          approvedAt:
+            data.approvedAt && data.approvedAt.toDate
+              ? data.approvedAt.toDate()
+              : null,
+          rejectedAt:
+            data.rejectedAt && data.rejectedAt.toDate
+              ? data.rejectedAt.toDate()
+              : null,
+        } as UserData);
       });
       users.sort(
         (a, b) =>
@@ -303,7 +352,14 @@ export default function KYCDashboard() {
             ) : (
               pendingUsers.map((user) => (
                 <Card key={user.id}>
-                  <CardHeader className="pb-4">
+                  <CardHeader
+                    className="cursor-pointer pb-4"
+                    onClick={() =>
+                      setExpandedUserId(
+                        expandedUserId === user.id ? null : user.id
+                      )
+                    }
+                  >
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle>{user.name}</CardTitle>
@@ -328,7 +384,10 @@ export default function KYCDashboard() {
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleApprove(user.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApprove(user.id);
+                          }}
                         >
                           <CheckCircle className="mr-1 h-4 w-4" />
                           승인
@@ -336,7 +395,8 @@ export default function KYCDashboard() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedUserId(user.id);
                             setIsRejectDialogOpen(true);
                           }}
@@ -347,31 +407,33 @@ export default function KYCDashboard() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    {user.photoURL && (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                        <Image
-                          src={user.photoURL}
-                          alt="시술 부위 사진"
-                          fill
-                          className="object-contain"
-                          unoptimized={user.photoURL.startsWith("data:")}
-                          onError={(e) => {
-                            console.error(
-                              "Failed to load image:",
-                              user.photoURL
-                            );
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                        {user.photoType === "base64" && (
-                          <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                            Base64
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
+                  {expandedUserId === user.id && (
+                    <CardContent>
+                      {user.photoURL && (
+                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
+                          <Image
+                            src={user.photoURL}
+                            alt="시술 부위 사진"
+                            fill
+                            className="object-contain"
+                            unoptimized={user.photoURL.startsWith("data:")}
+                            onError={(e) => {
+                              console.error(
+                                "Failed to load image:",
+                                user.photoURL
+                              );
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                          {user.photoType === "base64" && (
+                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                              Base64
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
                 </Card>
               ))
             )}
@@ -387,7 +449,14 @@ export default function KYCDashboard() {
             ) : (
               approvedUsers.map((user) => (
                 <Card key={user.id}>
-                  <CardHeader>
+                  <CardHeader
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setExpandedUserId(
+                        expandedUserId === user.id ? null : user.id
+                      )
+                    }
+                  >
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle>{user.name}</CardTitle>
@@ -428,6 +497,33 @@ export default function KYCDashboard() {
                       </Badge>
                     </div>
                   </CardHeader>
+                  {expandedUserId === user.id && (
+                    <CardContent>
+                      {user.photoURL && (
+                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
+                          <Image
+                            src={user.photoURL}
+                            alt="시술 부위 사진"
+                            fill
+                            className="object-contain"
+                            unoptimized={user.photoURL.startsWith("data:")}
+                            onError={(e) => {
+                              console.error(
+                                "Failed to load image:",
+                                user.photoURL
+                              );
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                          {user.photoType === "base64" && (
+                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                              Base64
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
                 </Card>
               ))
             )}
@@ -443,7 +539,14 @@ export default function KYCDashboard() {
             ) : (
               rejectedUsers.map((user) => (
                 <Card key={user.id}>
-                  <CardHeader>
+                  <CardHeader
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setExpandedUserId(
+                        expandedUserId === user.id ? null : user.id
+                      )
+                    }
+                  >
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle>{user.name}</CardTitle>
@@ -492,6 +595,33 @@ export default function KYCDashboard() {
                       </Badge>
                     </div>
                   </CardHeader>
+                  {expandedUserId === user.id && (
+                    <CardContent>
+                      {user.photoURL && (
+                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
+                          <Image
+                            src={user.photoURL}
+                            alt="시술 부위 사진"
+                            fill
+                            className="object-contain"
+                            unoptimized={user.photoURL.startsWith("data:")}
+                            onError={(e) => {
+                              console.error(
+                                "Failed to load image:",
+                                user.photoURL
+                              );
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                          {user.photoType === "base64" && (
+                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                              Base64
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
                 </Card>
               ))
             )}
