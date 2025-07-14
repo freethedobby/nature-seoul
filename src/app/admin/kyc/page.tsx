@@ -364,6 +364,9 @@ export default function KYCDashboard() {
                       <div>
                         <CardTitle>{user.name}</CardTitle>
                         <CardDescription>{user.contact}</CardDescription>
+                        <div className="text-gray-500 text-sm">
+                          {user.email}
+                        </div>
                         <div className="mt-2">
                           <div className="text-gray-500 text-sm">
                             신청일:{" "}
@@ -461,6 +464,9 @@ export default function KYCDashboard() {
                       <div>
                         <CardTitle>{user.name}</CardTitle>
                         <CardDescription>{user.contact}</CardDescription>
+                        <div className="text-gray-500 text-sm">
+                          {user.email}
+                        </div>
                         <div className="mt-2 space-y-1">
                           <div className="text-gray-500 text-sm">
                             신청일:{" "}
@@ -551,6 +557,9 @@ export default function KYCDashboard() {
                       <div>
                         <CardTitle>{user.name}</CardTitle>
                         <CardDescription>{user.contact}</CardDescription>
+                        <div className="text-gray-500 text-sm">
+                          {user.email}
+                        </div>
                         <div className="mt-2 space-y-1">
                           <div className="text-gray-500 text-sm">
                             신청일:{" "}
