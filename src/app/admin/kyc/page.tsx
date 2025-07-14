@@ -314,34 +314,46 @@ export default function KYCDashboard() {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="bg-gray-100 mb-4 flex w-full scroll-px-3 flex-nowrap gap-x-4 overflow-x-auto rounded-lg p-1 pl-3 pr-3 sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0">
+          <TabsList className="bg-gray-100 mb-4 flex w-full gap-x-1 rounded-lg p-1 pl-1 pr-1 sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0">
             <TabsTrigger
               value="pending"
-              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-green-600 data-[state=active]:ring-green-300 flex min-w-[110px] flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
+              className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
             >
-              <ClipboardList className="h-4 w-4" />
-              KYC ({pendingUsers.length})
+              <ClipboardList className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="hidden sm:inline">
+                KYC ({pendingUsers.length})
+              </span>
+              <span className="sm:hidden">KYC</span>
             </TabsTrigger>
             <TabsTrigger
               value="approved"
-              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-green-600 data-[state=active]:ring-green-300 flex min-w-[110px] flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
+              className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
             >
-              <CheckCircle className="h-4 w-4" />
-              승인 ({approvedUsers.length})
+              <CheckCircle className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="hidden sm:inline">
+                승인 ({approvedUsers.length})
+              </span>
+              <span className="sm:hidden">승인</span>
             </TabsTrigger>
             <TabsTrigger
               value="rejected"
-              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-400 data-[state=active]:to-red-600 data-[state=active]:ring-red-300 flex min-w-[110px] flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
+              className="data-[state=active]:bg-red-500 data-[state=active]:ring-red-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
             >
-              <XCircle className="h-4 w-4" />
-              반려 ({rejectedUsers.length})
+              <XCircle className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="hidden sm:inline">
+                반려 ({rejectedUsers.length})
+              </span>
+              <span className="sm:hidden">반려</span>
             </TabsTrigger>
             <TabsTrigger
               value="reservations"
-              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-400 data-[state=active]:to-blue-600 data-[state=active]:ring-blue-300 flex min-w-[110px] flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
+              className="data-[state=active]:bg-blue-500 data-[state=active]:ring-blue-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
             >
-              <Calendar className="h-4 w-4" />
-              예약 ({reservations.length})
+              <Calendar className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="hidden sm:inline">
+                예약 ({reservations.length})
+              </span>
+              <span className="sm:hidden">예약</span>
             </TabsTrigger>
           </TabsList>
 
