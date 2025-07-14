@@ -22,7 +22,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, ArrowLeft } from "lucide-react";
+import {
+  ClipboardList,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  ArrowLeft,
+  Eye,
+} from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -307,35 +314,33 @@ export default function KYCDashboard() {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList
-            className="
-              bg-gray-100 mb-4 flex w-full scroll-px-3 flex-nowrap gap-x-2 overflow-x-auto rounded-lg
-              p-1 pl-3 pr-3
-              sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0
-            "
-          >
+          <TabsList className="bg-gray-100 mb-4 flex w-full scroll-px-3 flex-nowrap gap-x-2 overflow-x-auto rounded-lg p-1 pl-3 pr-3 sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0">
             <TabsTrigger
               value="pending"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
+              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-green-600 data-[state=active]:ring-green-300 flex min-w-[70px] flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
             >
+              <ClipboardList className="h-5 w-5" />
               KYC ({pendingUsers.length})
             </TabsTrigger>
             <TabsTrigger
               value="approved"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
+              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-green-600 data-[state=active]:ring-green-300 flex min-w-[70px] flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
             >
+              <CheckCircle className="h-5 w-5" />
               승인 ({approvedUsers.length})
             </TabsTrigger>
             <TabsTrigger
               value="rejected"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
+              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-400 data-[state=active]:to-red-600 data-[state=active]:ring-red-300 flex min-w-[70px] flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
             >
+              <XCircle className="h-5 w-5" />
               반려 ({rejectedUsers.length})
             </TabsTrigger>
             <TabsTrigger
               value="reservations"
-              className="data-[state=active]:shadow min-w-[70px] flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:bg-white"
+              className="data-[state=active]:shadow data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-400 data-[state=active]:to-blue-600 data-[state=active]:ring-blue-300 flex min-w-[70px] flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2"
             >
+              <Calendar className="h-5 w-5" />
               예약 ({reservations.length})
             </TabsTrigger>
           </TabsList>
