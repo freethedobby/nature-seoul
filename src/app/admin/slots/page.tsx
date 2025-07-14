@@ -258,7 +258,8 @@ export default function SlotManagement() {
   );
 
   const [reservations, setReservations] = useState<ReservationData[]>([]);
-  const [kycNames, setKycNames] = useState<Record<string, string>>({}); // userId -> KYC name
+  const [kycNames, setKycNames] = useState<Record<string, string>>({});
+  const [kycContacts, setKycContacts] = useState<Record<string, string>>({});
 
   // Fetch reservations for slots of the selected day
   useEffect(() => {
@@ -276,12 +277,14 @@ export default function SlotManagement() {
     if (!selectedDate || slotsForSelectedDayLocal.length === 0) {
       setReservations([]);
       setKycNames({});
+      setKycContacts({});
       return;
     }
     const slotIds = slotsForSelectedDayLocal.map((slot) => slot.id);
     if (slotIds.length === 0) {
       setReservations([]);
       setKycNames({});
+      setKycContacts({});
       return;
     }
     const q = query(
@@ -304,8 +307,9 @@ export default function SlotManagement() {
         if (data.userId) userIds.add(data.userId);
       });
       setReservations(resList);
-      // Fetch KYC names for all userIds
+      // Fetch KYC names and contacts for all userIds
       const kycNameMap: Record<string, string> = {};
+      const kycContactMap: Record<string, string> = {};
       await Promise.all(
         Array.from(userIds).map(async (uid) => {
           try {
@@ -315,6 +319,9 @@ export default function SlotManagement() {
               if (userData && userData.name) {
                 kycNameMap[uid] = userData.name;
               }
+              if (userData && userData.contact) {
+                kycContactMap[uid] = userData.contact;
+              }
             }
           } catch {
             // ignore
@@ -322,6 +329,7 @@ export default function SlotManagement() {
         })
       );
       setKycNames(kycNameMap);
+      setKycContacts(kycContactMap);
     });
   }, [selectedDate, slots]);
 
@@ -756,7 +764,7 @@ export default function SlotManagement() {
                             {popoverOpenSlotId === slot.id && (
                               <div
                                 ref={popoverRef}
-                                className="w-72 border-green-200 shadow-xl absolute left-1/2 z-20 mt-2 flex -translate-x-1/2 flex-col items-center rounded-xl border bg-white p-4"
+                                className="w-72 border-green-200 shadow-xl fixed left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-xl border bg-white p-4"
                                 style={{ minWidth: 260 }}
                               >
                                 <div className="text-green-700 mb-1 text-lg font-bold">
@@ -766,6 +774,10 @@ export default function SlotManagement() {
                                 </div>
                                 <div className="text-green-600 mb-1 break-all text-sm">
                                   {reservation.userEmail}
+                                </div>
+                                <div className="text-green-600 mb-1 break-all text-sm">
+                                  연락처:{" "}
+                                  {kycContacts[reservation.userId] || "-"}
                                 </div>
                                 <div className="text-gray-500 mb-1 text-xs">
                                   KYC 제출일: -
