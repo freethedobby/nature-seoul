@@ -651,14 +651,14 @@ export default function KYCDashboard() {
                       <div>
                         <CardTitle>{reservation.userName}</CardTitle>
                         <CardDescription>
-                          <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-4">
                             <span className="flex items-center">
                               예약일: {reservation.date}
                             </span>
                             <span className="flex items-center">
                               시간: {reservation.time}
                             </span>
-                          </div>
+                          </span>
                         </CardDescription>
                         <div className="mt-2">
                           <div className="text-gray-500 text-sm">
