@@ -52,6 +52,16 @@ export default function AdminManagement() {
   const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
   const [isCheckingConfig, setIsCheckingConfig] = useState(false);
 
+  // Helper function to safely convert createdAt to Date
+  const getDateFromCreatedAt = (createdAt: unknown): Date => {
+    if (createdAt && typeof createdAt === "object" && "toDate" in createdAt) {
+      return (createdAt as { toDate(): Date }).toDate();
+    } else if (createdAt) {
+      return new Date(createdAt as string | number | Date);
+    }
+    return new Date(0); // Default date for sorting
+  };
+
   const checkConfigStatus = async () => {
     setIsCheckingConfig(true);
     try {
@@ -145,7 +155,8 @@ export default function AdminManagement() {
 
       allAdmins.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          getDateFromCreatedAt(b.createdAt).getTime() -
+          getDateFromCreatedAt(a.createdAt).getTime()
       );
       setAdmins(allAdmins);
     });
@@ -482,28 +493,15 @@ export default function AdminManagement() {
                               등록일:{" "}
                               {(() => {
                                 try {
-                                  // Handle different date formats from Firestore
-                                  let date: Date;
-                                  if (
-                                    admin.createdAt &&
-                                    typeof admin.createdAt === "object" &&
-                                    "toDate" in admin.createdAt
-                                  ) {
-                                    // Firestore Timestamp object
-                                    date = (
-                                      admin.createdAt as { toDate(): Date }
-                                    ).toDate();
-                                  } else if (admin.createdAt) {
-                                    // Regular Date object or string
-                                    date = new Date(
-                                      admin.createdAt as string | number | Date
-                                    );
-                                  } else {
-                                    return "날짜 정보 없음";
-                                  }
+                                  const date = getDateFromCreatedAt(
+                                    admin.createdAt
+                                  );
 
                                   // Check if date is valid
-                                  if (isNaN(date.getTime())) {
+                                  if (
+                                    isNaN(date.getTime()) ||
+                                    date.getTime() === 0
+                                  ) {
                                     return "날짜 정보 없음";
                                   }
 
