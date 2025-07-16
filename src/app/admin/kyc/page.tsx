@@ -124,9 +124,11 @@ export default function KYCDashboard() {
     );
 
     const unsubPending = onSnapshot(pendingQuery, (snapshot) => {
+      console.log("🔄 Pending users snapshot received, count:", snapshot.size);
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+        console.log("📄 User document:", doc.id, data);
         users.push({
           id: doc.id,
           ...data,
@@ -148,6 +150,7 @@ export default function KYCDashboard() {
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+      console.log("✅ Setting pending users:", users.length);
       setPendingUsers(users);
     });
 

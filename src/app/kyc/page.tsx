@@ -74,9 +74,9 @@ export default function KYCPage() {
 
           <KYCForm
             onSuccess={() => {
-              // 성공 후 사용자 페이지로 이동
+              // 성공 후 대시보드로 이동
               setTimeout(() => {
-                router.push("/user");
+                router.push("/dashboard");
               }, 2000);
             }}
           />

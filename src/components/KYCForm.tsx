@@ -278,13 +278,18 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       };
 
       console.log("Saving user data to Firestore...");
+      console.log("User data to save:", userData);
+      console.log("Document path: users/", user.uid);
+
       try {
         await setDoc(firestoreDoc(db, "users", user.uid), userData, {
           merge: true,
         });
-        console.log("User data saved successfully with UID as doc ID");
+        console.log("✅ User data saved successfully with UID as doc ID");
+        console.log("Document ID:", user.uid);
+        console.log("KYC Status: pending");
       } catch (firestoreError) {
-        console.error("Firestore save failed:", firestoreError);
+        console.error("❌ Firestore save failed:", firestoreError);
         // Continue anyway - the form should still show success
       }
 
