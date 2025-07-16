@@ -32,6 +32,9 @@ interface ReservationData {
   userId: string;
   userEmail: string;
   userName?: string;
+  date?: string;
+  time?: string;
+  status?: string;
   createdAt: Date;
 }
 
@@ -152,6 +155,16 @@ export default function UserReservePage() {
         userId: user.uid,
         userEmail: user.email,
         userName: user.displayName || "",
+        date: slot.start.toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        time: slot.start.toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: "대기",
         createdAt: new Date(),
       });
       setShowReserveBtn(null);

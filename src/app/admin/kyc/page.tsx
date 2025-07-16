@@ -225,10 +225,19 @@ export default function KYCDashboard() {
     const unsubReservations = onSnapshot(reservationsQuery, (snapshot) => {
       const reservs: ReservationData[] = [];
       snapshot.forEach((doc) => {
-        reservs.push({ id: doc.id, ...doc.data() } as ReservationData);
+        const data = doc.data();
+        reservs.push({
+          id: doc.id,
+          ...data,
+          createdAt:
+            data.createdAt && data.createdAt.toDate
+              ? data.createdAt.toDate()
+              : new Date(data.createdAt || Date.now()),
+        } as ReservationData);
       });
       reservs.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setReservations(reservs);
     });
@@ -384,20 +393,43 @@ export default function KYCDashboard() {
                         <div className="text-gray-500 text-sm">
                           {user.email}
                         </div>
-                        <div className="mt-2">
-                          <div className="text-gray-500 text-sm">
-                            신청일:{" "}
-                            {new Date(user.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
+                        <div className="mt-2 flex gap-2">
+                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                            <Calendar className="text-gray-400 h-4 w-4" />
+                            {user.createdAt
+                              ? user.createdAt.toLocaleString("ko-KR", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}
+                          </span>
+                          {user.approvedAt && (
+                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <CheckCircle className="text-green-500 h-4 w-4" />
+                              {user.approvedAt.toLocaleString("ko-KR", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
                                 hour: "2-digit",
                                 minute: "2-digit",
-                              }
-                            )}
-                          </div>
+                              })}
+                            </span>
+                          )}
+                          {user.rejectedAt && (
+                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <XCircle className="text-red-500 h-4 w-4" />
+                              {user.rejectedAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -452,20 +484,6 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
-                      <div className="mt-2 flex gap-2">
-                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                          <Calendar className="text-gray-400 h-4 w-4" />
-                          {user.createdAt
-                            ? user.createdAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
-                        </span>
-                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -498,34 +516,42 @@ export default function KYCDashboard() {
                         <div className="text-gray-500 text-sm">
                           {user.email}
                         </div>
-                        <div className="mt-2 space-y-1">
-                          <div className="text-gray-500 text-sm">
-                            신청일:{" "}
-                            {new Date(user.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </div>
-                          {user.approvedAt && (
-                            <div className="text-green-600 text-sm">
-                              승인일:{" "}
-                              {new Date(user.approvedAt).toLocaleDateString(
-                                "ko-KR",
-                                {
+                        <div className="mt-2 flex gap-2">
+                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                            <Calendar className="text-gray-400 h-4 w-4" />
+                            {user.createdAt
+                              ? user.createdAt.toLocaleString("ko-KR", {
                                   year: "numeric",
                                   month: "long",
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                }
-                              )}
-                            </div>
+                                })
+                              : "-"}
+                          </span>
+                          {user.approvedAt && (
+                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <CheckCircle className="text-green-500 h-4 w-4" />
+                              {user.approvedAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                          {user.rejectedAt && (
+                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <XCircle className="text-red-500 h-4 w-4" />
+                              {user.rejectedAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -559,32 +585,6 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
-                      <div className="mt-2 flex gap-2">
-                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                          <Calendar className="text-gray-400 h-4 w-4" />
-                          {user.createdAt
-                            ? user.createdAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
-                        </span>
-                        {user.approvedAt && (
-                          <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                            <CheckCircle className="text-green-500 h-4 w-4" />
-                            {user.approvedAt.toLocaleString("ko-KR", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -617,39 +617,42 @@ export default function KYCDashboard() {
                         <div className="text-gray-500 text-sm">
                           {user.email}
                         </div>
-                        <div className="mt-2 space-y-1">
-                          <div className="text-gray-500 text-sm">
-                            신청일:{" "}
-                            {new Date(user.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </div>
-                          {user.rejectedAt && (
-                            <div className="text-red-600 text-sm">
-                              반려일:{" "}
-                              {new Date(user.rejectedAt).toLocaleDateString(
-                                "ko-KR",
-                                {
+                        <div className="mt-2 flex gap-2">
+                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                            <Calendar className="text-gray-400 h-4 w-4" />
+                            {user.createdAt
+                              ? user.createdAt.toLocaleString("ko-KR", {
                                   year: "numeric",
                                   month: "long",
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                }
-                              )}
-                            </div>
+                                })
+                              : "-"}
+                          </span>
+                          {user.approvedAt && (
+                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <CheckCircle className="text-green-500 h-4 w-4" />
+                              {user.approvedAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
                           )}
-                          {user.rejectReason && (
-                            <div className="text-red-600 text-sm">
-                              반려 사유: {user.rejectReason}
-                            </div>
+                          {user.rejectedAt && (
+                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                              <XCircle className="text-red-500 h-4 w-4" />
+                              {user.rejectedAt.toLocaleString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -686,32 +689,6 @@ export default function KYCDashboard() {
                           )}
                         </div>
                       )}
-                      <div className="mt-2 flex gap-2">
-                        <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                          <Calendar className="text-gray-400 h-4 w-4" />
-                          {user.createdAt
-                            ? user.createdAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
-                        </span>
-                        {user.rejectedAt && (
-                          <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                            <XCircle className="text-red-500 h-4 w-4" />
-                            {user.rejectedAt.toLocaleString("ko-KR", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -736,26 +713,26 @@ export default function KYCDashboard() {
                         <CardDescription>
                           <span className="flex items-center gap-4">
                             <span className="flex items-center">
-                              예약일: {reservation.date}
+                              예약일: {reservation.date || "미정"}
                             </span>
                             <span className="flex items-center">
-                              시간: {reservation.time}
+                              시간: {reservation.time || "미정"}
                             </span>
                           </span>
                         </CardDescription>
                         <div className="mt-2">
                           <div className="text-gray-500 text-sm">
                             예약 생성일:{" "}
-                            {new Date(reservation.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
+                            {reservation.createdAt &&
+                            !isNaN(reservation.createdAt.getTime())
+                              ? reservation.createdAt.toLocaleString("ko-KR", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "날짜 정보 없음"}
                           </div>
                         </div>
                       </div>
