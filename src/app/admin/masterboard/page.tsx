@@ -1,0 +1,730 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  MessageSquare,
+  Calendar,
+  User,
+  Phone,
+  Mail,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from "lucide-react";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  onSnapshot,
+  query,
+  doc,
+  updateDoc,
+  deleteDoc,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  kycStatus: "pending" | "approved" | "rejected";
+  reservationStatus: "none" | "scheduled" | "completed" | "cancelled";
+  latestReservation?: {
+    date: string;
+    time: string;
+    status: string;
+  };
+  eyebrowProcedure: "not_started" | "in_progress" | "completed";
+  adminComments: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
+interface Comment {
+  id: string;
+  userId: string;
+  adminEmail: string;
+  comment: string;
+  createdAt: any;
+}
+
+export default function Masterboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check admin authorization
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!loading && user?.email) {
+        try {
+          const response = await fetch("/api/admin/check", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: user.email }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setIsAuthorized(data.isAdmin);
+            if (!data.isAdmin) {
+              router.push("/admin/login");
+            }
+          } else {
+            setIsAuthorized(false);
+            router.push("/admin/login");
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setIsAuthorized(false);
+          router.push("/admin/login");
+        }
+      } else if (!loading && !user) {
+        router.push("/admin/login");
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, loading, router]);
+
+  // Fetch users data
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    const usersQuery = query(collection(db, "users"));
+    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+      const userData: UserData[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        userData.push({
+          id: doc.id,
+          name: data.name || "N/A",
+          email: data.email || "N/A",
+          phone: data.phone || "N/A",
+          kycStatus: data.kycStatus || "pending",
+          reservationStatus: data.reservationStatus || "none",
+          latestReservation: data.latestReservation,
+          eyebrowProcedure: data.eyebrowProcedure || "not_started",
+          adminComments: data.adminComments || "",
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        });
+      });
+      setUsers(userData);
+    });
+
+    return () => unsubUsers();
+  }, [isAuthorized]);
+
+  // Fetch comments
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    const commentsQuery = query(collection(db, "adminComments"));
+    const unsubComments = onSnapshot(commentsQuery, (snapshot) => {
+      const commentData: Comment[] = [];
+      snapshot.forEach((doc) => {
+        commentData.push({ id: doc.id, ...doc.data() } as Comment);
+      });
+      setComments(commentData);
+    });
+
+    return () => unsubComments();
+  }, [isAuthorized]);
+
+  // Filter and search users
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone.includes(searchTerm);
+
+    const matchesFilter =
+      filterStatus === "all" ||
+      user.kycStatus === filterStatus ||
+      user.reservationStatus === filterStatus ||
+      user.eyebrowProcedure === filterStatus;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // Get user comments
+  const getUserComments = (userId: string) => {
+    return comments
+      .filter((comment) => comment.userId === userId)
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+  };
+
+  // Handle user update
+  const handleUpdateUser = async (
+    userId: string,
+    updates: Partial<UserData>
+  ) => {
+    setIsSubmitting(true);
+    try {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("사용자 정보 업데이트 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle comment addition
+  const handleAddComment = async (userId: string) => {
+    if (!newComment.trim() || !user?.email) return;
+
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "adminComments"), {
+        userId,
+        adminEmail: user.email,
+        comment: newComment.trim(),
+        createdAt: serverTimestamp(),
+      });
+      setNewComment("");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      alert("댓글 추가 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle comment deletion
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+
+    try {
+      await deleteDoc(doc(db, "adminComments", commentId));
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      alert("댓글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // Get status badge
+  const getStatusBadge = (
+    status: string,
+    type: "kyc" | "reservation" | "procedure"
+  ) => {
+    const colors = {
+      kyc: {
+        pending: "bg-yellow-100 text-yellow-800",
+        approved: "bg-green-100 text-green-800",
+        rejected: "bg-red-100 text-red-800",
+      },
+      reservation: {
+        none: "bg-gray-100 text-gray-800",
+        scheduled: "bg-blue-100 text-blue-800",
+        completed: "bg-green-100 text-green-800",
+        cancelled: "bg-red-100 text-red-800",
+      },
+      procedure: {
+        not_started: "bg-gray-100 text-gray-800",
+        in_progress: "bg-yellow-100 text-yellow-800",
+        completed: "bg-green-100 text-green-800",
+      },
+    };
+
+    const labels = {
+      kyc: {
+        pending: "대기중",
+        approved: "승인됨",
+        rejected: "거부됨",
+      },
+      reservation: {
+        none: "예약 없음",
+        scheduled: "예약됨",
+        completed: "완료됨",
+        cancelled: "취소됨",
+      },
+      procedure: {
+        not_started: "시작 안함",
+        in_progress: "진행중",
+        completed: "완료됨",
+      },
+    };
+
+    return (
+      <Badge
+        className={colors[type][status as keyof (typeof colors)[typeof type]]}
+      >
+        {labels[type][status as keyof (typeof labels)[typeof type]]}
+      </Badge>
+    );
+  };
+
+  if (loading || !isAuthorized) {
+    return (
+      <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center">
+            <div className="animate-spin border-black mb-4 h-8 w-8 rounded-full border-b-2"></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
+      <div className="container mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/admin")}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                뒤로
+              </Button>
+              <h1 className="text-gray-900 font-sans text-3xl font-extrabold tracking-tight">
+                마스터보드
+              </h1>
+            </div>
+            <p className="text-gray-600">모든 사용자 정보를 관리합니다</p>
+          </div>
+        </div>
+
+        {/* Search and Filter */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-1 items-center gap-2">
+                <Search className="text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="이름, 이메일, 전화번호로 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="text-gray-400 h-4 w-4" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border-gray-300 rounded-md border px-3 py-2 text-sm"
+                >
+                  <option value="all">모든 상태</option>
+                  <option value="pending">KYC 대기중</option>
+                  <option value="approved">KYC 승인됨</option>
+                  <option value="rejected">KYC 거부됨</option>
+                  <option value="scheduled">예약됨</option>
+                  <option value="completed">완료됨</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Users Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>사용자 목록 ({filteredUsers.length}명)</CardTitle>
+            <CardDescription>
+              모든 사용자의 정보와 상태를 확인하고 관리할 수 있습니다
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>기본 정보</TableHead>
+                    <TableHead>KYC 상태</TableHead>
+                    <TableHead>예약 상태</TableHead>
+                    <TableHead>시술 진행</TableHead>
+                    <TableHead>관리자 댓글</TableHead>
+                    <TableHead>작업</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      {/* Basic Information */}
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="text-gray-400 h-4 w-4" />
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                          <div className="text-gray-600 flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </div>
+                          <div className="text-gray-600 flex items-center gap-2 text-sm">
+                            <Phone className="h-3 w-3" />
+                            {user.phone}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* KYC Status */}
+                      <TableCell>
+                        {getStatusBadge(user.kycStatus, "kyc")}
+                      </TableCell>
+
+                      {/* Reservation Status */}
+                      <TableCell>
+                        <div className="space-y-1">
+                          {getStatusBadge(
+                            user.reservationStatus,
+                            "reservation"
+                          )}
+                          {user.latestReservation && (
+                            <div className="text-gray-600 flex items-center gap-1 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              {user.latestReservation.date}{" "}
+                              {user.latestReservation.time}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* Eyebrow Procedure */}
+                      <TableCell>
+                        {getStatusBadge(user.eyebrowProcedure, "procedure")}
+                      </TableCell>
+
+                      {/* Admin Comments */}
+                      <TableCell>
+                        <div className="space-y-1">
+                          {user.adminComments && (
+                            <p className="text-gray-600 max-w-xs truncate text-sm">
+                              {user.adminComments}
+                            </p>
+                          )}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedUser(user)}
+                                className="flex items-center gap-1"
+                              >
+                                <MessageSquare className="h-3 w-3" />
+                                댓글 보기
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  {user.name} - 관리자 댓글
+                                </DialogTitle>
+                                <DialogDescription>
+                                  사용자에 대한 관리자 댓글을 확인하고 추가할 수
+                                  있습니다
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                {/* Existing Comments */}
+                                <div className="space-y-2">
+                                  {getUserComments(user.id).map((comment) => (
+                                    <div
+                                      key={comment.id}
+                                      className="bg-gray-50 rounded-lg p-3"
+                                    >
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">
+                                            {comment.adminEmail}
+                                          </p>
+                                          <p className="text-gray-600 mt-1 text-sm">
+                                            {comment.comment}
+                                          </p>
+                                          <p className="text-gray-500 mt-2 text-xs">
+                                            {comment.createdAt
+                                              ?.toDate?.()
+                                              ?.toLocaleString("ko-KR") ||
+                                              new Date(
+                                                comment.createdAt
+                                              ).toLocaleString("ko-KR")}
+                                          </p>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleDeleteComment(comment.id)
+                                          }
+                                          className="text-red-600 hover:text-red-700"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Add New Comment */}
+                                <div className="space-y-2">
+                                  <Textarea
+                                    placeholder="새 댓글을 입력하세요..."
+                                    value={newComment}
+                                    onChange={(e) =>
+                                      setNewComment(e.target.value)
+                                    }
+                                    rows={3}
+                                  />
+                                  <Button
+                                    onClick={() => handleAddComment(user.id)}
+                                    disabled={
+                                      !newComment.trim() || isSubmitting
+                                    }
+                                    className="w-full"
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    댓글 추가
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingUser(user)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>사용자 정보 편집</DialogTitle>
+                                <DialogDescription>
+                                  {user.name}의 정보를 수정합니다
+                                </DialogDescription>
+                              </DialogHeader>
+                              {editingUser && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      이름
+                                    </label>
+                                    <Input
+                                      value={editingUser.name}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          name: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      이메일
+                                    </label>
+                                    <Input
+                                      value={editingUser.email}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          email: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      전화번호
+                                    </label>
+                                    <Input
+                                      value={editingUser.phone}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          phone: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      KYC 상태
+                                    </label>
+                                    <select
+                                      value={editingUser.kycStatus}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          kycStatus: e.target.value as any,
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="pending">대기중</option>
+                                      <option value="approved">승인됨</option>
+                                      <option value="rejected">거부됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      예약 상태
+                                    </label>
+                                    <select
+                                      value={editingUser.reservationStatus}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          reservationStatus: e.target
+                                            .value as any,
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="none">예약 없음</option>
+                                      <option value="scheduled">예약됨</option>
+                                      <option value="completed">완료됨</option>
+                                      <option value="cancelled">취소됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      시술 진행
+                                    </label>
+                                    <select
+                                      value={editingUser.eyebrowProcedure}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          eyebrowProcedure: e.target
+                                            .value as any,
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="not_started">
+                                        시작 안함
+                                      </option>
+                                      <option value="in_progress">
+                                        진행중
+                                      </option>
+                                      <option value="completed">완료됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      관리자 댓글
+                                    </label>
+                                    <Textarea
+                                      value={editingUser.adminComments}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          adminComments: e.target.value,
+                                        })
+                                      }
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() =>
+                                        handleUpdateUser(
+                                          editingUser.id,
+                                          editingUser
+                                        )
+                                      }
+                                      disabled={isSubmitting}
+                                      className="flex-1"
+                                    >
+                                      저장
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setEditingUser(null)}
+                                      className="flex-1"
+                                    >
+                                      취소
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

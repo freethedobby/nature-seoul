@@ -455,6 +455,57 @@ export default function AdminDashboard() {
 
           <Card
             className="hover:shadow-lg cursor-pointer transition-shadow"
+            onClick={() => router.push("/admin/masterboard")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="bg-orange-100 rounded-lg p-2">
+                  <svg
+                    className="text-orange-600 h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </div>
+                마스터보드
+              </CardTitle>
+              <CardDescription>모든 사용자 정보 관리</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500 text-sm">
+                  총{" "}
+                  {pendingUsers.length +
+                    approvedUsers.length +
+                    rejectedUsers.length}
+                  명의 사용자
+                </div>
+                <svg
+                  className="text-gray-400 h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-lg cursor-pointer transition-shadow"
             onClick={() => router.push("/admin/admins")}
           >
             <CardHeader>
@@ -481,7 +532,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-gray-500 text-sm">
-                  총 {allAdmins.length}명의 관리자
+                  총 {admins.length}명의 관리자
                 </div>
                 <svg
                   className="text-gray-400 h-5 w-5"
