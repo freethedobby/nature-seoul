@@ -29,7 +29,7 @@ interface AdminUser {
   id: string;
   email: string;
   isActive: boolean;
-  createdAt: Date;
+  createdAt: Date | any; // Can be Date, Firestore Timestamp, or string
 }
 
 interface ConfigStatus {
@@ -480,16 +480,40 @@ export default function AdminManagement() {
                             </p>
                             <p className="text-gray-500 text-sm">
                               등록일:{" "}
-                              {new Date(admin.createdAt).toLocaleDateString(
-                                "ko-KR",
-                                {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
+                              {(() => {
+                                try {
+                                  // Handle different date formats from Firestore
+                                  let date: Date;
+                                  if (
+                                    admin.createdAt &&
+                                    typeof admin.createdAt === "object" &&
+                                    "toDate" in admin.createdAt
+                                  ) {
+                                    // Firestore Timestamp object
+                                    date = (admin.createdAt as any).toDate();
+                                  } else if (admin.createdAt) {
+                                    // Regular Date object or string
+                                    date = new Date(admin.createdAt);
+                                  } else {
+                                    return "날짜 정보 없음";
+                                  }
+
+                                  // Check if date is valid
+                                  if (isNaN(date.getTime())) {
+                                    return "날짜 정보 없음";
+                                  }
+
+                                  return date.toLocaleDateString("ko-KR", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  });
+                                } catch (error) {
+                                  return "날짜 정보 없음";
                                 }
-                              )}
+                              })()}
                             </p>
                           </div>
                         </div>
