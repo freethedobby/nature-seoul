@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import KYCForm from "@/components/KYCForm";
+import FirebaseDebug from "@/components/FirebaseDebug";
 
 export default function KYCPage() {
   const { user, loading } = useAuth();
@@ -82,6 +83,7 @@ export default function KYCPage() {
           />
         </div>
       </main>
+      <FirebaseDebug />
     </div>
   );
 }

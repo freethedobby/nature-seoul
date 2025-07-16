@@ -222,24 +222,18 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     try {
       // Check if Firebase is properly configured
       if (!db || !user?.uid) {
-        console.log("Firebase not configured or user not authenticated");
-        // Show success even if Firebase is not available
-        console.log("KYC form data (Firebase unavailable):", {
-          name: data.name,
-          contact: data.contact,
-          hasPreviousTreatment: data.hasPreviousTreatment === "yes",
-          photoFileName: data.eyebrowPhoto?.name || "No file",
+        console.error("❌ Firebase not configured or user not authenticated");
+        console.error("db available:", !!db);
+        console.error("user available:", !!user);
+        console.error("user.uid:", user?.uid);
+        console.error("Environment check:", {
+          apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
         });
 
-        // Simulate a delay to show the loading state
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        console.log("Setting success status");
-        setSubmitStatus("success");
-        reset();
-        setPreviewImage(null);
-        setSelectedFile(null);
-        onSuccess?.();
+        // Don't show success if Firebase is not available - show error instead
+        setSubmitStatus("error");
         return;
       }
 
@@ -290,7 +284,20 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         console.log("KYC Status: pending");
       } catch (firestoreError) {
         console.error("❌ Firestore save failed:", firestoreError);
-        // Continue anyway - the form should still show success
+        console.error("Firestore error details:", {
+          code:
+            firestoreError instanceof Error
+              ? firestoreError.message
+              : "Unknown error",
+          message:
+            firestoreError instanceof Error
+              ? firestoreError.message
+              : "Unknown error",
+          stack:
+            firestoreError instanceof Error ? firestoreError.stack : undefined,
+        });
+        // Don't continue - show error to user
+        throw firestoreError;
       }
 
       console.log("Setting final success status");
