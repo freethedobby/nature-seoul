@@ -196,8 +196,12 @@ export default function Masterboard() {
     return comments
       .filter((comment) => comment.userId === userId)
       .sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        const dateA =
+          (a.createdAt as any)?.toDate?.() ||
+          new Date(a.createdAt as string | number | Date);
+        const dateB =
+          (b.createdAt as any)?.toDate?.() ||
+          new Date(b.createdAt as string | number | Date);
         return dateB.getTime() - dateA.getTime();
       });
   };
@@ -458,7 +462,6 @@ export default function Masterboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setSelectedUser(user)}
                                 className="flex items-center gap-1"
                               >
                                 <MessageSquare className="h-3 w-3" />
@@ -492,11 +495,14 @@ export default function Masterboard() {
                                             {comment.comment}
                                           </p>
                                           <p className="text-gray-500 mt-2 text-xs">
-                                            {comment.createdAt
+                                            {(comment.createdAt as any)
                                               ?.toDate?.()
                                               ?.toLocaleString("ko-KR") ||
                                               new Date(
-                                                comment.createdAt
+                                                comment.createdAt as
+                                                  | string
+                                                  | number
+                                                  | Date
                                               ).toLocaleString("ko-KR")}
                                           </p>
                                         </div>
