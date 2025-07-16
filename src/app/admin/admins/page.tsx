@@ -385,8 +385,9 @@ export default function AdminManagement() {
                           <br />
                           FIREBASE_CLIENT_EMAIL=your-service-account-email
                           <br />
-                          FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE
-                          KEY-----\nYour Private Key\n-----END PRIVATE KEY-----"
+                          FIREBASE_PRIVATE_KEY=&quot;-----BEGIN PRIVATE
+                          KEY-----\nYour Private Key\n-----END PRIVATE
+                          KEY-----&quot;
                         </code>
                         <p className="mt-2">
                           3. Vercel에 환경 변수를 추가하고 재배포하세요
