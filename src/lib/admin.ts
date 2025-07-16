@@ -3,13 +3,23 @@ import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    }),
-  });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      }),
+    });
+  } catch (error) {
+    console.error('Firebase Admin initialization error:', error);
+    // Fallback: try to get default app
+    try {
+      admin.app();
+    } catch (fallbackError) {
+      console.error('Firebase Admin fallback error:', fallbackError);
+    }
+  }
 }
 
 const db = getFirestore();
@@ -42,7 +52,6 @@ export async function addAdmin(email: string) {
   try {
     await db.collection('admins').doc(email).set({
       email: email,
-      role: 'admin',
       isActive: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -63,7 +72,6 @@ export async function removeAdmin(email: string) {
   try {
     await db.collection('admins').doc(email).update({
       isActive: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Remove from allowed emails
