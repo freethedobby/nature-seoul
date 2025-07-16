@@ -37,16 +37,11 @@ import {
   Plus,
   Search,
   Filter,
-  Eye,
   MessageSquare,
   Calendar,
   User,
   Phone,
   Mail,
-  FileText,
-  CheckCircle,
-  XCircle,
-  Clock,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -74,8 +69,8 @@ interface UserData {
   };
   eyebrowProcedure: "not_started" | "in_progress" | "completed";
   adminComments: string;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: unknown;
+  updatedAt: unknown;
 }
 
 interface Comment {
@@ -83,7 +78,7 @@ interface Comment {
   userId: string;
   adminEmail: string;
   comment: string;
-  createdAt: any;
+  createdAt: unknown;
 }
 
 export default function Masterboard() {
@@ -96,7 +91,7 @@ export default function Masterboard() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [newComment, setNewComment] = useState("");
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check admin authorization
