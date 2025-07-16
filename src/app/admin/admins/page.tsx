@@ -13,7 +13,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, ArrowLeft } from "lucide-react";
+import {
+  UserPlus,
+  Trash2,
+  ArrowLeft,
+  AlertTriangle,
+  CheckCircle,
+  Settings,
+  RefreshCw,
+} from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 
@@ -24,6 +32,16 @@ interface AdminUser {
   createdAt: Date;
 }
 
+interface ConfigStatus {
+  isConfigured: boolean;
+  hasProjectId: boolean;
+  hasClientEmail: boolean;
+  hasPrivateKey: boolean;
+  adminTest: boolean;
+  adminError: string | null;
+  environment: string;
+}
+
 export default function AdminManagement() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -31,6 +49,25 @@ export default function AdminManagement() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
+  const [isCheckingConfig, setIsCheckingConfig] = useState(false);
+
+  const checkConfigStatus = async () => {
+    setIsCheckingConfig(true);
+    try {
+      const response = await fetch("/api/admin/check-config");
+      if (response.ok) {
+        const data = await response.json();
+        setConfigStatus(data);
+      } else {
+        console.error("Failed to check config status");
+      }
+    } catch (error) {
+      console.error("Error checking config status:", error);
+    } finally {
+      setIsCheckingConfig(false);
+    }
+  };
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -49,6 +86,9 @@ export default function AdminManagement() {
             setIsAuthorized(data.isAdmin);
             if (!data.isAdmin) {
               router.push("/admin/login");
+            } else {
+              // Check config status after confirming admin access
+              checkConfigStatus();
             }
           } else {
             setIsAuthorized(false);
@@ -117,6 +157,12 @@ export default function AdminManagement() {
 
   const handleAddAdmin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!configStatus?.adminTest) {
+      alert("Firebase 설정이 완료되지 않았습니다. 설정 상태를 확인해주세요.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -133,11 +179,24 @@ export default function AdminManagement() {
         alert("관리자가 성공적으로 추가되었습니다.");
       } else {
         const error = await response.json();
-        alert(error.error || "관리자 추가에 실패했습니다.");
+        let errorMessage = error.error || "관리자 추가에 실패했습니다.";
+
+        // Provide more specific error messages
+        if (errorMessage.includes("Admin functionality not configured")) {
+          errorMessage =
+            "Firebase Admin 설정이 완료되지 않았습니다. 환경 변수를 확인해주세요.";
+        } else if (errorMessage.includes("Internal server error")) {
+          errorMessage =
+            "서버 오류가 발생했습니다. Firebase 연결을 확인해주세요.";
+        }
+
+        alert(errorMessage);
       }
     } catch (error) {
       console.error("Error adding admin:", error);
-      alert("관리자 추가 중 오류가 발생했습니다.");
+      alert(
+        "관리자 추가 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -219,6 +278,127 @@ export default function AdminManagement() {
         </div>
 
         <div className="space-y-6">
+          {/* Configuration Status Card */}
+          {configStatus && (
+            <Card
+              className={
+                configStatus.isConfigured && configStatus.adminTest
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    <CardTitle className="text-lg">관리자 설정 상태</CardTitle>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={checkConfigStatus}
+                    disabled={isCheckingConfig}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${
+                        isCheckingConfig ? "animate-spin" : ""
+                      }`}
+                    />
+                    새로고침
+                  </Button>
+                </div>
+                <CardDescription>
+                  Firebase Admin SDK 설정 상태를 확인합니다
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Environment Variables Status */}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="flex items-center gap-2">
+                      {configStatus.hasProjectId ? (
+                        <CheckCircle className="text-green-600 h-4 w-4" />
+                      ) : (
+                        <AlertTriangle className="text-red-600 h-4 w-4" />
+                      )}
+                      <span className="text-sm">Project ID</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {configStatus.hasClientEmail ? (
+                        <CheckCircle className="text-green-600 h-4 w-4" />
+                      ) : (
+                        <AlertTriangle className="text-red-600 h-4 w-4" />
+                      )}
+                      <span className="text-sm">Client Email</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {configStatus.hasPrivateKey ? (
+                        <CheckCircle className="text-green-600 h-4 w-4" />
+                      ) : (
+                        <AlertTriangle className="text-red-600 h-4 w-4" />
+                      )}
+                      <span className="text-sm">Private Key</span>
+                    </div>
+                  </div>
+
+                  {/* Connection Test */}
+                  <div className="flex items-center gap-2">
+                    {configStatus.adminTest ? (
+                      <CheckCircle className="text-green-600 h-4 w-4" />
+                    ) : (
+                      <AlertTriangle className="text-red-600 h-4 w-4" />
+                    )}
+                    <span className="text-sm">
+                      {configStatus.adminTest
+                        ? "Firebase 연결 성공"
+                        : "Firebase 연결 실패"}
+                    </span>
+                  </div>
+
+                  {/* Error Message */}
+                  {configStatus.adminError && (
+                    <div className="bg-red-100 border-red-200 rounded-md border p-3">
+                      <p className="text-red-800 text-sm font-medium">
+                        연결 오류:
+                      </p>
+                      <p className="text-red-700 mt-1 text-xs">
+                        {configStatus.adminError}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Setup Instructions */}
+                  {(!configStatus.isConfigured || !configStatus.adminTest) && (
+                    <div className="bg-yellow-100 border-yellow-200 rounded-md border p-3">
+                      <p className="text-yellow-800 text-sm font-medium">
+                        설정이 필요합니다:
+                      </p>
+                      <div className="text-yellow-700 mt-2 space-y-1 text-xs">
+                        <p>
+                          1. Firebase Console에서 서비스 계정 키를
+                          다운로드하세요
+                        </p>
+                        <p>2. 환경 변수를 설정하세요:</p>
+                        <code className="bg-yellow-200 mt-1 block rounded px-2 py-1 text-xs">
+                          FIREBASE_PROJECT_ID=your-project-id
+                          <br />
+                          FIREBASE_CLIENT_EMAIL=your-service-account-email
+                          <br />
+                          FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE
+                          KEY-----\nYour Private Key\n-----END PRIVATE KEY-----"
+                        </code>
+                        <p className="mt-2">
+                          3. Vercel에 환경 변수를 추가하고 재배포하세요
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>새 관리자 추가</CardTitle>
@@ -235,13 +415,27 @@ export default function AdminManagement() {
                     value={newAdminEmail}
                     onChange={(e) => setNewAdminEmail(e.target.value)}
                     required
+                    disabled={!configStatus?.adminTest}
                   />
                 </div>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !configStatus?.adminTest}
+                  title={
+                    !configStatus?.adminTest
+                      ? "Firebase 설정이 완료되지 않았습니다"
+                      : ""
+                  }
+                >
                   <UserPlus className="mr-2 h-4 w-4" />
                   추가
                 </Button>
               </form>
+              {!configStatus?.adminTest && (
+                <p className="text-red-600 mt-2 text-sm">
+                  ⚠️ 관리자 추가를 위해서는 Firebase 설정을 완료해야 합니다.
+                </p>
+              )}
             </CardContent>
           </Card>
 

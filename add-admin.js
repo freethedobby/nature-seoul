@@ -1,41 +1,50 @@
-const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, addDoc, serverTimestamp } = require('firebase/firestore');
-
-// Load environment variables
+const admin = require('firebase-admin');
 require('dotenv').config({ path: '.env.local' });
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
-};
-
-console.log('Firebase config:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain
-});
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-async function addAdminUser() {
+// Initialize Firebase Admin
+if (!admin.apps.length) {
   try {
-    const adminDoc = {
-      email: 'blacksheepwall.xyz@gmail.com',
-      isActive: true,
-      createdAt: serverTimestamp(),
-    };
-    
-    console.log('Adding admin user:', adminDoc.email);
-    const docRef = await addDoc(collection(db, 'admins'), adminDoc);
-    console.log('✅ Admin added successfully with ID:', docRef.id);
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      }),
+    });
+    console.log('✅ Firebase Admin initialized successfully');
   } catch (error) {
-    console.error('❌ Error adding admin:', error);
+    console.error('❌ Firebase Admin initialization error:', error);
+    process.exit(1);
   }
 }
 
-addAdminUser(); 
+const db = admin.firestore();
+
+async function addAdminUser(email) {
+  try {
+    if (!email) {
+      console.error('❌ Email is required');
+      console.log('Usage: node add-admin.js <email>');
+      process.exit(1);
+    }
+
+    const adminDoc = {
+      email: email,
+      isActive: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    
+    console.log('Adding admin user:', adminDoc.email);
+    
+    // Use the email as the document ID for easier querying
+    await db.collection('admins').doc(email).set(adminDoc);
+    console.log('✅ Admin added successfully:', email);
+  } catch (error) {
+    console.error('❌ Error adding admin:', error);
+    process.exit(1);
+  }
+}
+
+// Get email from command line argument
+const email = process.argv[2];
+addAdminUser(email); 
