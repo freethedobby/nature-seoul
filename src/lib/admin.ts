@@ -1,8 +1,8 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
+// Initialize Firebase Admin if not already initialized and environment variables are available
+if (!admin.apps.length && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
@@ -13,12 +13,6 @@ if (!admin.apps.length) {
     });
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
-    // Fallback: try to get default app
-    try {
-      admin.app();
-    } catch (fallbackError) {
-      console.error('Firebase Admin fallback error:', fallbackError);
-    }
   }
 }
 
@@ -38,6 +32,12 @@ export async function isAdmin(email: string): Promise<boolean> {
     return true;
   }
   
+  // Check if Firebase Admin is initialized
+  if (!admin.apps.length) {
+    console.log('Firebase Admin not initialized, using hardcoded admins only');
+    return false;
+  }
+  
   // Check Firestore admins collection
   try {
     const adminDoc = await db.collection('admins').doc(email).get();
@@ -49,6 +49,11 @@ export async function isAdmin(email: string): Promise<boolean> {
 }
 
 export async function addAdmin(email: string) {
+  // Check if Firebase Admin is initialized
+  if (!admin.apps.length) {
+    throw new Error('Firebase Admin not initialized. Please set environment variables.');
+  }
+  
   try {
     await db.collection('admins').doc(email).set({
       email: email,
@@ -69,6 +74,11 @@ export async function addAdmin(email: string) {
 }
 
 export async function removeAdmin(email: string) {
+  // Check if Firebase Admin is initialized
+  if (!admin.apps.length) {
+    throw new Error('Firebase Admin not initialized. Please set environment variables.');
+  }
+  
   try {
     await db.collection('admins').doc(email).update({
       isActive: false,
