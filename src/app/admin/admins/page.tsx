@@ -29,7 +29,7 @@ interface AdminUser {
   id: string;
   email: string;
   isActive: boolean;
-  createdAt: Date | any; // Can be Date, Firestore Timestamp, or string
+  createdAt: unknown; // Can be Date, Firestore Timestamp, or string
 }
 
 interface ConfigStatus {
@@ -490,10 +490,14 @@ export default function AdminManagement() {
                                     "toDate" in admin.createdAt
                                   ) {
                                     // Firestore Timestamp object
-                                    date = (admin.createdAt as any).toDate();
+                                    date = (
+                                      admin.createdAt as { toDate(): Date }
+                                    ).toDate();
                                   } else if (admin.createdAt) {
                                     // Regular Date object or string
-                                    date = new Date(admin.createdAt);
+                                    date = new Date(
+                                      admin.createdAt as string | number | Date
+                                    );
                                   } else {
                                     return "날짜 정보 없음";
                                   }
@@ -510,7 +514,7 @@ export default function AdminManagement() {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                   });
-                                } catch (error) {
+                                } catch {
                                   return "날짜 정보 없음";
                                 }
                               })()}
