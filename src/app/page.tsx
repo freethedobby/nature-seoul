@@ -3,130 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, User, LogOut, Loader2, Menu } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { signOutUser } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import AdminModeToggle from "@/components/AdminModeToggle";
+import CustomerHeader from "@/components/CustomerHeader";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await signOutUser();
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const AuthButtons = () => {
-    if (loading) {
-      return (
-        <div className="flex items-center space-x-4">
-          <div className="animate-pulse bg-gray-200 w-24 h-10 rounded-xl"></div>
-          <div className="animate-pulse bg-gray-200 w-24 h-10 rounded-xl"></div>
-        </div>
-      );
-    }
-
-    if (user) {
-      return (
-        <div className="flex items-center space-x-3">
-          <AdminModeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user.email}</span>
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {/* Show email as first item, disabled, for mobile */}
-              <DropdownMenuItem
-                disabled
-                className="cursor-default opacity-100 sm:hidden"
-              >
-                {user.email}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-                대시보드
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="text-red-600 focus:text-red-600"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    로그아웃 중...
-                  </>
-                ) : (
-                  <>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    로그아웃
-                  </>
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center space-x-3">
-        <Button
-          variant="outline"
-          onClick={() => router.push("/login")}
-          className="hidden sm:flex"
-        >
-          로그인
-        </Button>
-        <Button onClick={() => router.push("/login")}>시작하기</Button>
-      </div>
-    );
-  };
 
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white">
-      <header className="border-gray-100 sticky top-0 z-50 border-b bg-white/80 px-4 py-4 backdrop-blur-md">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="transition-opacity hover:opacity-80">
-              <div>
-                <h1 className="text-black text-xl font-light tracking-wide">
-                  nature.seoul
-                </h1>
-                <p className="text-gray-400 text-[10px] tracking-wide">
-                  premium studio
-                </p>
-              </div>
-            </Link>
-
-            <AuthButtons />
-          </div>
-        </div>
-      </header>
+      <CustomerHeader />
 
       <main className="relative flex min-h-[90vh] items-start justify-center overflow-hidden md:min-h-screen md:items-center">
         <div className="absolute bottom-16 right-0 z-0 h-2/5 w-3/4 md:right-0 md:top-0 md:bottom-0 md:h-full md:w-2/3">

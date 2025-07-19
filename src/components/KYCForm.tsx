@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { createNotification, notificationTemplates } from "@/lib/notifications";
 
 // Form validation schema
 const kycSchema = z.object({
@@ -295,6 +296,39 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       reset();
       setPreviewImage(null);
       setSelectedFile(null);
+
+      // Create notifications
+      try {
+        // Create customer notification
+        await createNotification({
+          userId: user.uid,
+          type: "kyc_submitted",
+          title: "KYC 신청 완료",
+          message:
+            "KYC 신청이 성공적으로 제출되었습니다. 검토 후 연락드리겠습니다.",
+        });
+
+        // Create admin notification for all admins
+        const adminNotification = notificationTemplates.adminKycNew(
+          data.name,
+          user.email || ""
+        );
+        await createNotification({
+          userId: "admin", // Special ID for admin notifications
+          type: "admin_kyc_new",
+          title: adminNotification.title,
+          message: adminNotification.message,
+          data: {
+            customerName: data.name,
+            customerEmail: user.email,
+            customerId: user.uid,
+          },
+        });
+      } catch (notificationError) {
+        console.error("Error creating notifications:", notificationError);
+        // Don't fail the form submission if notifications fail
+      }
+
       onSuccess?.();
     } catch (error) {
       console.error("=== KYC SUBMISSION ERROR ===");
