@@ -10,7 +10,6 @@ import CustomerHeader from "@/components/CustomerHeader";
 
 export default function Home() {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white">

@@ -34,8 +34,8 @@ export async function GET() {
       if (status.configuration.hasSendGrid) {
         // Test SendGrid connection
         try {
-          const sgMail = require('@sendgrid/mail');
-          sgMail.setApiKey(sendGridApiKey);
+          const sgMail = await import('@sendgrid/mail');
+          sgMail.default.setApiKey(sendGridApiKey!);
           
           // Test API key by making a simple request
           const response = await fetch('https://api.sendgrid.com/v3/user/profile', {

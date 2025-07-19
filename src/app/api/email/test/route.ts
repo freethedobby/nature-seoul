@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
 
 async function sendWithSendGrid(to: string, testType: string, apiKey: string, fromEmail: string) {
   try {
-    const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(apiKey);
+    const sgMail = await import('@sendgrid/mail');
+    sgMail.default.setApiKey(apiKey);
 
     const { subject, text, html } = getEmailContent(testType);
 
@@ -40,7 +40,7 @@ async function sendWithSendGrid(to: string, testType: string, apiKey: string, fr
       html,
     };
 
-    await sgMail.send(msg);
+    await sgMail.default.send(msg);
 
     return NextResponse.json(
       { message: "Test email sent successfully via SendGrid" },

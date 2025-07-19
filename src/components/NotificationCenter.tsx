@@ -28,7 +28,7 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: Date;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 interface NotificationCenterProps {

@@ -6,7 +6,7 @@ export interface CreateNotificationParams {
   type: "kyc_submitted" | "kyc_approved" | "kyc_rejected" | "reservation_created" | "reservation_cancelled" | "admin_kyc_new";
   title: string;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export async function createNotification(params: CreateNotificationParams) {
