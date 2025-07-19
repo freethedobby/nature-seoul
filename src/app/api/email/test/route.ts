@@ -1,194 +1,161 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
 export async function POST(request: NextRequest) {
   try {
-    const { to, testType = "kyc" } = await request.json();
+    const { to, testType } = await request.json();
 
-    if (!to) {
-      return NextResponse.json(
-        { error: "Email address required" },
-        { status: 400 }
-      );
+    // Check if SendGrid is configured
+    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
+
+    if (sendGridApiKey && sendGridFromEmail) {
+      // Use SendGrid
+      return await sendWithSendGrid(to, testType, sendGridApiKey, sendGridFromEmail);
+    } else {
+      // Fallback to Gmail
+      return await sendWithGmail(to, testType);
     }
+  } catch (error) {
+    console.error("Email test error:", error);
+    return NextResponse.json(
+      { error: "Failed to send test email" },
+      { status: 500 }
+    );
+  }
+}
 
-    // Check environment variables
-    console.log("=== EMAIL TEST DEBUG ===");
-    console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Set" : "Not set");
-    console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Set" : "Not set");
-    
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      return NextResponse.json(
-        { 
-          error: "Email configuration missing", 
-          details: "EMAIL_USER or EMAIL_PASS environment variables are not set",
-          emailUser: !!process.env.EMAIL_USER,
-          emailPass: !!process.env.EMAIL_PASS
-        },
-        { status: 500 }
-      );
-    }
+async function sendWithSendGrid(to: string, testType: string, apiKey: string, fromEmail: string) {
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(apiKey);
 
-    // Test email templates
-    let emailSubject = "";
-    let emailHtml = "";
+    const { subject, text, html } = getEmailContent(testType);
 
-    if (testType === "kyc") {
-      emailSubject = `[테스트] 네이처서울 KYC 승인 안내`;
-      emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 24px;">네이처서울</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">KYC 승인 안내 (테스트)</p>
-          </div>
-          
-          <div style="background: white; padding: 30px; border: 1px solid #e1e5e9; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              안녕하세요, <strong>테스트 사용자</strong>님
-            </p>
-            
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              이는 <strong>테스트 이메일</strong>입니다.
-            </p>
-            
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <h4 style="margin: 0 0 10px 0; color: #155724;">🎉 테스트 성공!</h4>
-              <p style="margin: 0; color: #155724;">
-                이메일 시스템이 정상적으로 작동하고 있습니다.
-              </p>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin: 0 0 10px 0; color: #333;">테스트 정보</h3>
-              <p style="margin: 0; color: #333;">
-                📧 받는 사람: ${to}<br>
-                🕐 전송 시간: ${new Date().toLocaleString('ko-KR')}<br>
-                🔧 테스트 타입: KYC 승인
-              </p>
-            </div>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e1e5e9;">
-              <p style="font-size: 14px; color: #666; margin-bottom: 10px;">
-                이 이메일은 테스트 목적으로 전송되었습니다.
-              </p>
-              <p style="font-size: 14px; color: #666; margin: 0;">
-                📧 이메일: info@natureseoul.com<br>
-                📞 전화: 02-1234-5678
-              </p>
-            </div>
-          </div>
-          
-          <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
-            © 2024 네이처서울. All rights reserved.
-          </div>
-        </div>
-      `;
-    } else if (testType === "rejection") {
-      emailSubject = `[테스트] 네이처서울 KYC 반려 안내`;
-      emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 24px;">네이처서울</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">KYC 반려 안내 (테스트)</p>
-          </div>
-          
-          <div style="background: white; padding: 30px; border: 1px solid #e1e5e9; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              안녕하세요, <strong>테스트 사용자</strong>님
-            </p>
-            
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              이는 <strong>테스트 이메일</strong>입니다.
-            </p>
-            
-            <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <h4 style="margin: 0 0 10px 0; color: #721c24;">⚠️ 테스트 - 반려 안내</h4>
-              <p style="margin: 0; color: #721c24;">
-                이는 반려 이메일 템플릿 테스트입니다.
-              </p>
-              <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 5px;">
-                <h5 style="margin: 0 0 8px 0; color: #721c24; font-size: 14px;">📝 테스트 반려 사유</h5>
-                <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.4;">이것은 테스트용 반려 사유입니다.</p>
-              </div>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin: 0 0 10px 0; color: #333;">테스트 정보</h3>
-              <p style="margin: 0; color: #333;">
-                📧 받는 사람: ${to}<br>
-                🕐 전송 시간: ${new Date().toLocaleString('ko-KR')}<br>
-                🔧 테스트 타입: KYC 반려
-              </p>
-            </div>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e1e5e9;">
-              <p style="font-size: 14px; color: #666; margin-bottom: 10px;">
-                이 이메일은 테스트 목적으로 전송되었습니다.
-              </p>
-              <p style="font-size: 14px; color: #666; margin: 0;">
-                📧 이메일: info@natureseoul.com<br>
-                📞 전화: 02-1234-5678
-              </p>
-            </div>
-          </div>
-          
-          <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
-            © 2024 네이처서울. All rights reserved.
-          </div>
-        </div>
-      `;
-    }
-
-    // Test transporter connection
-    console.log("Testing transporter connection...");
-    try {
-      await transporter.verify();
-      console.log("Transporter verification successful");
-    } catch (verifyError) {
-      console.error("Transporter verification failed:", verifyError);
-      return NextResponse.json(
-        { 
-          error: "Email server connection failed", 
-          details: verifyError instanceof Error ? verifyError.message : "Unknown error",
-          suggestion: "Check Gmail app password and 2FA settings"
-        },
-        { status: 500 }
-      );
-    }
-
-    // Send email
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: to,
-      subject: emailSubject,
-      html: emailHtml,
+    const msg = {
+      to,
+      from: fromEmail,
+      subject,
+      text,
+      html,
     };
 
-    console.log("Sending email to:", to);
-    console.log("From:", process.env.EMAIL_USER);
-    console.log("Subject:", emailSubject);
-    
-    const result = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", result.messageId);
+    await sgMail.send(msg);
 
     return NextResponse.json(
-      { message: "Test email sent successfully", to, testType },
+      { message: "Test email sent successfully via SendGrid" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error sending test email:", error);
+    console.error("SendGrid error:", error);
     return NextResponse.json(
-      { error: "Failed to send test email", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: `SendGrid error: ${error instanceof Error ? error.message : "Unknown error"}` },
       { status: 500 }
     );
+  }
+}
+
+async function sendWithGmail(to: string, testType: string) {
+  try {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
+
+    if (!emailUser || !emailPass) {
+      return NextResponse.json(
+        { error: "Gmail credentials not configured" },
+        { status: 500 }
+      );
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+    });
+
+    const { subject, text, html } = getEmailContent(testType);
+
+    await transporter.sendMail({
+      from: emailUser,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    return NextResponse.json(
+      { message: "Test email sent successfully via Gmail" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Gmail error:", error);
+    return NextResponse.json(
+      { error: `Gmail error: ${error instanceof Error ? error.message : "Unknown error"}` },
+      { status: 500 }
+    );
+  }
+}
+
+function getEmailContent(testType: string) {
+  if (testType === "kyc") {
+    return {
+      subject: "🎉 KYC 승인 완료 - Nature Seoul",
+      text: `안녕하세요!
+
+축하합니다! 귀하의 KYC(고객확인)가 성공적으로 승인되었습니다.
+
+이제 Nature Seoul의 모든 서비스를 이용하실 수 있습니다.
+
+감사합니다.
+Nature Seoul 팀`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #28a745;">🎉 KYC 승인 완료</h2>
+          <p>안녕하세요!</p>
+          <p>축하합니다! 귀하의 KYC(고객확인)가 성공적으로 승인되었습니다.</p>
+          <p>이제 Nature Seoul의 모든 서비스를 이용하실 수 있습니다.</p>
+          <hr style="margin: 20px 0;">
+          <p style="color: #666;">감사합니다.<br>Nature Seoul 팀</p>
+        </div>
+      `,
+    };
+  } else {
+    return {
+      subject: "❌ KYC 반려 안내 - Nature Seoul",
+      text: `안녕하세요!
+
+죄송합니다. 귀하의 KYC(고객확인) 신청이 반려되었습니다.
+
+반려 사유: 제출된 서류가 불완전하거나 명확하지 않습니다.
+
+재신청을 원하시면 다음 사항을 확인해 주세요:
+- 모든 필수 서류가 첨부되었는지 확인
+- 서류가 명확하고 읽기 쉬운지 확인
+- 최신 서류인지 확인
+
+문의사항이 있으시면 언제든 연락주세요.
+
+감사합니다.
+Nature Seoul 팀`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #dc3545;">❌ KYC 반려 안내</h2>
+          <p>안녕하세요!</p>
+          <p>죄송합니다. 귀하의 KYC(고객확인) 신청이 반려되었습니다.</p>
+          <p><strong>반려 사유:</strong> 제출된 서류가 불완전하거나 명확하지 않습니다.</p>
+          <p><strong>재신청을 원하시면 다음 사항을 확인해 주세요:</strong></p>
+          <ul>
+            <li>모든 필수 서류가 첨부되었는지 확인</li>
+            <li>서류가 명확하고 읽기 쉬운지 확인</li>
+            <li>최신 서류인지 확인</li>
+          </ul>
+          <p>문의사항이 있으시면 언제든 연락주세요.</p>
+          <hr style="margin: 20px 0;">
+          <p style="color: #666;">감사합니다.<br>Nature Seoul 팀</p>
+        </div>
+      `,
+    };
   }
 } 
