@@ -49,7 +49,7 @@ export default function NotificationCenter({
       // Admin notifications - show all KYC submissions and admin-specific notifications
       q = query(
         collection(db, "notifications"),
-        where("type", "in", ["admin_kyc_new", "kyc_submitted"]),
+        where("userId", "==", "admin"),
         orderBy("createdAt", "desc")
       );
     } else if (user?.uid) {

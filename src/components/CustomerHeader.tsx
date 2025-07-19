@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationCenter from "@/components/NotificationCenter";
+import AdminModeToggle from "@/components/AdminModeToggle";
 import { Button } from "@/components/ui/button";
 import { Home, User, Calendar, LogOut } from "lucide-react";
 
@@ -69,6 +70,7 @@ export default function CustomerHeader() {
             {user ? (
               <>
                 <NotificationCenter variant="customer" />
+                <AdminModeToggle />
                 <div className="text-gray-600 hidden text-sm sm:block">
                   {user.email}
                 </div>
