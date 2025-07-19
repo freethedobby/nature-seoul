@@ -200,12 +200,20 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     if (!user) {
       console.error("No user found");
       setSubmitStatus("error");
+      setIsSubmitting(false);
       return;
     }
 
     console.log("Setting isSubmitting to true");
     setIsSubmitting(true);
     setSubmitStatus("idle");
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log("Submission timeout - forcing completion");
+      setIsSubmitting(false);
+      setSubmitStatus("error");
+    }, 30000); // 30 second timeout
 
     // Remove timeout that was hiding errors
     // const timeoutId = setTimeout(() => {
@@ -300,8 +308,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       }
 
       console.log("Setting final success status");
-      // clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       setSubmitStatus("success");
+      setIsSubmitting(false);
       reset();
       setPreviewImage(null);
       setSelectedFile(null);
@@ -315,10 +324,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         user: user?.email,
         formData: data,
       });
-      // clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       setSubmitStatus("error");
-    } finally {
-      console.log("Setting isSubmitting to false");
       setIsSubmitting(false);
     }
   };
@@ -620,9 +627,28 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               setValue("hasPreviousTreatment", "no");
               console.log("Test data filled");
             }}
-            className="bg-blue-500 hover:bg-blue-600 mb-4 w-full text-white"
+            className="bg-blue-500 hover:bg-blue-600 mb-2 w-full text-white"
           >
             Fill Test Data
+          </Button>
+
+          {/* Test Submit Button (bypasses Firebase) */}
+          <Button
+            type="button"
+            onClick={async () => {
+              console.log("=== TEST SUBMIT (BYPASS FIREBASE) ===");
+              setIsSubmitting(true);
+
+              // Simulate processing time
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              console.log("Test submission completed");
+              setIsSubmitting(false);
+              setSubmitStatus("success");
+            }}
+            className="bg-green-500 hover:bg-green-600 mb-4 w-full text-white"
+          >
+            Test Submit (Bypass Firebase)
           </Button>
 
           {/* Submit Button */}
