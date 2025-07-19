@@ -53,7 +53,6 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [testClickCount, setTestClickCount] = useState(0);
 
   console.log(
     "KYCForm rendered - user:",
@@ -571,112 +570,6 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               </p>
             )}
           </div>
-
-          {/* Test Button */}
-          <Button
-            type="button"
-            onClick={() => {
-              setTestClickCount((prev) => prev + 1);
-              console.log("=== TEST BUTTON CLICKED ===", testClickCount + 1);
-              const currentData = watch();
-              console.log("Current form data:", currentData);
-              console.log("Form errors:", errors);
-              console.log("User:", user);
-
-              // Show alert with form data for immediate feedback
-              alert(
-                `Form Data:\nName: ${currentData.name || "empty"}\nContact: ${
-                  currentData.contact || "empty"
-                }\nPrevious Treatment: ${
-                  currentData.hasPreviousTreatment || "empty"
-                }\nPhoto: ${
-                  currentData.eyebrowPhoto ? "selected" : "not selected"
-                }`
-              );
-            }}
-            className="bg-gray-500 hover:bg-gray-600 mb-2 w-full text-white"
-          >
-            Test Form Data (Clicked: {testClickCount})
-          </Button>
-
-          {/* Fill Test Data Button */}
-          <Button
-            type="button"
-            onClick={() => {
-              console.log("=== FILLING TEST DATA ===");
-              setValue("name", "테스트 사용자");
-              setValue("contact", "01012345678");
-              setValue("hasPreviousTreatment", "no");
-              console.log("Test data filled");
-            }}
-            className="bg-blue-500 hover:bg-blue-600 mb-2 w-full text-white"
-          >
-            Fill Test Data
-          </Button>
-
-          {/* Test Submit Button (bypasses Firebase) */}
-          <Button
-            type="button"
-            onClick={async () => {
-              console.log("=== TEST SUBMIT (BYPASS FIREBASE) ===");
-              setIsSubmitting(true);
-
-              // Simulate processing time
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-
-              console.log("Test submission completed");
-              setIsSubmitting(false);
-              setSubmitStatus("success");
-            }}
-            className="bg-green-500 hover:bg-green-600 mb-2 w-full text-white"
-          >
-            Test Submit (Bypass Firebase)
-          </Button>
-
-          {/* Test Firebase Submit (without image) */}
-          <Button
-            type="button"
-            onClick={async () => {
-              console.log("=== TEST FIREBASE SUBMIT (NO IMAGE) ===");
-              setIsSubmitting(true);
-
-              try {
-                // Test Firebase connectivity only
-                const testData = {
-                  userId: user?.uid,
-                  email: user?.email,
-                  name: "Firebase Test",
-                  contact: "01012345678",
-                  photoURL: "test-url",
-                  photoType: "test",
-                  kycStatus: "pending",
-                  hasPreviousTreatment: false,
-                  createdAt: serverTimestamp(),
-                  submittedAt: serverTimestamp(),
-                };
-
-                console.log("Testing Firestore save...");
-                await setDoc(
-                  firestoreDoc(db, "users", user?.uid || "test"),
-                  testData,
-                  {
-                    merge: true,
-                  }
-                );
-
-                console.log("✅ Firebase test successful");
-                setSubmitStatus("success");
-              } catch (error) {
-                console.error("❌ Firebase test failed:", error);
-                setSubmitStatus("error");
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-            className="bg-orange-500 hover:bg-orange-600 mb-4 w-full text-white"
-          >
-            Test Firebase (No Image)
-          </Button>
 
           {/* Submit Button */}
           <Button

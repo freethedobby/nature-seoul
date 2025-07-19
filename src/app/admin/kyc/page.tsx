@@ -50,6 +50,7 @@ interface UserData {
   photoURL: string;
   photoType?: "base64" | "firebase-storage";
   kycStatus: string;
+  hasPreviousTreatment?: boolean;
   rejectReason?: string;
   createdAt: Date;
   approvedAt?: Date;
@@ -459,6 +460,19 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
+                          {user.hasPreviousTreatment !== undefined && (
+                            <span
+                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
+                                user.hasPreviousTreatment
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {user.hasPreviousTreatment
+                                ? "기존 시술 경험 있음"
+                                : "기존 시술 경험 없음"}
+                            </span>
+                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
@@ -582,6 +596,19 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
+                          {user.hasPreviousTreatment !== undefined && (
+                            <span
+                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
+                                user.hasPreviousTreatment
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {user.hasPreviousTreatment
+                                ? "기존 시술 경험 있음"
+                                : "기존 시술 경험 없음"}
+                            </span>
+                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
@@ -683,6 +710,19 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
+                          {user.hasPreviousTreatment !== undefined && (
+                            <span
+                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
+                                user.hasPreviousTreatment
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {user.hasPreviousTreatment
+                                ? "기존 시술 경험 있음"
+                                : "기존 시술 경험 없음"}
+                            </span>
+                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
