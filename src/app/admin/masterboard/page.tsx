@@ -94,7 +94,7 @@ export default function Masterboard() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check admin authorization
+  // Check admin authorization - Masterboard component
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!loading && user?.email) {
