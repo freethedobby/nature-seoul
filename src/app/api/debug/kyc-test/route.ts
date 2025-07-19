@@ -33,10 +33,10 @@ export async function GET() {
     }));
 
     // Test 3: Check for recent KYC submissions
-    const recentUsers = users.filter((user: { kycStatus?: string; createdAt?: any }) => 
+    const recentUsers = users.filter((user: { kycStatus?: string; createdAt?: admin.firestore.Timestamp }) => 
       user.kycStatus === "pending" && 
       user.createdAt && 
-      new Date((user.createdAt as any).toDate()).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Last 24 hours
+      new Date(user.createdAt.toDate()).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     return NextResponse.json({
