@@ -383,9 +383,13 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       <CardContent className="space-y-6">
         <form
           onSubmit={(e) => {
+            console.log("=== FORM SUBMIT EVENT ===");
             console.log("Form submit event triggered");
             console.log("Form validation errors:", errors);
             console.log("Form is valid:", Object.keys(errors).length === 0);
+            console.log("User state:", user);
+            console.log("User UID:", user?.uid);
+            console.log("Is submitting:", isSubmitting);
             handleSubmit(onSubmit)(e);
           }}
           className="space-y-6"
@@ -578,6 +582,20 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               </p>
             )}
           </div>
+
+          {/* Test Button */}
+          <Button
+            type="button"
+            onClick={() => {
+              console.log("=== TEST BUTTON CLICKED ===");
+              console.log("Current form data:", watch());
+              console.log("Form errors:", errors);
+              console.log("User:", user);
+            }}
+            className="bg-gray-500 hover:bg-gray-600 mb-4 w-full text-white"
+          >
+            Test Form Data
+          </Button>
 
           {/* Submit Button */}
           <Button
