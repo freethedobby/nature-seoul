@@ -251,7 +251,18 @@ export default function Masterboard() {
       // Send email notifications for status changes
       for (const change of statusChanges) {
         try {
-          const emailData: any = {
+          const emailData: {
+            to: string;
+            userName: string;
+            statusType: string;
+            newStatus: string;
+            subject: string;
+            html: string;
+            reservationInfo?: {
+              date: string;
+              time: string;
+            };
+          } = {
             to: currentUser.email,
             userName: currentUser.name,
             statusType: change.type,
