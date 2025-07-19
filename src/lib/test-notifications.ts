@@ -2,6 +2,7 @@ import { createNotification } from "./notifications";
 
 // Test function to create sample notifications
 export async function createTestNotifications(userId: string, isAdmin: boolean = false) {
+  console.log("Creating test notifications for:", { userId, isAdmin });
   try {
     if (isAdmin) {
       // Create admin notifications
@@ -14,10 +15,19 @@ export async function createTestNotifications(userId: string, isAdmin: boolean =
 
       await createNotification({
         userId: "admin",
-        type: "admin_kyc_new",
-        title: "KYC 승인 요청",
-        message: "새로운 고객의 KYC 검토가 필요합니다.",
+        type: "admin_reservation_new",
+        title: "새로운 예약",
+        message: "user@example.com님이 2024년 1월 15일 오후 2시에 예약했습니다.",
       });
+
+      await createNotification({
+        userId: "admin",
+        type: "admin_reservation_cancelled",
+        title: "예약 취소",
+        message: "user@example.com님이 2024년 1월 14일 오후 3시 예약을 취소했습니다.",
+      });
+      
+      console.log("Admin test notifications created successfully!");
     } else {
       // Create user notifications
       await createNotification({
@@ -40,6 +50,8 @@ export async function createTestNotifications(userId: string, isAdmin: boolean =
         title: "예약 완료",
         message: "2024년 1월 15일 오후 2시 예약이 완료되었습니다.",
       });
+      
+      console.log("User test notifications created successfully!");
     }
 
     console.log("Test notifications created successfully!");

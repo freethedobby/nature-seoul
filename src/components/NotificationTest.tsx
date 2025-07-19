@@ -15,6 +15,12 @@ export default function NotificationTest() {
   const handleCreateTestNotifications = async () => {
     if (!user?.uid) return;
 
+    console.log(
+      "NotificationTest: Creating notifications for user:",
+      user.email,
+      "isAdmin:",
+      isAdmin
+    );
     setIsLoading(true);
     try {
       await createTestNotifications(user.uid, isAdmin);
