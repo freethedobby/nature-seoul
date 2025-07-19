@@ -208,16 +208,16 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     setIsSubmitting(true);
     setSubmitStatus("idle");
 
-    // Add a timeout to prevent getting stuck
-    const timeoutId = setTimeout(() => {
-      console.log("KYC submission timeout - forcing success");
-      setSubmitStatus("success");
-      setIsSubmitting(false);
-      reset();
-      setPreviewImage(null);
-      setSelectedFile(null);
-      onSuccess?.();
-    }, 10000); // 10 second timeout
+    // Remove timeout that was hiding errors
+    // const timeoutId = setTimeout(() => {
+    //   console.log("KYC submission timeout - forcing success");
+    //   setSubmitStatus("success");
+    //   setIsSubmitting(false);
+    //   reset();
+    //   setPreviewImage(null);
+    //   setSelectedFile(null);
+    //   onSuccess?.();
+    // }, 10000); // 10 second timeout
 
     try {
       // Check if Firebase is properly configured
@@ -301,7 +301,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       }
 
       console.log("Setting final success status");
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId);
       setSubmitStatus("success");
       reset();
       setPreviewImage(null);
@@ -316,7 +316,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         user: user?.email,
         formData: data,
       });
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId);
       setSubmitStatus("error");
     } finally {
       console.log("Setting isSubmitting to false");
@@ -336,6 +336,33 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               <br />
               검토 후 연락드리겠습니다.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (submitStatus === "error") {
+    return (
+      <Card className="mx-auto w-full max-w-md">
+        <CardContent className="pt-6">
+          <div className="space-y-4 text-center">
+            <AlertCircle className="text-red-500 mx-auto h-16 w-16" />
+            <h3 className="text-gray-900 text-xl font-semibold">제출 실패</h3>
+            <p className="text-gray-600">
+              KYC 신청 제출 중 오류가 발생했습니다.
+              <br />
+              다시 시도해 주세요.
+            </p>
+            <Button
+              onClick={() => {
+                setSubmitStatus("idle" as const);
+                setIsSubmitting(false);
+              }}
+              className="mt-4"
+            >
+              다시 시도
+            </Button>
           </div>
         </CardContent>
       </Card>
