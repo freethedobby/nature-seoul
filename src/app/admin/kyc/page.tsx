@@ -376,16 +376,25 @@ export default function KYCDashboard() {
               </h1>
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              router.push("/dashboard");
-            }}
-            className="flex items-center gap-2"
-          >
-            <Eye className="h-4 w-4" />
-            사용자 페이지로
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/admin/email-test")}
+              className="flex items-center gap-2"
+            >
+              이메일 테스트
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                router.push("/dashboard");
+              }}
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              사용자 페이지로
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
