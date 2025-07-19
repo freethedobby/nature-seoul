@@ -815,13 +815,13 @@ export default function SlotManagement() {
 
           {/* Slot Dialog (existing code) */}
           <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>새 슬롯 추가</DialogTitle>
               </DialogHeader>
               <form
                 onSubmit={handleCreateSlot}
-                className="w-full max-w-full space-y-4"
+                className="w-full max-w-full space-y-4 pb-4"
               >
                 <div className="flex gap-4">
                   {/* Custom Toggle Switch for Slot Type */}
@@ -900,7 +900,7 @@ export default function SlotManagement() {
                       </div>
                     </div>
                     <label className="font-medium">간격</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
+                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
                       {[
                         { label: "30분", value: 30 },
                         { label: "1시간", value: 60 },
@@ -919,11 +919,11 @@ export default function SlotManagement() {
                               ? "default"
                               : "outline"
                           }
-                          className={
+                          className={`text-xs sm:text-sm ${
                             customSlot.duration === option.value
                               ? "bg-green-500 text-white"
                               : ""
-                          }
+                          }`}
                           onClick={() =>
                             setCustomSlot({
                               ...customSlot,
@@ -946,11 +946,11 @@ export default function SlotManagement() {
                               ? "default"
                               : "outline"
                           }
-                          className={
+                          className={`text-xs sm:text-sm ${
                             customSlot.numberOfSlots === num
                               ? "bg-green-500 text-white"
                               : ""
-                          }
+                          }`}
                           onClick={() =>
                             setCustomSlot({
                               ...customSlot,
@@ -986,7 +986,7 @@ export default function SlotManagement() {
                     )}
                     {/* 요일 선택 */}
                     <label className="font-medium">요일 선택</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
+                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
                       {["일", "월", "화", "수", "목", "금", "토"].map(
                         (day, idx) => (
                           <Button
@@ -997,11 +997,11 @@ export default function SlotManagement() {
                                 ? "default"
                                 : "outline"
                             }
-                            className={
+                            className={`text-xs sm:text-sm ${
                               recurringSlot.daysOfWeek.includes(idx)
                                 ? "bg-green-500 text-white"
                                 : ""
-                            }
+                            }`}
                             onClick={() => {
                               setRecurringSlot((prev) => ({
                                 ...prev,
@@ -1049,7 +1049,7 @@ export default function SlotManagement() {
                     </label>
                     {/* 간격 선택 */}
                     <label className="font-medium">간격</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap flex-wrap justify-center gap-2">
+                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
                       {[
                         { label: "30분", value: 30 },
                         { label: "1시간", value: 60 },
@@ -1068,11 +1068,11 @@ export default function SlotManagement() {
                               ? "default"
                               : "outline"
                           }
-                          className={
+                          className={`text-xs sm:text-sm ${
                             recurringSlot.intervalMinutes === option.value
                               ? "bg-green-500 text-white"
                               : ""
-                          }
+                          }`}
                           onClick={() =>
                             setRecurringSlot({
                               ...recurringSlot,
@@ -1086,7 +1086,7 @@ export default function SlotManagement() {
                     </div>
                     {/* 슬롯 개수 section ... */}
                     <label className="font-medium">슬롯 개수</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
+                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
                       {[1, 2, 3, 4, 5].map((num) => (
                         <Button
                           key={num}
@@ -1096,11 +1096,11 @@ export default function SlotManagement() {
                               ? "default"
                               : "outline"
                           }
-                          className={
+                          className={`text-xs sm:text-sm ${
                             recurringSlot.numberOfSlots === num
                               ? "bg-green-500 text-white"
                               : ""
-                          }
+                          }`}
                           onClick={() =>
                             setRecurringSlot({
                               ...recurringSlot,
