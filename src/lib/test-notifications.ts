@@ -1,4 +1,4 @@
-import { createNotification, notificationTemplates } from "./notifications";
+import { createNotification } from "./notifications";
 
 // Test function to create sample notifications
 export async function createTestNotifications(userId: string, isAdmin: boolean = false) {
