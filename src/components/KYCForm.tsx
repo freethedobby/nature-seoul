@@ -23,7 +23,7 @@ import {
   setDoc,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
