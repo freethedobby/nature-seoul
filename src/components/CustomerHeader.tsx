@@ -86,8 +86,9 @@ export default function CustomerHeader() {
                   </Button>
                 </div>
 
-                {/* Mobile: Dropdown menu */}
-                <div className="sm:hidden">
+                {/* Mobile: Admin Mode Toggle and Dropdown menu */}
+                <div className="flex items-center space-x-2 sm:hidden">
+                  <AdminModeToggle />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
