@@ -247,7 +247,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       // Test Firebase connectivity
       console.log("=== TESTING FIREBASE CONNECTIVITY ===");
       try {
-        const testDoc = firestoreDoc(db, "test", "connectivity");
+        firestoreDoc(db, "test", "connectivity");
         console.log("✅ Firestore doc reference created successfully");
       } catch (firestoreError) {
         console.error("❌ Firestore doc reference failed:", firestoreError);
