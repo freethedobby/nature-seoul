@@ -11,13 +11,13 @@ export default function DebugKYCPage() {
   const { user } = useAuth();
   const [debugData, setDebugData] = useState<{
     userExists?: boolean;
-    userData?: any;
+    userData?: Record<string, unknown>;
     userId?: string;
     userEmail?: string;
     totalUsers?: number;
-    allUsers?: any[];
+    allUsers?: Record<string, unknown>[];
     pendingKYC?: number;
-    apiDebug?: any;
+    apiDebug?: Record<string, unknown>;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +60,9 @@ export default function DebugKYCPage() {
         ...prev,
         totalUsers: allUsers.length,
         allUsers: allUsers.slice(0, 5), // Show first 5 users
-        pendingKYC: allUsers.filter((u) => (u as any).kycStatus === "pending")
-          .length,
+        pendingKYC: allUsers.filter(
+          (u) => (u as Record<string, unknown>).kycStatus === "pending"
+        ).length,
       }));
     } catch (err) {
       console.error("Debug error:", err);
@@ -90,7 +91,7 @@ export default function DebugKYCPage() {
     if (user) {
       checkKYCData();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (

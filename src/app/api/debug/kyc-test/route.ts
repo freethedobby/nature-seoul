@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import * as admin from 'firebase-admin';
 
 export async function GET() {
@@ -36,7 +36,7 @@ export async function GET() {
     const recentUsers = users.filter((user: { kycStatus?: string; createdAt?: any }) => 
       user.kycStatus === "pending" && 
       user.createdAt && 
-      new Date(user.createdAt.toDate()).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Last 24 hours
+      new Date((user.createdAt as any).toDate()).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     return NextResponse.json({
