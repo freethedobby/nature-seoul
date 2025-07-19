@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 // Email transporter configuration
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransporter({
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, subject, html, userName, statusType, newStatus } = await request.json();
+    const { to, subject, html, userName, statusType, newStatus, rejectReason, reservationInfo } = await request.json();
 
     // Validate required fields
     if (!to || !subject || !html) {
@@ -80,6 +80,12 @@ export async function POST(request: NextRequest) {
                   <p style="margin: 0; color: #721c24;">
                     KYC가 거부되었습니다. 추가 정보가 필요하거나 문의사항이 있으시면 연락주세요.
                   </p>
+                  ${rejectReason ? `
+                  <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 5px;">
+                    <h5 style="margin: 0 0 8px 0; color: #721c24; font-size: 14px;">📝 거부 사유</h5>
+                    <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.4;">${rejectReason}</p>
+                  </div>
+                  ` : ''}
                 </div>
                 `
                 : `
@@ -157,6 +163,15 @@ export async function POST(request: NextRequest) {
                   <p style="margin: 0; color: #004085;">
                     예약이 성공적으로 확정되었습니다. 예약 시간에 맞춰 방문해 주세요.
                   </p>
+                  ${reservationInfo ? `
+                  <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 5px;">
+                    <h5 style="margin: 0 0 8px 0; color: #004085; font-size: 14px;">📋 예약 정보</h5>
+                    <p style="margin: 0; color: #004085; font-size: 14px; line-height: 1.4;">
+                      📅 날짜: ${reservationInfo.date}<br>
+                      🕐 시간: ${reservationInfo.time}
+                    </p>
+                  </div>
+                  ` : ''}
                 </div>
                 `
                 : newStatus === "completed"
