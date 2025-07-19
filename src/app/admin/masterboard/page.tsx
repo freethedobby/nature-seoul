@@ -197,10 +197,10 @@ export default function Masterboard() {
       .filter((comment) => comment.userId === userId)
       .sort((a, b) => {
         const dateA =
-          (a.createdAt as any)?.toDate?.() ||
+          (a.createdAt as { toDate?: () => Date })?.toDate?.() ||
           new Date(a.createdAt as string | number | Date);
         const dateB =
-          (b.createdAt as any)?.toDate?.() ||
+          (b.createdAt as { toDate?: () => Date })?.toDate?.() ||
           new Date(b.createdAt as string | number | Date);
         return dateB.getTime() - dateA.getTime();
       });
@@ -495,7 +495,11 @@ export default function Masterboard() {
                                             {comment.comment}
                                           </p>
                                           <p className="text-gray-500 mt-2 text-xs">
-                                            {(comment.createdAt as any)
+                                            {(
+                                              comment.createdAt as {
+                                                toDate?: () => Date;
+                                              }
+                                            )
                                               ?.toDate?.()
                                               ?.toLocaleString("ko-KR") ||
                                               new Date(
@@ -621,7 +625,10 @@ export default function Masterboard() {
                                       onChange={(e) =>
                                         setEditingUser({
                                           ...editingUser,
-                                          kycStatus: e.target.value as any,
+                                          kycStatus: e.target.value as
+                                            | "pending"
+                                            | "approved"
+                                            | "rejected",
                                         })
                                       }
                                       className="border-gray-300 w-full rounded-md border px-3 py-2"
@@ -640,8 +647,11 @@ export default function Masterboard() {
                                       onChange={(e) =>
                                         setEditingUser({
                                           ...editingUser,
-                                          reservationStatus: e.target
-                                            .value as any,
+                                          reservationStatus: e.target.value as
+                                            | "none"
+                                            | "scheduled"
+                                            | "completed"
+                                            | "cancelled",
                                         })
                                       }
                                       className="border-gray-300 w-full rounded-md border px-3 py-2"
@@ -661,8 +671,10 @@ export default function Masterboard() {
                                       onChange={(e) =>
                                         setEditingUser({
                                           ...editingUser,
-                                          eyebrowProcedure: e.target
-                                            .value as any,
+                                          eyebrowProcedure: e.target.value as
+                                            | "not_started"
+                                            | "in_progress"
+                                            | "completed",
                                         })
                                       }
                                       className="border-gray-300 w-full rounded-md border px-3 py-2"
