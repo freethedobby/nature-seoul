@@ -44,8 +44,6 @@ export default function NotificationCenter({
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!user?.email) return;
-
     let q;
     if (variant === "admin") {
       // Admin notifications - show all KYC submissions and admin-specific notifications
@@ -54,11 +52,18 @@ export default function NotificationCenter({
         where("type", "in", ["admin_kyc_new", "kyc_submitted"]),
         orderBy("createdAt", "desc")
       );
-    } else {
+    } else if (user?.uid) {
       // Customer notifications - show only user's notifications
       q = query(
         collection(db, "notifications"),
         where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+    } else {
+      // Guest notifications - show notifications for anonymous users
+      q = query(
+        collection(db, "notifications"),
+        where("userId", "==", "guest"),
         orderBy("createdAt", "desc")
       );
     }
@@ -152,7 +157,7 @@ export default function NotificationCenter({
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white">
+        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white">
           <div className="border-gray-200 border-b p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-gray-900 text-lg font-semibold">알림</h3>

@@ -27,21 +27,22 @@ export default function CustomerHeader() {
     <header className="shadow-sm border-b bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Button
               variant="ghost"
               onClick={() => router.push("/")}
-              className="flex items-center space-x-2 text-lg font-semibold"
+              className="text-base flex items-center space-x-1 font-semibold sm:space-x-2 sm:text-lg"
             >
-              <Home className="h-5 w-5" />
-              <span>Nature Seoul</span>
+              <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">nature.seoul</span>
+              <span className="sm:hidden">nature</span>
             </Button>
 
             {user && (
               <>
-                <div className="w-px bg-gray-300 h-6" />
+                <div className="w-px bg-gray-300 hidden h-6 sm:block" />
 
-                <nav className="flex items-center space-x-4">
+                <nav className="hidden items-center space-x-4 sm:flex">
                   <Button
                     variant="ghost"
                     onClick={() => router.push("/dashboard")}
@@ -64,24 +65,26 @@ export default function CustomerHeader() {
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {user ? (
               <>
                 <NotificationCenter variant="customer" />
-                <div className="text-gray-600 text-sm">{user.email}</div>
+                <div className="text-gray-600 hidden text-sm sm:block">
+                  {user.email}
+                </div>
                 <Button
                   variant="ghost"
                   onClick={() => router.push("/login")}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-1 sm:space-x-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>로그아웃</span>
+                  <span className="hidden sm:inline">로그아웃</span>
                 </Button>
               </>
             ) : (
               <Button
                 onClick={() => router.push("/login")}
-                className="bg-black hover:bg-gray-800 text-white"
+                className="bg-black hover:bg-gray-800 sm:text-base text-sm text-white"
               >
                 로그인
               </Button>

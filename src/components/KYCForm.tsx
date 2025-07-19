@@ -155,12 +155,10 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     console.log("Firebase db available:", !!db);
     console.log("Firebase storage available:", !!storage);
 
-    if (!user) {
-      console.error("No user found");
-      setSubmitStatus("error");
-      setIsSubmitting(false);
-      return;
-    }
+    // Handle both logged-in users and guests
+    const isGuest = !user;
+    const userId = user?.uid || "guest";
+    const userEmail = user?.email || "guest@example.com";
 
     console.log("Setting isSubmitting to true");
     setIsSubmitting(true);
@@ -186,11 +184,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
     try {
       // Check if Firebase is properly configured
-      if (!db || !user?.uid) {
-        console.error("❌ Firebase not configured or user not authenticated");
-        console.error("db available:", !!db);
-        console.error("user available:", !!user);
-        console.error("user.uid:", user?.uid);
+      if (!db) {
+        console.error("❌ Firebase not configured");
         console.error("Environment check:", {
           apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
           projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -248,8 +243,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
       // Save to Firestore in users collection
       const userData = {
-        userId: user.uid,
-        email: user.email,
+        userId: userId,
+        email: userEmail,
         name: data.name,
         contact: data.contact,
         photoURL: imageUrl,
@@ -258,18 +253,19 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         hasPreviousTreatment: data.hasPreviousTreatment === "yes",
         createdAt: serverTimestamp(),
         submittedAt: serverTimestamp(),
+        isGuest: isGuest,
       };
 
       console.log("Saving user data to Firestore...");
       console.log("User data to save:", userData);
-      console.log("Document path: users/", user.uid);
+      console.log("Document path: users/", userId);
 
       try {
-        await setDoc(firestoreDoc(db, "users", user.uid), userData, {
+        await setDoc(firestoreDoc(db, "users", userId), userData, {
           merge: true,
         });
         console.log("✅ User data saved successfully with UID as doc ID");
-        console.log("Document ID:", user.uid);
+        console.log("Document ID:", userId);
         console.log("KYC Status: pending");
       } catch (firestoreError) {
         console.error("❌ Firestore save failed:", firestoreError);
@@ -301,7 +297,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       try {
         // Create customer notification
         await createNotification({
-          userId: user.uid,
+          userId: userId,
           type: "kyc_submitted",
           title: "KYC 신청 완료",
           message:
@@ -311,7 +307,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         // Create admin notification for all admins
         const adminNotification = notificationTemplates.adminKycNew(
           data.name,
-          user.email || ""
+          userEmail
         );
         await createNotification({
           userId: "admin", // Special ID for admin notifications
@@ -320,8 +316,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
           message: adminNotification.message,
           data: {
             customerName: data.name,
-            customerEmail: user.email,
-            customerId: user.uid,
+            customerEmail: userEmail,
+            customerId: userId,
           },
         });
       } catch (notificationError) {
@@ -336,7 +332,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       console.error("Error details:", {
         message: error instanceof Error ? error.message : "Unknown error",
         stack: error instanceof Error ? error.stack : undefined,
-        user: user?.email,
+        user: userEmail,
         formData: data,
       });
       clearTimeout(timeoutId);
