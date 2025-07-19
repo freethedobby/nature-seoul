@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationCenter from "@/components/NotificationCenter";
 import AdminModeToggle from "@/components/AdminModeToggle";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Home, User, Calendar, LogOut, Menu } from "lucide-react";
+import { User, Calendar, LogOut, Menu } from "lucide-react";
 
 export default function CustomerHeader() {
   const router = useRouter();
@@ -35,14 +36,7 @@ export default function CustomerHeader() {
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-1 sm:space-x-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/")}
-              className="flex items-center space-x-1 text-sm font-semibold sm:space-x-2 sm:text-lg"
-            >
-              <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span>nature.seoul</span>
-            </Button>
+            <Logo variant="header" />
 
             {user && (
               <>

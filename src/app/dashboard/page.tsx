@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, Clock, Lock } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
+import Logo from "@/components/Logo";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -59,7 +60,7 @@ export default function DashboardPage() {
               >
                 <ArrowLeft className="h-6 w-6" />
               </button>
-              <h1 className="text-xl font-light">nature.seoul</h1>
+              <Logo variant="header" />
             </div>
           </div>
         </div>

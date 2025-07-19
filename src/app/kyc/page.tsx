@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import KYCForm from "@/components/KYCForm";
 import FirebaseDebug from "@/components/FirebaseDebug";
+import Logo from "@/components/Logo";
 
 export default function KYCPage() {
   const { user, loading } = useAuth();
@@ -53,7 +54,7 @@ export default function KYCPage() {
                   />
                 </svg>
               </button>
-              <h1 className="text-xl font-light">nature.seoul</h1>
+              <Logo variant="header" />
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CustomerHeader from "@/components/CustomerHeader";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -75,8 +76,8 @@ export default function Home() {
         <div className="container mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="text-center md:text-left">
-              <p className="text-black text-sm font-light">nature.seoul</p>
-              <p className="text-gray-400 text-xs">
+              <Logo variant="footer" className="text-black" />
+              <p className="text-gray-400 mt-2 text-xs">
                 designed by{" "}
                 <a
                   href="https://blacksheepwall.xyz"
