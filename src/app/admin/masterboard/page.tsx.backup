@@ -93,9 +93,10 @@ export default function Masterboard() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [newComment, setNewComment] = useState("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check admin authorization
+  // Check admin authorization - Masterboard component
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!loading && user?.email) {
@@ -446,7 +447,7 @@ export default function Masterboard() {
                     <TableHead>예약 상태</TableHead>
                     <TableHead>시술 진행</TableHead>
                     <TableHead>관리자 댓글</TableHead>
-                    <TableHead>작업</TableHead>
+                    <TableHead>수정</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -787,6 +788,171 @@ export default function Masterboard() {
                           </Button>
                         </div>
                       </TableCell>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>사용자 정보 편집</DialogTitle>
+                                <DialogDescription>
+                                  {user.name}의 정보를 수정합니다
+                                </DialogDescription>
+                              </DialogHeader>
+                              {editingUser && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      이름
+                                    </label>
+                                    <Input
+                                      value={editingUser.name}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          name: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      이메일
+                                    </label>
+                                    <Input
+                                      value={editingUser.email}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          email: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      전화번호
+                                    </label>
+                                    <Input
+                                      value={editingUser.phone}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          phone: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      KYC 상태
+                                    </label>
+                                    <select
+                                      value={editingUser.kycStatus}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          kycStatus: e.target.value as
+                                            | "pending"
+                                            | "approved"
+                                            | "rejected",
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="pending">대기중</option>
+                                      <option value="approved">승인됨</option>
+                                      <option value="rejected">거부됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      예약 상태
+                                    </label>
+                                    <select
+                                      value={editingUser.reservationStatus}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          reservationStatus: e.target.value as
+                                            | "none"
+                                            | "scheduled"
+                                            | "completed"
+                                            | "cancelled",
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="none">예약 없음</option>
+                                      <option value="scheduled">예약됨</option>
+                                      <option value="completed">완료됨</option>
+                                      <option value="cancelled">취소됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      시술 진행
+                                    </label>
+                                    <select
+                                      value={editingUser.eyebrowProcedure}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          eyebrowProcedure: e.target.value as
+                                            | "not_started"
+                                            | "in_progress"
+                                            | "completed",
+                                        })
+                                      }
+                                      className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                    >
+                                      <option value="not_started">
+                                        시작 안함
+                                      </option>
+                                      <option value="in_progress">
+                                        진행중
+                                      </option>
+                                      <option value="completed">완료됨</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">
+                                      관리자 댓글
+                                    </label>
+                                    <Textarea
+                                      value={editingUser.adminComments}
+                                      onChange={(e) =>
+                                        setEditingUser({
+                                          ...editingUser,
+                                          adminComments: e.target.value,
+                                        })
+                                      }
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() =>
+                                        handleUpdateUser(
+                                          editingUser.id,
+                                          editingUser
+                                        )
+                                      }
+                                      disabled={isSubmitting}
+                                      className="flex-1"
+                                    >
+                                      저장
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setEditingUser(null)}
+                                      className="flex-1"
+                                    >
+                                      취소
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -813,186 +979,172 @@ export default function Masterboard() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingUser(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>사용자 정보 편집</DialogTitle>
-                            <DialogDescription>
-                              {user.name}의 정보를 수정합니다
-                            </DialogDescription>
-                          </DialogHeader>
-                          {editingUser && (
-                            <div className="space-y-4">
-                              <div>
-                                <label className="text-sm font-medium">
-                                  이름
-                                </label>
-                                <Input
-                                  value={editingUser.name}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      name: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  이메일
-                                </label>
-                                <Input
-                                  value={editingUser.email}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      email: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  전화번호
-                                </label>
-                                <Input
-                                  value={editingUser.phone}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      phone: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  KYC 상태
-                                </label>
-                                <select
-                                  value={editingUser.kycStatus}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      kycStatus: e.target.value as
-                                        | "pending"
-                                        | "approved"
-                                        | "rejected",
-                                    })
-                                  }
-                                  className="border-gray-300 w-full rounded-md border px-3 py-2"
-                                >
-                                  <option value="pending">대기중</option>
-                                  <option value="approved">승인됨</option>
-                                  <option value="rejected">거부됨</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  예약 상태
-                                </label>
-                                <select
-                                  value={editingUser.reservationStatus}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      reservationStatus: e.target.value as
-                                        | "none"
-                                        | "scheduled"
-                                        | "completed"
-                                        | "cancelled",
-                                    })
-                                  }
-                                  className="border-gray-300 w-full rounded-md border px-3 py-2"
-                                >
-                                  <option value="none">예약 없음</option>
-                                  <option value="scheduled">예약됨</option>
-                                  <option value="completed">완료됨</option>
-                                  <option value="cancelled">취소됨</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  시술 진행
-                                </label>
-                                <select
-                                  value={editingUser.eyebrowProcedure}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      eyebrowProcedure: e.target.value as
-                                        | "not_started"
-                                        | "in_progress"
-                                        | "completed",
-                                    })
-                                  }
-                                  className="border-gray-300 w-full rounded-md border px-3 py-2"
-                                >
-                                  <option value="not_started">시작 안함</option>
-                                  <option value="in_progress">진행중</option>
-                                  <option value="completed">완료됨</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  관리자 댓글
-                                </label>
-                                <Textarea
-                                  value={editingUser.adminComments}
-                                  onChange={(e) =>
-                                    setEditingUser({
-                                      ...editingUser,
-                                      adminComments: e.target.value,
-                                    })
-                                  }
-                                  rows={3}
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  onClick={() =>
-                                    handleUpdateUser(
-                                      editingUser.id,
-                                      editingUser
-                                    )
-                                  }
-                                  disabled={isSubmitting}
-                                  className="flex-1"
-                                >
-                                  저장
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setEditingUser(null)}
-                                  className="flex-1"
-                                >
-                                  취소
-                                </Button>
-                              </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingUser(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>사용자 정보 편집</DialogTitle>
+                          <DialogDescription>
+                            {user.name}의 정보를 수정합니다
+                          </DialogDescription>
+                        </DialogHeader>
+                        {editingUser && (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium">
+                                이름
+                              </label>
+                              <Input
+                                value={editingUser.name}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    name: e.target.value,
+                                  })
+                                }
+                              />
                             </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id, user.name)}
-                        disabled={isSubmitting}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                이메일
+                              </label>
+                              <Input
+                                value={editingUser.email}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    email: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                전화번호
+                              </label>
+                              <Input
+                                value={editingUser.phone}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    phone: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                KYC 상태
+                              </label>
+                              <select
+                                value={editingUser.kycStatus}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    kycStatus: e.target.value as
+                                      | "pending"
+                                      | "approved"
+                                      | "rejected",
+                                  })
+                                }
+                                className="border-gray-300 w-full rounded-md border px-3 py-2"
+                              >
+                                <option value="pending">대기중</option>
+                                <option value="approved">승인됨</option>
+                                <option value="rejected">거부됨</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                예약 상태
+                              </label>
+                              <select
+                                value={editingUser.reservationStatus}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    reservationStatus: e.target.value as
+                                      | "none"
+                                      | "scheduled"
+                                      | "completed"
+                                      | "cancelled",
+                                  })
+                                }
+                                className="border-gray-300 w-full rounded-md border px-3 py-2"
+                              >
+                                <option value="none">예약 없음</option>
+                                <option value="scheduled">예약됨</option>
+                                <option value="completed">완료됨</option>
+                                <option value="cancelled">취소됨</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                시술 진행
+                              </label>
+                              <select
+                                value={editingUser.eyebrowProcedure}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    eyebrowProcedure: e.target.value as
+                                      | "not_started"
+                                      | "in_progress"
+                                      | "completed",
+                                  })
+                                }
+                                className="border-gray-300 w-full rounded-md border px-3 py-2"
+                              >
+                                <option value="not_started">시작 안함</option>
+                                <option value="in_progress">진행중</option>
+                                <option value="completed">완료됨</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                관리자 댓글
+                              </label>
+                              <Textarea
+                                value={editingUser.adminComments}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    adminComments: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() =>
+                                  handleUpdateUser(editingUser.id, editingUser)
+                                }
+                                disabled={isSubmitting}
+                                className="flex-1"
+                              >
+                                저장
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setEditingUser(null)}
+                                className="flex-1"
+                              >
+                                취소
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
                   </div>
 
                   {/* Status Badges */}
