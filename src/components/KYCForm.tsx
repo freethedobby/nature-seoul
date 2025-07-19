@@ -615,14 +615,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             </div>
           </Button>
 
-          {submitStatus === "error" && (
-            <div className="text-red-600 bg-red-50 border-red-100 flex items-center space-x-2 rounded-xl border p-4">
-              <AlertCircle className="h-5 w-5" />
-              <span className="text-sm">
-                신청 중 오류가 발생했습니다. 다시 시도해주세요.
-              </span>
-            </div>
-          )}
+          {/* Error display is handled in the conditional rendering above */}
         </form>
       </CardContent>
     </Card>
