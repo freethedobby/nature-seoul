@@ -36,12 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let unsubscribeFirestore: (() => void) | null = null;
 
     const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      console.log(
-        "Auth state changed:",
-        firebaseUser?.email,
-        "loading:",
-        loading
-      );
+      console.log("Auth state changed:", firebaseUser?.email);
 
       // Clean up previous Firestore listener if it exists
       if (unsubscribeFirestore) {
