@@ -19,6 +19,7 @@ export default function DebugKYCPage() {
     pendingKYC?: number;
     apiDebug?: Record<string, unknown>;
     testSubmission?: Record<string, unknown>;
+    formTest?: Record<string, unknown>;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +119,34 @@ export default function DebugKYCPage() {
     }
   };
 
+  const testFormSubmission = async () => {
+    try {
+      const testFormData = {
+        name: "Test User",
+        contact: "01012345678",
+        hasPreviousTreatment: "no",
+        eyebrowPhoto: "test-file-data",
+      };
+
+      const response = await fetch("/api/test-form-submission", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(testFormData),
+      });
+      const data = await response.json();
+      console.log("Form submission test response:", data);
+      setDebugData((prev) => ({
+        ...prev,
+        formTest: data,
+      }));
+    } catch (err) {
+      console.error("Form submission test error:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
+    }
+  };
+
   useEffect(() => {
     if (user) {
       checkKYCData();
@@ -157,6 +186,13 @@ export default function DebugKYCPage() {
                 className="bg-green-100 text-green-700 hover:bg-green-200"
               >
                 Test KYC Submission
+              </Button>
+              <Button
+                onClick={testFormSubmission}
+                variant="outline"
+                className="bg-blue-100 text-blue-700 hover:bg-blue-200"
+              >
+                Test Form API
               </Button>
             </div>
 
@@ -230,6 +266,15 @@ export default function DebugKYCPage() {
                     </h3>
                     <pre className="overflow-auto text-sm">
                       {JSON.stringify(debugData.testSubmission, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {debugData.formTest && (
+                  <div className="bg-blue-50 rounded-md p-4">
+                    <h3 className="mb-2 font-semibold">Form API Test Result</h3>
+                    <pre className="overflow-auto text-sm">
+                      {JSON.stringify(debugData.formTest, null, 2)}
                     </pre>
                   </div>
                 )}
