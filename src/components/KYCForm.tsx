@@ -444,6 +444,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               기존 눈썹 시술 경험이 있으신가요? *
             </Label>
             <RadioGroup
+              {...register("hasPreviousTreatment")}
               onValueChange={(value) =>
                 setValue("hasPreviousTreatment", value as "yes" | "no")
               }
@@ -592,9 +593,24 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               console.log("Form errors:", errors);
               console.log("User:", user);
             }}
-            className="bg-gray-500 hover:bg-gray-600 mb-4 w-full text-white"
+            className="bg-gray-500 hover:bg-gray-600 mb-2 w-full text-white"
           >
             Test Form Data
+          </Button>
+
+          {/* Fill Test Data Button */}
+          <Button
+            type="button"
+            onClick={() => {
+              console.log("=== FILLING TEST DATA ===");
+              setValue("name", "테스트 사용자");
+              setValue("contact", "01012345678");
+              setValue("hasPreviousTreatment", "no");
+              console.log("Test data filled");
+            }}
+            className="bg-blue-500 hover:bg-blue-600 mb-4 w-full text-white"
+          >
+            Fill Test Data
           </Button>
 
           {/* Submit Button */}
