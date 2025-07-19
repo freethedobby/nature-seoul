@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as admin from 'firebase-admin';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test 1: Check if Firebase Admin is working
     console.log("Testing Firebase Admin connection...");
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Test 3: Check for recent KYC submissions
-    const recentUsers = users.filter((user: any) => 
+    const recentUsers = users.filter((user: { kycStatus?: string; createdAt?: any }) => 
       user.kycStatus === "pending" && 
       user.createdAt && 
       new Date(user.createdAt.toDate()).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Last 24 hours
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       totalUsers: users.length,
-      pendingKYC: users.filter((u: any) => u.kycStatus === "pending").length,
+      pendingKYC: users.filter((u: { kycStatus?: string }) => u.kycStatus === "pending").length,
       recentSubmissions: recentUsers.length,
       recentUsers: recentUsers,
       allUsers: users.slice(0, 10), // First 10 users for debugging

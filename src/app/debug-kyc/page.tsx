@@ -9,7 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DebugKYCPage() {
   const { user } = useAuth();
-  const [debugData, setDebugData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<{
+    userExists?: boolean;
+    userData?: any;
+    userId?: string;
+    userEmail?: string;
+    totalUsers?: number;
+    allUsers?: any[];
+    pendingKYC?: number;
+    apiDebug?: any;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,13 +38,13 @@ export default function DebugKYCPage() {
             userExists: true,
             userData: userDoc.data(),
             userId: user.uid,
-            userEmail: user.email,
+            userEmail: user.email || undefined,
           });
         } else {
           setDebugData({
             userExists: false,
             userId: user.uid,
-            userEmail: user.email,
+            userEmail: user.email || undefined,
           });
         }
       }
@@ -47,11 +56,11 @@ export default function DebugKYCPage() {
         ...doc.data(),
       }));
 
-      setDebugData((prev: any) => ({
+      setDebugData((prev) => ({
         ...prev,
         totalUsers: allUsers.length,
         allUsers: allUsers.slice(0, 5), // Show first 5 users
-        pendingKYC: allUsers.filter((u: any) => u.kycStatus === "pending")
+        pendingKYC: allUsers.filter((u) => (u as any).kycStatus === "pending")
           .length,
       }));
     } catch (err) {
@@ -67,7 +76,7 @@ export default function DebugKYCPage() {
       const response = await fetch("/api/debug/kyc-test");
       const data = await response.json();
       console.log("API Debug response:", data);
-      setDebugData((prev: any) => ({
+      setDebugData((prev) => ({
         ...prev,
         apiDebug: data,
       }));
