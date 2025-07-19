@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Home } from "lucide-react";
 
 interface LogoProps {
   variant?: "header" | "footer" | "hero";
@@ -29,8 +28,22 @@ export default function Logo({
 
   return (
     <Link href="/" className={classes}>
-      <Home className={iconSizes[variant]} />
-      <span>nature.seoul</span>
+      <div className={`${iconSizes[variant]} flex items-center justify-center`}>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-full w-full"
+        >
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
+      </div>
+      <span className="font-light tracking-wide">nature.seoul</span>
     </Link>
   );
 }

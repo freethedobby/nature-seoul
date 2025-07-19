@@ -145,11 +145,11 @@ export default function NotificationCenter({
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="text-gray-600 hover:text-gray-900 relative p-2 transition-colors"
+        className="text-gray-600 hover:text-gray-900 p-1.5 relative transition-colors"
       >
-        <Bell className="h-6 w-6" />
+        <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
         {unreadCount > 0 && (
-          <span className="bg-red-500 absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs text-white">
+          <span className="bg-red-500 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white sm:h-5 sm:w-5">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -157,65 +157,72 @@ export default function NotificationCenter({
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white">
-          <div className="border-gray-200 border-b p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-gray-900 text-lg font-semibold">알림</h3>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
+        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white sm:right-0">
+          {/* Mobile overlay to prevent screen cutoff */}
+          <div
+            className="fixed inset-0 z-40 sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="relative z-50">
+            <div className="border-gray-200 border-b p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-900 text-lg font-semibold">알림</h3>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      모두 읽음
+                    </button>
+                  )}
                   <button
-                    onClick={markAllAsRead}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+                    onClick={() => setIsOpen(false)}
+                    className="text-gray-400 hover:text-gray-600"
                   >
-                    모두 읽음
+                    <X className="h-4 w-4" />
                   </button>
-                )}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="text-gray-500 p-4 text-center">
-                알림이 없습니다
-              </div>
-            ) : (
-              <div className="divide-gray-100 divide-y">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`hover:bg-gray-50 cursor-pointer p-4 transition-colors ${
-                      !notification.read ? "bg-blue-50" : ""
-                    }`}
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type)}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-gray-900 text-sm font-medium">
-                          {notification.title}
-                        </p>
-                        <p className="text-gray-600 mt-1 text-sm">
-                          {notification.message}
-                        </p>
-                        <p className="text-gray-400 mt-2 text-xs">
-                          {formatTime(notification.createdAt)}
-                        </p>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="text-gray-500 p-4 text-center">
+                  알림이 없습니다
+                </div>
+              ) : (
+                <div className="divide-gray-100 divide-y">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`hover:bg-gray-50 cursor-pointer p-4 transition-colors ${
+                        !notification.read ? "bg-blue-50" : ""
+                      }`}
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        {getNotificationIcon(notification.type)}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-gray-900 text-sm font-medium">
+                            {notification.title}
+                          </p>
+                          <p className="text-gray-600 mt-1 text-sm">
+                            {notification.message}
+                          </p>
+                          <p className="text-gray-400 mt-2 text-xs">
+                            {formatTime(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <div className="bg-blue-500 mt-2 h-2 w-2 flex-shrink-0 rounded-full" />
+                        )}
                       </div>
-                      {!notification.read && (
-                        <div className="bg-blue-500 mt-2 h-2 w-2 flex-shrink-0 rounded-full" />
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
