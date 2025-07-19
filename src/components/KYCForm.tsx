@@ -244,24 +244,48 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         return;
       }
 
+      // Test Firebase connectivity
+      console.log("=== TESTING FIREBASE CONNECTIVITY ===");
+      try {
+        const testDoc = firestoreDoc(db, "test", "connectivity");
+        console.log("✅ Firestore doc reference created successfully");
+      } catch (firestoreError) {
+        console.error("❌ Firestore doc reference failed:", firestoreError);
+        throw new Error("Firestore not accessible");
+      }
+
       console.log("Starting image upload...");
       // Upload image (with fallback to base64 if Firebase Storage fails)
       let imageUrl;
       try {
+        console.log("=== IMAGE UPLOAD ATTEMPT ===");
+        console.log("File to upload:", data.eyebrowPhoto);
+        console.log("File type:", data.eyebrowPhoto?.type);
+        console.log("File size:", data.eyebrowPhoto?.size);
+
         imageUrl = await uploadImage(data.eyebrowPhoto);
         console.log(
           "Image processed successfully, URL type:",
           imageUrl.startsWith("data:") ? "base64" : "firebase-storage"
         );
       } catch (uploadError) {
-        console.error("Image upload failed, using fallback:", uploadError);
+        console.error("=== IMAGE UPLOAD FAILED ===");
+        console.error("Upload error:", uploadError);
+        console.error("Using fallback to base64...");
+
         // Fallback: convert to base64
-        imageUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(data.eyebrowPhoto);
-        });
+        try {
+          imageUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(data.eyebrowPhoto);
+          });
+          console.log("✅ Base64 fallback successful");
+        } catch (base64Error) {
+          console.error("❌ Base64 fallback also failed:", base64Error);
+          throw new Error("Image processing completely failed");
+        }
       }
 
       // Save to Firestore in users collection
@@ -646,9 +670,54 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               setIsSubmitting(false);
               setSubmitStatus("success");
             }}
-            className="bg-green-500 hover:bg-green-600 mb-4 w-full text-white"
+            className="bg-green-500 hover:bg-green-600 mb-2 w-full text-white"
           >
             Test Submit (Bypass Firebase)
+          </Button>
+
+          {/* Test Firebase Submit (without image) */}
+          <Button
+            type="button"
+            onClick={async () => {
+              console.log("=== TEST FIREBASE SUBMIT (NO IMAGE) ===");
+              setIsSubmitting(true);
+
+              try {
+                // Test Firebase connectivity only
+                const testData = {
+                  userId: user?.uid,
+                  email: user?.email,
+                  name: "Firebase Test",
+                  contact: "01012345678",
+                  photoURL: "test-url",
+                  photoType: "test",
+                  kycStatus: "pending",
+                  hasPreviousTreatment: false,
+                  createdAt: serverTimestamp(),
+                  submittedAt: serverTimestamp(),
+                };
+
+                console.log("Testing Firestore save...");
+                await setDoc(
+                  firestoreDoc(db, "users", user?.uid || "test"),
+                  testData,
+                  {
+                    merge: true,
+                  }
+                );
+
+                console.log("✅ Firebase test successful");
+                setSubmitStatus("success");
+              } catch (error) {
+                console.error("❌ Firebase test failed:", error);
+                setSubmitStatus("error");
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            className="bg-orange-500 hover:bg-orange-600 mb-4 w-full text-white"
+          >
+            Test Firebase (No Image)
           </Button>
 
           {/* Submit Button */}
