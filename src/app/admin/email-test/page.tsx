@@ -167,20 +167,32 @@ export default function EmailTestPage() {
                 </>
               )}
             </Button>
+          </div>
 
           {emailStatus && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-800 mb-2">📧 이메일 설정 상태</h3>
+            <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
+              <h3 className="text-blue-800 mb-2 font-semibold">
+                📧 이메일 설정 상태
+              </h3>
               <div className="space-y-2 text-sm">
                 <div>
                   <strong>환경 변수:</strong>
                   <ul className="ml-4 mt-1">
-                    <li>EMAIL_USER: {emailStatus.environmentVariables?.EMAIL_USER || "알 수 없음"}</li>
-                    <li>EMAIL_PASS: {emailStatus.environmentVariables?.EMAIL_PASS || "알 수 없음"}</li>
+                    <li>
+                      EMAIL_USER:{" "}
+                      {emailStatus.environmentVariables?.EMAIL_USER ||
+                        "알 수 없음"}
+                    </li>
+                    <li>
+                      EMAIL_PASS:{" "}
+                      {emailStatus.environmentVariables?.EMAIL_PASS ||
+                        "알 수 없음"}
+                    </li>
                   </ul>
                 </div>
                 <div>
-                  <strong>연결 상태:</strong> {emailStatus.connection?.status || "알 수 없음"}
+                  <strong>연결 상태:</strong>{" "}
+                  {emailStatus.connection?.status || "알 수 없음"}
                 </div>
                 {emailStatus.connection?.message && (
                   <div>
