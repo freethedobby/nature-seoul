@@ -128,62 +128,23 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     if (!user) throw new Error("User not authenticated");
 
     // Skip Firebase Storage and use base64 directly to avoid CORS issues
-    if (true) {
-      console.log("Development mode detected, using base64 storage directly");
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64String = reader.result as string;
-          console.log(
-            "Base64 conversion successful, length:",
-            base64String.length
-          );
-          resolve(base64String);
-        };
-        reader.onerror = (error) => {
-          console.error("FileReader error:", error);
-          reject(error);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    try {
-      console.log("Attempting Firebase Storage upload...");
-      const timestamp = Date.now();
-      const fileName = `kyc/${user.uid}/${timestamp}_${file.name}`;
-      const storageRef = ref(storage, fileName);
-
-      console.log("Uploading bytes...");
-      const snapshot = await uploadBytes(storageRef, file);
-      console.log("Bytes uploaded, getting download URL...");
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      console.log("Firebase Storage upload successful:", downloadURL);
-
-      return downloadURL;
-    } catch (error) {
-      console.error("=== FIREBASE STORAGE UPLOAD FAILED ===");
-      console.error("Error:", error);
-
-      // Fallback: convert file to base64 and store in Firestore
-      console.log("Falling back to base64 storage");
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64String = reader.result as string;
-          console.log(
-            "Base64 conversion successful, length:",
-            base64String.length
-          );
-          resolve(base64String);
-        };
-        reader.onerror = (error) => {
-          console.error("FileReader error:", error);
-          reject(error);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+    console.log("Using base64 storage to avoid CORS issues");
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        console.log(
+          "Base64 conversion successful, length:",
+          base64String.length
+        );
+        resolve(base64String);
+      };
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   // Submit form
