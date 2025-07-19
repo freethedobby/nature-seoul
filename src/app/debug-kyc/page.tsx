@@ -18,6 +18,7 @@ export default function DebugKYCPage() {
     allUsers?: Record<string, unknown>[];
     pendingKYC?: number;
     apiDebug?: Record<string, unknown>;
+    testSubmission?: Record<string, unknown>;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +88,36 @@ export default function DebugKYCPage() {
     }
   };
 
+  const testKYCSubmission = async () => {
+    try {
+      const response = await fetch("/api/test-kyc-submission", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user?.email || "test@example.com",
+          name: "Test User",
+          contact: "010-1234-5678",
+        }),
+      });
+      const data = await response.json();
+      console.log("Test KYC submission response:", data);
+      setDebugData((prev) => ({
+        ...prev,
+        testSubmission: data,
+      }));
+
+      // Refresh the data after test submission
+      setTimeout(() => {
+        checkKYCData();
+      }, 1000);
+    } catch (err) {
+      console.error("Test KYC submission error:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
+    }
+  };
+
   useEffect(() => {
     if (user) {
       checkKYCData();
@@ -119,6 +150,13 @@ export default function DebugKYCPage() {
               </Button>
               <Button onClick={testAPIDebug} variant="outline">
                 Test API Debug
+              </Button>
+              <Button
+                onClick={testKYCSubmission}
+                variant="outline"
+                className="bg-green-100 text-green-700 hover:bg-green-200"
+              >
+                Test KYC Submission
               </Button>
             </div>
 
@@ -181,6 +219,17 @@ export default function DebugKYCPage() {
                     <h3 className="mb-2 font-semibold">API Debug Response</h3>
                     <pre className="overflow-auto text-sm">
                       {JSON.stringify(debugData.apiDebug, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {debugData.testSubmission && (
+                  <div className="bg-green-50 rounded-md p-4">
+                    <h3 className="mb-2 font-semibold">
+                      Test KYC Submission Result
+                    </h3>
+                    <pre className="overflow-auto text-sm">
+                      {JSON.stringify(debugData.testSubmission, null, 2)}
                     </pre>
                   </div>
                 )}
