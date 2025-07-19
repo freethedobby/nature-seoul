@@ -20,12 +20,26 @@ export default function EmailTestPage() {
     success: boolean;
     message: string;
   } | null>(null);
+  const [emailStatus, setEmailStatus] = useState<any>(null);
 
   // Check admin status
   if (!loading && !user) {
     router.push("/login?redirectTo=/admin/email-test");
     return null;
   }
+
+  const checkEmailStatus = async () => {
+    try {
+      const response = await fetch("/api/email/status");
+      const data = await response.json();
+      setEmailStatus(data);
+    } catch (error) {
+      setEmailStatus({
+        error: "Failed to check status",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
 
   const handleTestEmail = async () => {
     if (!email.trim()) {
@@ -128,23 +142,59 @@ export default function EmailTestPage() {
             </RadioGroup>
           </div>
 
-          <Button
-            onClick={handleTestEmail}
-            disabled={isSending || !email.trim()}
-            className="w-full"
-          >
-            {isSending ? (
-              <>
-                <div className="animate-spin mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent" />
-                전송 중...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                테스트 이메일 전송
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={checkEmailStatus}
+              variant="outline"
+              className="flex-1"
+            >
+              이메일 설정 확인
+            </Button>
+            <Button
+              onClick={handleTestEmail}
+              disabled={isSending || !email.trim()}
+              className="flex-1"
+            >
+              {isSending ? (
+                <>
+                  <div className="animate-spin mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent" />
+                  전송 중...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  테스트 이메일 전송
+                </>
+              )}
+            </Button>
+
+          {emailStatus && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">📧 이메일 설정 상태</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <strong>환경 변수:</strong>
+                  <ul className="ml-4 mt-1">
+                    <li>EMAIL_USER: {emailStatus.environmentVariables?.EMAIL_USER || "알 수 없음"}</li>
+                    <li>EMAIL_PASS: {emailStatus.environmentVariables?.EMAIL_PASS || "알 수 없음"}</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong>연결 상태:</strong> {emailStatus.connection?.status || "알 수 없음"}
+                </div>
+                {emailStatus.connection?.message && (
+                  <div>
+                    <strong>메시지:</strong> {emailStatus.connection.message}
+                  </div>
+                )}
+                {emailStatus.connection?.suggestion && (
+                  <div className="text-blue-700">
+                    <strong>제안:</strong> {emailStatus.connection.suggestion}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {result && (
             <div

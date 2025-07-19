@@ -21,6 +21,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check environment variables
+    console.log("=== EMAIL TEST DEBUG ===");
+    console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Set" : "Not set");
+    console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Set" : "Not set");
+    
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return NextResponse.json(
+        { 
+          error: "Email configuration missing", 
+          details: "EMAIL_USER or EMAIL_PASS environment variables are not set",
+          emailUser: !!process.env.EMAIL_USER,
+          emailPass: !!process.env.EMAIL_PASS
+        },
+        { status: 500 }
+      );
+    }
+
     // Test email templates
     let emailSubject = "";
     let emailHtml = "";
@@ -131,6 +148,23 @@ export async function POST(request: NextRequest) {
       `;
     }
 
+    // Test transporter connection
+    console.log("Testing transporter connection...");
+    try {
+      await transporter.verify();
+      console.log("Transporter verification successful");
+    } catch (verifyError) {
+      console.error("Transporter verification failed:", verifyError);
+      return NextResponse.json(
+        { 
+          error: "Email server connection failed", 
+          details: verifyError instanceof Error ? verifyError.message : "Unknown error",
+          suggestion: "Check Gmail app password and 2FA settings"
+        },
+        { status: 500 }
+      );
+    }
+
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -139,7 +173,12 @@ export async function POST(request: NextRequest) {
       html: emailHtml,
     };
 
-    await transporter.sendMail(mailOptions);
+    console.log("Sending email to:", to);
+    console.log("From:", process.env.EMAIL_USER);
+    console.log("Subject:", emailSubject);
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", result.messageId);
 
     return NextResponse.json(
       { message: "Test email sent successfully", to, testType },
