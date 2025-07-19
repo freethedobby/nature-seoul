@@ -16,8 +16,10 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 interface SlotData {
   id: string;
@@ -40,6 +42,7 @@ interface ReservationData {
 
 export default function UserReservePage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,16 @@ export default function UserReservePage() {
   const [reserving, setReserving] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null);
+
+  // Check KYC authorization
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.kycStatus !== "approved") {
+        router.push("/dashboard?message=kyc_required");
+        return;
+      }
+    }
+  }, [user, authLoading, router]);
 
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
   const slotCountByDate: Record<string, number> = {};
@@ -192,6 +205,34 @@ export default function UserReservePage() {
       setCanceling(false);
     }
   };
+
+  // Show loading while checking authorization
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="animate-spin border-gray-900 h-8 w-8 rounded-full border-b-2"></div>
+      </div>
+    );
+  }
+
+  // Show unauthorized message
+  if (!user || user.kycStatus !== "approved") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <h2 className="text-gray-900 mb-2 text-xl font-semibold">
+            접근 권한이 없습니다
+          </h2>
+          <p className="text-gray-600 mb-4">
+            예약을 하려면 KYC 승인이 필요합니다.
+          </p>
+          <Link href="/dashboard">
+            <Button variant="outline">대시보드로 돌아가기</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">

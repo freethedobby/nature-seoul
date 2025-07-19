@@ -5,7 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import NotificationCenter from "@/components/NotificationCenter";
 import AdminModeToggle from "@/components/AdminModeToggle";
 import { Button } from "@/components/ui/button";
-import { Home, User, Calendar, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Home, User, Calendar, LogOut, Menu } from "lucide-react";
 
 export default function CustomerHeader() {
   const router = useRouter();
@@ -52,14 +58,16 @@ export default function CustomerHeader() {
                     <span>대시보드</span>
                   </Button>
 
-                  <Button
-                    variant="ghost"
-                    onClick={() => router.push("/user/reserve")}
-                    className="flex items-center space-x-2"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>예약하기</span>
-                  </Button>
+                  {user.kycStatus === "approved" && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => router.push("/user/reserve")}
+                      className="flex items-center space-x-2"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span>예약하기</span>
+                    </Button>
+                  )}
                 </nav>
               </>
             )}
@@ -69,18 +77,57 @@ export default function CustomerHeader() {
             {user ? (
               <>
                 <NotificationCenter variant="customer" />
-                <AdminModeToggle />
-                <div className="text-gray-600 hidden text-sm sm:block">
-                  {user.email}
+
+                {/* Desktop: Show all buttons */}
+                <div className="hidden items-center space-x-4 sm:flex">
+                  <AdminModeToggle />
+                  <div className="text-gray-600 text-sm">{user.email}</div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push("/login")}
+                    className="flex items-center space-x-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>로그아웃</span>
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push("/login")}
-                  className="flex items-center space-x-1 sm:space-x-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>로그아웃</span>
-                </Button>
+
+                {/* Mobile: Dropdown menu */}
+                <div className="sm:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Menu className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        disabled
+                        className="cursor-default opacity-100"
+                      >
+                        {user.email}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => router.push("/dashboard")}
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        대시보드
+                      </DropdownMenuItem>
+                      {user.kycStatus === "approved" && (
+                        <DropdownMenuItem
+                          onClick={() => router.push("/user/reserve")}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          예약하기
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => router.push("/login")}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        로그아웃
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </>
             ) : (
               <Button
