@@ -70,10 +70,9 @@ export default function CustomerHeader() {
           <div className="flex items-center space-x-1 sm:space-x-4">
             {user ? (
               <>
-                <NotificationCenter variant="customer" />
-
                 {/* Desktop: Show all buttons */}
                 <div className="hidden items-center space-x-4 sm:flex">
+                  <NotificationCenter variant="customer" />
                   <AdminModeToggle />
                   <div className="text-gray-600 text-sm">{user.email}</div>
                   <Button
@@ -86,9 +85,10 @@ export default function CustomerHeader() {
                   </Button>
                 </div>
 
-                {/* Mobile: Admin Mode Toggle and Dropdown menu */}
+                {/* Mobile: Admin Mode Toggle, Notification, and Dropdown menu */}
                 <div className="flex items-center space-x-2 sm:hidden">
                   <AdminModeToggle />
+                  <NotificationCenter variant="customer" />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">

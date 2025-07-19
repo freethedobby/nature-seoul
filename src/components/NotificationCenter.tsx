@@ -157,13 +157,13 @@ export default function NotificationCenter({
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white sm:right-0">
+        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 -mt-2 rounded-lg border bg-white sm:right-0 sm:mt-2">
           {/* Mobile overlay to prevent screen cutoff */}
           <div
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative z-50">
+          <div className="relative z-50 max-h-[calc(100vh-5rem)] overflow-hidden">
             <div className="border-gray-200 border-b p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-gray-900 text-lg font-semibold">알림</h3>
