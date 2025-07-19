@@ -5,6 +5,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { ko } from "date-fns/locale";
 import { db } from "@/lib/firebase";
+import { createNotification } from "@/lib/notifications";
 import {
   collection,
   doc,
@@ -163,7 +164,8 @@ export default function UserReservePage() {
       }
       // Mark slot as booked and create reservation
       await updateDoc(doc(db, "slots", slot.id), { status: "booked" });
-      await addDoc(collection(db, "reservations"), {
+
+      const reservationData = {
         slotId: slot.id,
         userId: user.uid,
         userEmail: user.email,
@@ -179,6 +181,37 @@ export default function UserReservePage() {
         }),
         status: "대기",
         createdAt: new Date(),
+      };
+
+      await addDoc(collection(db, "reservations"), reservationData);
+
+      // Create notifications for user and admin
+      const reservationDate = slot.start.toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const reservationTime = slot.start.toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // User notification
+      await createNotification({
+        userId: user.uid,
+        type: "reservation_created",
+        title: "예약 완료",
+        message: `${reservationDate} ${reservationTime} 예약이 완료되었습니다.`,
+      });
+
+      // Admin notification
+      await createNotification({
+        userId: "admin",
+        type: "admin_reservation_new",
+        title: "새로운 예약",
+        message: `${
+          user.displayName || user.email
+        }님이 ${reservationDate} ${reservationTime}에 예약했습니다.`,
       });
       setShowReserveBtn(null);
     } catch {
@@ -199,6 +232,28 @@ export default function UserReservePage() {
       });
       // Delete reservation
       await deleteDoc(doc(db, "reservations", reservation.id));
+
+      // Create cancellation notifications
+      const reservationDate = reservation.date || "미정";
+      const reservationTime = reservation.time || "미정";
+
+      // User notification
+      await createNotification({
+        userId: user.uid,
+        type: "reservation_cancelled",
+        title: "예약 취소",
+        message: `${reservationDate} ${reservationTime} 예약이 취소되었습니다.`,
+      });
+
+      // Admin notification
+      await createNotification({
+        userId: "admin",
+        type: "admin_reservation_cancelled",
+        title: "예약 취소",
+        message: `${
+          user.displayName || user.email
+        }님이 ${reservationDate} ${reservationTime} 예약을 취소했습니다.`,
+      });
     } catch {
       alert("예약 취소에 실패했습니다. 다시 시도해주세요.");
     } finally {

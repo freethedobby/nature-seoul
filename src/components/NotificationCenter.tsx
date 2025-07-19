@@ -23,7 +23,9 @@ interface Notification {
     | "kyc_rejected"
     | "reservation_created"
     | "reservation_cancelled"
-    | "admin_kyc_new";
+    | "admin_kyc_new"
+    | "admin_reservation_new"
+    | "admin_reservation_cancelled";
   title: string;
   message: string;
   read: boolean;
@@ -91,6 +93,12 @@ export default function NotificationCenter({
       await updateDoc(doc(db, "notifications", notificationId), {
         read: true,
       });
+
+      // Optimistically update local state for immediate UI feedback
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -103,6 +111,10 @@ export default function NotificationCenter({
         updateDoc(doc(db, "notifications", notification.id), { read: true })
       );
       await Promise.all(updatePromises);
+
+      // Optimistically update local state for immediate UI feedback
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -121,6 +133,10 @@ export default function NotificationCenter({
         return <CheckCircle className="text-green-500 h-5 w-5" />;
       case "reservation_cancelled":
         return <AlertCircle className="text-orange-500 h-5 w-5" />;
+      case "admin_reservation_new":
+        return <CheckCircle className="text-blue-500 h-5 w-5" />;
+      case "admin_reservation_cancelled":
+        return <AlertCircle className="text-red-500 h-5 w-5" />;
       default:
         return <Clock className="text-gray-500 h-5 w-5" />;
     }
