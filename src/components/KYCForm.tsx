@@ -128,11 +128,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     if (!user) throw new Error("User not authenticated");
 
     // Skip Firebase Storage and use base64 directly to avoid CORS issues
-    if (
-      process.env.NODE_ENV === "development" ||
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "natureseoul.vercel.app"
-    ) {
+    if (true) {
       console.log("Development mode detected, using base64 storage directly");
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
