@@ -20,7 +20,19 @@ export default function EmailTestPage() {
     success: boolean;
     message: string;
   } | null>(null);
-  const [emailStatus, setEmailStatus] = useState<any>(null);
+  const [emailStatus, setEmailStatus] = useState<{
+    environmentVariables?: {
+      EMAIL_USER?: string;
+      EMAIL_PASS?: string;
+    };
+    connection?: {
+      status?: string;
+      message?: string;
+      suggestion?: string;
+    };
+    error?: string;
+    details?: string;
+  } | null>(null);
 
   // Check admin status
   if (!loading && !user) {

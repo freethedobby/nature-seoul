@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkAdminStatus();
-  }, [user, loading]);
+  }, [user]);
 
   return (
     <AuthContext.Provider

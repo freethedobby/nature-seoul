@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1178,9 +1179,11 @@ function KycPhoto({ userId }: { userId: string }) {
   }, [userId]);
   if (!photoUrl) return null;
   return (
-    <img
+    <Image
       src={photoUrl}
       alt="KYC Eyebrow"
+      width={200}
+      height={128}
       className="max-h-32 bg-gray-50 mt-2 w-full rounded-lg border object-contain"
       style={{ maxWidth: 200 }}
     />

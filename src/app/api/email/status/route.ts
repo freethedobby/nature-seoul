@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check environment variables
     const emailUser = process.env.EMAIL_USER;
@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
         hasEmailPass: !!emailPass,
         isConfigured: !!(emailUser && emailPass),
       },
-      connection: null as any,
+      connection: null as {
+        status: string;
+        message: string;
+        suggestion?: string;
+      } | null,
     };
 
     // Test connection if configured
