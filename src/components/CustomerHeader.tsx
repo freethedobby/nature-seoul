@@ -26,17 +26,16 @@ export default function CustomerHeader() {
 
   return (
     <header className="shadow-sm border-b bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
             <Button
               variant="ghost"
               onClick={() => router.push("/")}
-              className="text-base flex items-center space-x-1 font-semibold sm:space-x-2 sm:text-lg"
+              className="flex items-center space-x-1 text-sm font-semibold sm:space-x-2 sm:text-lg"
             >
               <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">nature.seoul</span>
-              <span className="sm:hidden">nature</span>
+              <span>nature.seoul</span>
             </Button>
 
             {user && (
@@ -66,7 +65,7 @@ export default function CustomerHeader() {
             )}
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
             {user ? (
               <>
                 <NotificationCenter variant="customer" />
@@ -80,7 +79,7 @@ export default function CustomerHeader() {
                   className="flex items-center space-x-1 sm:space-x-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">로그아웃</span>
+                  <span>로그아웃</span>
                 </Button>
               </>
             ) : (
