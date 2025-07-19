@@ -53,6 +53,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [testClickCount, setTestClickCount] = useState(0);
 
   console.log(
     "KYCForm rendered - user:",
@@ -72,12 +73,10 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     resolver: zodResolver(kycSchema),
   });
 
-  // Watch form values for debugging (only in development)
-  if (process.env.NODE_ENV === "development") {
-    const watchedValues = watch();
-    console.log("Form values:", watchedValues);
-    console.log("Form errors:", errors);
-  }
+  // Watch form values for debugging
+  const watchedValues = watch();
+  console.log("Form values:", watchedValues);
+  console.log("Form errors:", errors);
 
   // Handle file change (for drag and drop)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -588,14 +587,27 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
           <Button
             type="button"
             onClick={() => {
-              console.log("=== TEST BUTTON CLICKED ===");
-              console.log("Current form data:", watch());
+              setTestClickCount((prev) => prev + 1);
+              console.log("=== TEST BUTTON CLICKED ===", testClickCount + 1);
+              const currentData = watch();
+              console.log("Current form data:", currentData);
               console.log("Form errors:", errors);
               console.log("User:", user);
+
+              // Show alert with form data for immediate feedback
+              alert(
+                `Form Data:\nName: ${currentData.name || "empty"}\nContact: ${
+                  currentData.contact || "empty"
+                }\nPrevious Treatment: ${
+                  currentData.hasPreviousTreatment || "empty"
+                }\nPhoto: ${
+                  currentData.eyebrowPhoto ? "selected" : "not selected"
+                }`
+              );
             }}
             className="bg-gray-500 hover:bg-gray-600 mb-2 w-full text-white"
           >
-            Test Form Data
+            Test Form Data (Clicked: {testClickCount})
           </Button>
 
           {/* Fill Test Data Button */}
