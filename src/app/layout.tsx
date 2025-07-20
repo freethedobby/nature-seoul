@@ -9,17 +9,34 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NATURE PREMIUM | 프라이빗 눈썹 아트 스튜디오",
+  title: "Nature Seoul - 당신의 눈썹을 더 아름답게",
   description:
-    "Yongsan premium studio에서 펼쳐지는 예술적 눈썹 조각. 완전 맞춤형 디자인과 독점적 뷰티 경험을 제공하는 프리미엄 눈썹 아트 전문가.",
+    "개인 맞춤형 디자인으로 당신만의 완벽한 눈썹을 만들어드립니다. 용산 스튜디오에서 펼쳐지는 예술적 눈썹 조각.",
   keywords:
-    "프리미엄눈썹시술, 용산눈썹, 프라이빗뷰티, 맞춤형눈썹, 럭셔리뷰티, 눈썹아트, 예약제눈썹, 고급눈썹시술, 네이쳐프리미엄",
+    "눈썹, 반영구, 서울, 용산, nature seoul, 맞춤형눈썹, 눈썹시술, 예약제눈썹, 고급눈썹시술",
   openGraph: {
-    title: "NATURE PREMIUM | 프라이빗 눈썹 아트 스튜디오",
+    title: "Nature Seoul - 당신의 눈썹을 더 아름답게",
     description:
-      "Yongsan premium studio에서 펼쳐지는 예술적 눈썹 조각. 완전 맞춤형 디자인과 독점적 뷰티 경험.",
-    type: "website",
+      "개인 맞춤형 디자인으로 당신만의 완벽한 눈썹을 만들어드립니다.",
+    url: "https://natureseoul.com",
+    siteName: "Nature Seoul",
+    images: [
+      {
+        url: "https://natureseoul.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Nature Seoul - 당신의 눈썹을 더 아름답게",
+      },
+    ],
     locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nature Seoul - 당신의 눈썹을 더 아름답게",
+    description:
+      "개인 맞춤형 디자인으로 당신만의 완벽한 눈썹을 만들어드립니다.",
+    images: ["https://natureseoul.com/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -27,6 +44,9 @@ export const metadata: Metadata = {
   },
   viewport:
     "width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1",
+  alternates: {
+    canonical: "https://natureseoul.com",
+  },
 };
 
 export default function RootLayout({
