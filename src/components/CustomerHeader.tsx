@@ -13,10 +13,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, Calendar, LogOut, Menu } from "lucide-react";
+import { signOutUser } from "@/lib/firebase";
 
 export default function CustomerHeader() {
   const router = useRouter();
   const { user, loading } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -77,7 +87,7 @@ export default function CustomerHeader() {
                   <div className="text-gray-600 text-sm">{user.email}</div>
                   <Button
                     variant="ghost"
-                    onClick={() => router.push("/login")}
+                    onClick={handleLogout}
                     className="flex items-center space-x-2"
                   >
                     <LogOut className="h-4 w-4" />
@@ -116,7 +126,7 @@ export default function CustomerHeader() {
                           예약하기
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={() => router.push("/login")}>
+                      <DropdownMenuItem onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         로그아웃
                       </DropdownMenuItem>
