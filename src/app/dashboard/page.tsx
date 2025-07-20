@@ -83,6 +83,40 @@ export default function DashboardPage() {
               <Logo variant="header" />
             </div>
 
+            {/* Desktop User Info */}
+            <div className="hidden items-center space-x-4 md:flex">
+              <div className="shadow-sm border-gray-200 flex items-center gap-2 rounded-lg border bg-white px-3 py-2">
+                <div className="bg-gradient-to-br from-blue-400 to-purple-500 flex h-8 w-8 items-center justify-center rounded-full">
+                  <span className="text-sm font-medium text-white">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-900 text-sm font-medium">
+                    {user?.email}
+                  </span>
+                  <span className="text-gray-500 text-xs">
+                    {user?.kycStatus === "approved"
+                      ? "승인된 사용자"
+                      : user?.kycStatus === "pending"
+                      ? "검토 중"
+                      : user?.kycStatus === "rejected"
+                      ? "거절됨"
+                      : "미신청"}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="hover:bg-red-50 border-red-200 text-red-600 hover:text-red-700 flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>로그아웃</span>
+              </Button>
+            </div>
+
             {/* Mobile Menu Button */}
             <div className="md:hidden">
               <Button
