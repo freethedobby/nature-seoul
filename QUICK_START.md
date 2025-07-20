@@ -2,7 +2,7 @@
 
 ## ✅ Your Application is Ready!
 
-The time scheduling application is **already running** at **http://localhost:3000**!
+The time scheduling application is **live** at **https://natureseoul.com**!
 
 ## 🎯 What You Have
 
@@ -81,11 +81,11 @@ npm run lint
 
 ## 🌐 Access Your Application
 
-- **Main Site**: http://localhost:3000
-- **Login**: http://localhost:3000/login
-- **Dashboard**: http://localhost:3000/dashboard
-- **Admin**: http://localhost:3000/admin
-- **KYC Form**: http://localhost:3000/kyc
+- **Main Site**: https://natureseoul.com
+- **Login**: https://natureseoul.com/login
+- **Dashboard**: https://natureseoul.com/dashboard
+- **Admin**: https://natureseoul.com/admin
+- **KYC Form**: https://natureseoul.com/kyc
 
 ## 🎨 Design Features
 
