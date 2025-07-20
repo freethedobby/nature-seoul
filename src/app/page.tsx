@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CustomerHeader from "@/components/CustomerHeader";
 import Logo from "@/components/Logo";
+import AnimatedText from "@/components/AnimatedText";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -26,6 +27,10 @@ export default function Home() {
               priority
             />
             <div className="bg-gradient-to-r absolute inset-0 rounded-2xl from-white/20 to-transparent"></div>
+            {/* Shining effect */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl">
+              <div className="bg-gradient-to-r animate-shine absolute inset-0 -skew-x-12 transform from-transparent via-white/30 to-transparent"></div>
+            </div>
           </div>
         </div>
 
@@ -34,9 +39,19 @@ export default function Home() {
             <div className="text-black space-y-2 md:space-y-8">
               <div className="space-y-2 md:space-y-6">
                 <h2 className="text-4xl font-bold leading-tight tracking-tight drop-shadow-2xl md:text-6xl lg:text-7xl">
-                  당신의 눈썹을
+                  <AnimatedText
+                    text="당신의 눈썹을"
+                    delay={500}
+                    speed={150}
+                    className="inline-block"
+                  />
                   <br />
-                  <span className="font-bold">더 아름답게</span>
+                  <AnimatedText
+                    text="더 아름답게"
+                    delay={2000}
+                    speed={150}
+                    className="inline-block font-bold"
+                  />
                 </h2>
 
                 <p className="text-gray-600 text-lg font-medium leading-relaxed drop-shadow-xl md:text-xl">
