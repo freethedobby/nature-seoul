@@ -1,17 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Clock, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Lock,
+  Menu,
+  X,
+  LogOut,
+} from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
+import { auth } from "@/lib/firebase";
+import { signOut as firebaseSignOut } from "firebase/auth";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   console.log("user object in DashboardPage:", user);
 
@@ -29,6 +40,15 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  const handleLogout = async () => {
+    try {
+      await firebaseSignOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -62,7 +82,39 @@ export default function DashboardPage() {
               </button>
               <Logo variant="header" />
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center space-x-1"
+              >
+                {isMenuOpen ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Menu className="h-4 w-4" />
+                )}
+                <span className="text-sm">메뉴</span>
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Menu */}
+          {isMenuOpen && (
+            <div className="border-t bg-white py-4 md:hidden">
+              <nav className="flex flex-col space-y-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center justify-start space-x-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>로그아웃</span>
+                </Button>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 

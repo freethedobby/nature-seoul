@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationCenter from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Calendar, Menu, X } from "lucide-react";
+import { ArrowLeft, Users, Calendar, Menu, X, LogOut } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { signOut as firebaseSignOut } from "firebase/auth";
 
 export default function AdminLayout({
   children,
@@ -20,6 +22,15 @@ export default function AdminLayout({
     // Let the page component handle admin authorization
     // This layout just provides the container
   }, [user, router]);
+
+  const handleLogout = async () => {
+    try {
+      await firebaseSignOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (!user) {
     return (
@@ -132,6 +143,17 @@ export default function AdminLayout({
                   <Calendar className="h-4 w-4" />
                   <span>슬롯 관리</span>
                 </Button>
+
+                <div className="mt-2 border-t pt-2">
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center justify-start space-x-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>로그아웃</span>
+                  </Button>
+                </div>
               </nav>
             </div>
           )}
