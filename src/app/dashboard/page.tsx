@@ -103,6 +103,31 @@ export default function DashboardPage() {
           {/* Mobile Menu */}
           {isMenuOpen && (
             <div className="border-t bg-white py-4 md:hidden">
+              {/* User Profile Section */}
+              <div className="mb-4 px-2">
+                <div className="bg-gray-50 flex items-center space-x-3 rounded-lg p-3">
+                  <div className="bg-gradient-to-br from-blue-400 to-purple-500 flex h-10 w-10 items-center justify-center rounded-full">
+                    <span className="text-sm font-medium text-white">
+                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-900 text-sm font-medium">
+                      {user?.email}
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      {user?.kycStatus === "approved"
+                        ? "승인된 사용자"
+                        : user?.kycStatus === "pending"
+                        ? "검토 중"
+                        : user?.kycStatus === "rejected"
+                        ? "거절됨"
+                        : "미신청"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <nav className="flex flex-col space-y-2">
                 <Button
                   variant="ghost"
