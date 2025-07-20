@@ -8,7 +8,6 @@ import { ArrowLeft, Calendar, Clock, Lock } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
-import NotificationTest from "@/components/NotificationTest";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -185,11 +184,6 @@ export default function DashboardPage() {
                 </p>
               </div>
             )}
-
-            {/* Notification Test Component */}
-            <div className="mt-8">
-              <NotificationTest />
-            </div>
           </div>
         </div>
       </main>

@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import NotificationTest from "@/components/NotificationTest";
 
 import { db } from "@/lib/firebase";
 import {
@@ -552,11 +551,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Notification Test Component */}
-      <div className="mt-8">
-        <NotificationTest />
       </div>
 
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
