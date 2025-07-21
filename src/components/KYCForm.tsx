@@ -120,6 +120,62 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     setIsDragging(false);
   };
 
+  // Compress image to reduce size
+  const compressImage = (
+    file: File,
+    maxSizeBytes: number = 800000
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new window.Image();
+
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        let { width, height } = img;
+        const maxDimension = 1200; // Max width/height
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress image
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with compression
+        let quality = 0.8;
+        let base64String = canvas.toDataURL("image/jpeg", quality);
+
+        // Reduce quality if still too large
+        while (base64String.length > maxSizeBytes && quality > 0.1) {
+          quality -= 0.1;
+          base64String = canvas.toDataURL("image/jpeg", quality);
+        }
+
+        console.log(
+          `Image compressed: ${file.size} -> ${
+            base64String.length
+          } bytes, quality: ${quality.toFixed(1)}`
+        );
+        resolve(base64String);
+      };
+
+      img.onerror = () => reject(new Error("이미지 로딩에 실패했습니다."));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // Upload image to Firebase Storage
   const uploadImage = async (file: File): Promise<string> => {
     console.log("=== UPLOAD IMAGE START ===");
@@ -144,45 +200,18 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       );
     }
 
-    // Skip Firebase Storage and use base64 directly to avoid CORS issues
-    console.log("Using base64 storage to avoid CORS issues");
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      // Add timeout for mobile devices
-      const timeoutId = setTimeout(() => {
-        console.error("FileReader timeout on mobile");
-        reject(
-          new Error("파일 읽기 시간이 초과되었습니다. 다시 시도해주세요.")
-        );
-      }, 30000); // 30 second timeout
-
-      reader.onload = () => {
-        clearTimeout(timeoutId);
-        const base64String = reader.result as string;
-        console.log(
-          "Base64 conversion successful, length:",
-          base64String.length
-        );
-
-        // Check if base64 string is valid
-        if (!base64String.startsWith("data:image/")) {
-          console.error("Invalid base64 string format");
-          reject(new Error("이미지 파일 형식이 올바르지 않습니다."));
-          return;
-        }
-
-        resolve(base64String);
-      };
-
-      reader.onerror = (error) => {
-        clearTimeout(timeoutId);
-        console.error("FileReader error:", error);
-        reject(new Error("파일을 읽는 중 오류가 발생했습니다."));
-      };
-
-      reader.readAsDataURL(file);
-    });
+    // Compress image to fit Firestore limits
+    console.log("Compressing image to fit Firestore limits...");
+    try {
+      const compressedImage = await compressImage(file, 800000); // 800KB limit
+      console.log("Image compressed successfully");
+      return compressedImage;
+    } catch (compressError) {
+      console.error("Image compression failed:", compressError);
+      throw new Error(
+        "이미지 압축에 실패했습니다. 다른 이미지를 선택해주세요."
+      );
+    }
   };
 
   // Submit form
