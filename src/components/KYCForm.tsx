@@ -135,6 +135,7 @@ const kycSchema = z.object({
       required_error: "피부타입을 선택해주세요",
     }
   ),
+  skinTypeOther: z.string().optional(), // 기타 선택 시 상세 내용
   hasPreviousTreatment: z.enum(["yes", "no"], {
     required_error: "기존 시술 여부를 선택해주세요",
   }),
@@ -451,6 +452,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         district: data.district,
         detailedAddress: data.detailedAddress || "",
         skinType: data.skinType,
+        skinTypeOther: data.skinTypeOther || "",
         photoURLs: {
           left: imageUrls.left,
           front: imageUrls.front,
@@ -615,52 +617,78 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">이름 *</Label>
+              <Label
+                htmlFor="name"
+                className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+              >
+                이름 *
+              </Label>
               <Input
                 id="name"
                 {...register("name")}
                 placeholder="이름을 입력하세요"
-                className={cn(errors.name && "border-red-500")}
+                className={cn(
+                  "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
+                  errors.name &&
+                    "border-red-500 focus:border-red-500 focus:ring-red-200"
+                )}
               />
               {errors.name && (
-                <p className="text-red-500 text-sm">{errors.name.message}</p>
+                <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
             {/* Gender */}
             <div className="space-y-2">
-              <Label>성별 *</Label>
+              <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                성별 *
+              </Label>
               <RadioGroup
                 onValueChange={(value) =>
                   setValue("gender", value as "male" | "female" | "other")
                 }
                 className="flex space-x-4"
               >
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male">남성</Label>
+                  <Label htmlFor="male" className="text-sm">
+                    남성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female">여성</Label>
+                  <Label htmlFor="female" className="text-sm">
+                    여성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other">기타</Label>
+                  <Label htmlFor="other" className="text-sm">
+                    기타
+                  </Label>
                 </div>
               </RadioGroup>
               {errors.gender && (
-                <p className="text-red-500 text-sm">{errors.gender.message}</p>
+                <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                  {errors.gender.message}
+                </p>
               )}
             </div>
 
             {/* Birth Year */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="birthYear">출생년도 *</Label>
+                <Label
+                  htmlFor="birthYear"
+                  className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+                >
+                  출생년도 *
+                </Label>
                 <button
                   type="button"
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-600 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold transition-colors duration-200"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-300 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold transition-colors duration-200"
                   onClick={() => alert("미성년자 작업 불가")}
                   title="미성년자 작업 불가"
                 >
@@ -688,7 +716,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Contact */}
             <div className="space-y-2">
-              <Label htmlFor="contact">연락처 *</Label>
+              <Label
+                htmlFor="contact"
+                className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+              >
+                연락처 *
+              </Label>
               <Input
                 id="contact"
                 {...register("contact")}
@@ -710,7 +743,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Province and District */}
             <div className="space-y-2">
-              <Label htmlFor="province">시도 *</Label>
+              <Label
+                htmlFor="province"
+                className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+              >
+                시도 *
+              </Label>
               <select
                 id="province"
                 {...register("province")}
@@ -741,7 +779,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="district">시군구 *</Label>
+              <Label
+                htmlFor="district"
+                className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+              >
+                시군구 *
+              </Label>
               <select
                 id="district"
                 {...register("district")}
@@ -771,7 +814,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Detailed Address */}
             <div className="space-y-2">
-              <Label htmlFor="detailedAddress">상세주소</Label>
+              <Label
+                htmlFor="detailedAddress"
+                className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+              >
+                상세주소
+              </Label>
               <Input
                 id="detailedAddress"
                 {...register("detailedAddress")}
@@ -788,7 +836,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Skin Type */}
             <div className="space-y-2">
-              <Label>피부타입 *</Label>
+              <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                피부타입 *
+              </Label>
               <RadioGroup
                 onValueChange={(value) =>
                   setValue(
@@ -804,39 +854,71 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                 }
                 className="grid grid-cols-2 gap-2"
               >
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="oily" id="oily" />
-                  <Label htmlFor="oily">지성</Label>
+                  <Label htmlFor="oily" className="text-sm">
+                    지성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="dry" id="dry" />
-                  <Label htmlFor="dry">건성</Label>
+                  <Label htmlFor="dry" className="text-sm">
+                    건성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="normal" id="normal" />
-                  <Label htmlFor="normal">중성</Label>
+                  <Label htmlFor="normal" className="text-sm">
+                    중성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="combination" id="combination" />
-                  <Label htmlFor="combination">복합성</Label>
+                  <Label htmlFor="combination" className="text-sm">
+                    복합성
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="unknown" id="unknown" />
-                  <Label htmlFor="unknown">모르겠음</Label>
+                  <Label htmlFor="unknown" className="text-sm">
+                    모르겠음
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="other" id="other-skin" />
-                  <Label htmlFor="other-skin">기타</Label>
+                  <Label htmlFor="other-skin" className="text-sm">
+                    기타
+                  </Label>
                 </div>
               </RadioGroup>
               {watch("skinType") === "other" && (
-                <div className="bg-blue-50 text-blue-700 rounded-lg p-3 text-sm">
-                  <p>특이 체질이 있으시다면 기타에 적어주세요</p>
-                  <p>예) 켈로이드, 피부염, 아토피 등</p>
+                <div className="space-y-3">
+                  <div className="bg-blue-50 text-blue-700 border-blue-200 rounded-lg border p-3 text-sm">
+                    <p className="font-medium">
+                      특이 체질이 있으시다면 기타에 적어주세요
+                    </p>
+                    <p className="text-blue-600">
+                      예) 켈로이드, 피부염, 아토피 등
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="skinTypeOther"
+                      className="text-gray-700 text-sm font-medium"
+                    >
+                      상세 내용
+                    </Label>
+                    <textarea
+                      id="skinTypeOther"
+                      {...register("skinTypeOther")}
+                      placeholder="특이 체질이나 피부 상태를 자세히 적어주세요"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 min-h-[80px] w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2"
+                    />
+                  </div>
                 </div>
               )}
               {errors.skinType && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
                   {errors.skinType.message}
                 </p>
               )}
@@ -844,24 +926,30 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Previous Treatment */}
             <div className="space-y-2">
-              <Label>기존 시술 여부 *</Label>
+              <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                기존 시술 여부 *
+              </Label>
               <RadioGroup
                 onValueChange={(value) =>
                   setValue("hasPreviousTreatment", value as "yes" | "no")
                 }
                 className="flex space-x-4"
               >
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="yes" id="yes" />
-                  <Label htmlFor="yes">있음</Label>
+                  <Label htmlFor="yes" className="text-sm">
+                    있음
+                  </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                   <RadioGroupItem value="no" id="no" />
-                  <Label htmlFor="no">없음</Label>
+                  <Label htmlFor="no" className="text-sm">
+                    없음
+                  </Label>
                 </div>
               </RadioGroup>
               {errors.hasPreviousTreatment && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
                   {errors.hasPreviousTreatment.message}
                 </p>
               )}
