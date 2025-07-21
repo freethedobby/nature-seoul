@@ -22,6 +22,34 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 
+// 서울시 시군구 데이터
+const districts = [
+  { value: "gangnam", label: "강남구" },
+  { value: "gangdong", label: "강동구" },
+  { value: "gangbuk", label: "강북구" },
+  { value: "gangseo", label: "강서구" },
+  { value: "gwanak", label: "관악구" },
+  { value: "gwangjin", label: "광진구" },
+  { value: "guro", label: "구로구" },
+  { value: "geumcheon", label: "금천구" },
+  { value: "nowon", label: "노원구" },
+  { value: "dobong", label: "도봉구" },
+  { value: "dongdaemun", label: "동대문구" },
+  { value: "dongjak", label: "동작구" },
+  { value: "mapo", label: "마포구" },
+  { value: "seodaemun", label: "서대문구" },
+  { value: "seocho", label: "서초구" },
+  { value: "seongbuk", label: "성북구" },
+  { value: "songpa", label: "송파구" },
+  { value: "yangcheon", label: "양천구" },
+  { value: "yeongdeungpo", label: "영등포구" },
+  { value: "yongsan", label: "용산구" },
+  { value: "eunpyeong", label: "은평구" },
+  { value: "jongno", label: "종로구" },
+  { value: "junggu", label: "중구" },
+  { value: "jungnang", label: "중랑구" },
+];
+
 // Form validation schema
 const kycSchema = z.object({
   name: z
@@ -36,6 +64,38 @@ const kycSchema = z.object({
     .string()
     .length(11, "연락처는 11자리로 입력해주세요")
     .regex(/^[0-9]+$/, "숫자만 입력해주세요"),
+  district: z.enum(
+    [
+      "gangnam",
+      "gangdong",
+      "gangbuk",
+      "gangseo",
+      "gwanak",
+      "gwangjin",
+      "guro",
+      "geumcheon",
+      "nowon",
+      "dobong",
+      "dongdaemun",
+      "dongjak",
+      "mapo",
+      "seodaemun",
+      "seocho",
+      "seongbuk",
+      "songpa",
+      "yangcheon",
+      "yeongdeungpo",
+      "yongsan",
+      "eunpyeong",
+      "jongno",
+      "junggu",
+      "jungnang",
+    ],
+    {
+      required_error: "시군구를 선택해주세요",
+    }
+  ),
+  detailedAddress: z.string().optional(), // 상세주소는 선택항목
   skinType: z.enum(
     ["oily", "dry", "normal", "combination", "unknown", "other"],
     {
@@ -354,6 +414,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         gender: data.gender,
         birthYear: data.birthYear,
         contact: data.contact,
+        district: data.district,
+        detailedAddress: data.detailedAddress || "",
         skinType: data.skinType,
         photoURLs: {
           left: imageUrls.left,
@@ -562,6 +624,48 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               <p className="text-gray-500 text-sm">숫자만 입력하세요</p>
               {errors.contact && (
                 <p className="text-red-500 text-sm">{errors.contact.message}</p>
+              )}
+            </div>
+
+            {/* District */}
+            <div className="space-y-2">
+              <Label htmlFor="district">시군구 *</Label>
+              <select
+                id="district"
+                {...register("district")}
+                className={cn(
+                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  errors.district && "border-red-500"
+                )}
+              >
+                <option value="">시군구를 선택하세요</option>
+                {districts.map((district) => (
+                  <option key={district.value} value={district.value}>
+                    {district.label}
+                  </option>
+                ))}
+              </select>
+              {errors.district && (
+                <p className="text-red-500 text-sm">
+                  {errors.district.message}
+                </p>
+              )}
+            </div>
+
+            {/* Detailed Address */}
+            <div className="space-y-2">
+              <Label htmlFor="detailedAddress">상세주소</Label>
+              <Input
+                id="detailedAddress"
+                {...register("detailedAddress")}
+                placeholder="상세주소를 입력하세요 (선택사항)"
+                className={cn(errors.detailedAddress && "border-red-500")}
+              />
+              <p className="text-gray-500 text-sm">선택사항입니다</p>
+              {errors.detailedAddress && (
+                <p className="text-red-500 text-sm">
+                  {errors.detailedAddress.message}
+                </p>
               )}
             </div>
 

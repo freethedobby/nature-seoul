@@ -43,6 +43,34 @@ import {
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
 
+// 서울시 시군구 데이터
+const districts = [
+  { value: "gangnam", label: "강남구" },
+  { value: "gangdong", label: "강동구" },
+  { value: "gangbuk", label: "강북구" },
+  { value: "gangseo", label: "강서구" },
+  { value: "gwanak", label: "관악구" },
+  { value: "gwangjin", label: "광진구" },
+  { value: "guro", label: "구로구" },
+  { value: "geumcheon", label: "금천구" },
+  { value: "nowon", label: "노원구" },
+  { value: "dobong", label: "도봉구" },
+  { value: "dongdaemun", label: "동대문구" },
+  { value: "dongjak", label: "동작구" },
+  { value: "mapo", label: "마포구" },
+  { value: "seodaemun", label: "서대문구" },
+  { value: "seocho", label: "서초구" },
+  { value: "seongbuk", label: "성북구" },
+  { value: "songpa", label: "송파구" },
+  { value: "yangcheon", label: "양천구" },
+  { value: "yeongdeungpo", label: "영등포구" },
+  { value: "yongsan", label: "용산구" },
+  { value: "eunpyeong", label: "은평구" },
+  { value: "jongno", label: "종로구" },
+  { value: "junggu", label: "중구" },
+  { value: "jungnang", label: "중랑구" },
+];
+
 interface UserData {
   id: string;
   userId: string; // Firebase Auth UID or "guest"
@@ -51,6 +79,8 @@ interface UserData {
   gender?: string;
   birthYear?: string;
   contact: string;
+  district?: string;
+  detailedAddress?: string;
   skinType?: string;
   photoURLs?: {
     left: string;
@@ -521,19 +551,6 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
-                          {user.hasPreviousTreatment !== undefined && (
-                            <span
-                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
-                                user.hasPreviousTreatment
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {user.hasPreviousTreatment
-                                ? "기존 시술 경험 있음"
-                                : "기존 시술 경험 없음"}
-                            </span>
-                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
@@ -546,30 +563,6 @@ export default function KYCDashboard() {
                                 })
                               : "-"}
                           </span>
-                          {user.approvedAt && (
-                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <CheckCircle className="text-green-500 h-4 w-4" />
-                              {user.approvedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                          {user.rejectedAt && (
-                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <XCircle className="text-red-500 h-4 w-4" />
-                              {user.rejectedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -636,6 +629,24 @@ export default function KYCDashboard() {
                                 {user.contact}
                               </span>
                             </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">시군구</span>
+                              <span className="font-medium">
+                                {user.district
+                                  ? districts.find(
+                                      (d) => d.value === user.district
+                                    )?.label || user.district
+                                  : "-"}
+                              </span>
+                            </div>
+                            {user.detailedAddress && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">상세주소</span>
+                                <span className="font-medium">
+                                  {user.detailedAddress}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex justify-between">
                               <span className="text-gray-600">이메일</span>
                               <span className="font-medium">{user.email}</span>
@@ -831,19 +842,6 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
-                          {user.hasPreviousTreatment !== undefined && (
-                            <span
-                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
-                                user.hasPreviousTreatment
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {user.hasPreviousTreatment
-                                ? "기존 시술 경험 있음"
-                                : "기존 시술 경험 없음"}
-                            </span>
-                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
@@ -1133,19 +1131,6 @@ export default function KYCDashboard() {
                           {user.email}
                         </div>
                         <div className="mt-2 flex gap-2">
-                          {user.hasPreviousTreatment !== undefined && (
-                            <span
-                              className={`py-0.5 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium ${
-                                user.hasPreviousTreatment
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {user.hasPreviousTreatment
-                                ? "기존 시술 경험 있음"
-                                : "기존 시술 경험 없음"}
-                            </span>
-                          )}
                           <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
                             <Calendar className="text-gray-400 h-4 w-4" />
                             {user.createdAt
