@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import {
   serverTimestamp,
   setDoc,
@@ -32,11 +33,23 @@ import { createNotification, notificationTemplates } from "@/lib/notifications";
 // Form validation schema
 const kycSchema = z.object({
   name: z.string().min(2, "이름은 2글자 이상 입력해주세요"),
+  gender: z.enum(["male", "female", "other"], {
+    required_error: "성별을 선택해주세요",
+  }),
+  birthYear: z.string().min(4, "출생년도를 선택해주세요"),
   contact: z.string().min(10, "연락처를 정확히 입력해주세요"),
+  skinType: z.enum(
+    ["oily", "dry", "normal", "combination", "unknown", "other"],
+    {
+      required_error: "피부타입을 선택해주세요",
+    }
+  ),
   hasPreviousTreatment: z.enum(["yes", "no"], {
     required_error: "기존 시술 여부를 선택해주세요",
   }),
-  eyebrowPhoto: z.any(), // Temporarily simplify to debug
+  eyebrowPhotoLeft: z.any(), // 좌측 사진
+  eyebrowPhotoFront: z.any(), // 정면 사진
+  eyebrowPhotoRight: z.any(), // 우측 사진
 });
 
 type KYCFormData = z.infer<typeof kycSchema>;
@@ -52,16 +65,17 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     "idle" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewImages, setPreviewImages] = useState<{
+    left: string | null;
+    front: string | null;
+    right: string | null;
+  }>({ left: null, front: null, right: null });
+  const [selectedFiles, setSelectedFiles] = useState<{
+    left: File | null;
+    front: File | null;
+    right: File | null;
+  }>({ left: null, front: null, right: null });
   const [isDragging, setIsDragging] = useState(false);
-
-  console.log(
-    "KYCForm rendered - user:",
-    user?.email,
-    "isSubmitting:",
-    isSubmitting
-  );
 
   const {
     register,
@@ -79,48 +93,66 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   console.log("Form values:", watchedValues);
   console.log("Form errors:", errors);
 
-  // Handle file change (for drag and drop)
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setValue("eyebrowPhoto", file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Handle file change for specific photo type
+  const handleFileChange =
+    (photoType: "left" | "front" | "right") =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        setSelectedFiles((prev) => ({ ...prev, [photoType]: file }));
+        setValue(
+          `eyebrowPhoto${
+            photoType.charAt(0).toUpperCase() + photoType.slice(1)
+          }` as any,
+          file
+        );
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewImages((prev) => ({
+            ...prev,
+            [photoType]: e.target?.result as string,
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    };
 
-  // Handle file drop
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragging(false);
-    const file = event.dataTransfer.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setValue("eyebrowPhoto", file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Handle file drop for specific photo type
+  const handleDrop =
+    (photoType: "left" | "front" | "right") =>
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragging(false);
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        setSelectedFiles((prev) => ({ ...prev, [photoType]: file }));
+        setValue(
+          `eyebrowPhoto${
+            photoType.charAt(0).toUpperCase() + photoType.slice(1)
+          }` as any,
+          file
+        );
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewImages((prev) => ({
+            ...prev,
+            [photoType]: e.target?.result as string,
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    };
 
-  // Handle drag over
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(true);
   };
 
-  // Handle drag leave
   const handleDragLeave = () => {
     setIsDragging(false);
   };
 
-  // Compress image to reduce size
+  // Compress image function
   const compressImage = (
     file: File,
     maxSizeBytes: number = 800000
@@ -133,7 +165,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       img.onload = () => {
         // Calculate new dimensions while maintaining aspect ratio
         let { width, height } = img;
-        const maxDimension = 1200; // Max width/height
+        const maxDimension = 1200;
 
         if (width > height) {
           if (width > maxDimension) {
@@ -150,73 +182,69 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         canvas.width = width;
         canvas.height = height;
 
-        // Draw and compress image
+        // Draw and compress
         ctx?.drawImage(img, 0, 0, width, height);
-
-        // Convert to base64 with compression
-        let quality = 0.8;
-        let base64String = canvas.toDataURL("image/jpeg", quality);
-
-        // Reduce quality if still too large
-        while (base64String.length > maxSizeBytes && quality > 0.1) {
-          quality -= 0.1;
-          base64String = canvas.toDataURL("image/jpeg", quality);
-        }
-
-        console.log(
-          `Image compressed: ${file.size} -> ${
-            base64String.length
-          } bytes, quality: ${quality.toFixed(1)}`
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            } else {
+              reject(new Error("Failed to compress image"));
+            }
+          },
+          "image/jpeg",
+          0.8
         );
-        resolve(base64String);
       };
 
-      img.onerror = () => reject(new Error("이미지 로딩에 실패했습니다."));
+      img.onerror = reject;
       img.src = URL.createObjectURL(file);
     });
   };
 
-  // Upload image to Firebase Storage
+  // Upload image function
   const uploadImage = async (file: File): Promise<string> => {
-    console.log("=== UPLOAD IMAGE START ===");
-    console.log("File:", file.name, file.size, file.type);
-    console.log("User:", user?.email);
-    console.log("User agent:", navigator.userAgent);
-    console.log(
-      "Is mobile:",
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      )
-    );
-
-    if (!user) throw new Error("User not authenticated");
-
-    // Check file size for mobile devices
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      console.error("File too large:", file.size, "bytes");
-      throw new Error(
-        "파일 크기가 너무 큽니다. 10MB 이하의 파일을 선택해주세요."
-      );
-    }
-
-    // Compress image to fit Firestore limits
-    console.log("Compressing image to fit Firestore limits...");
     try {
-      const compressedImage = await compressImage(file, 800000); // 800KB limit
-      console.log("Image compressed successfully");
-      return compressedImage;
-    } catch (compressError) {
-      console.error("Image compression failed:", compressError);
-      throw new Error(
-        "이미지 압축에 실패했습니다. 다른 이미지를 선택해주세요."
-      );
+      // Compress image first
+      const compressedImage = await compressImage(file);
+
+      // Try Firebase Storage first
+      const storageRef = ref(storage, `kyc-photos/${Date.now()}-${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      return new Promise((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log("Upload progress:", progress);
+          },
+          (error) => {
+            console.error("Upload error:", error);
+            reject(error);
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(downloadURL);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      throw error;
     }
   };
 
-  // Submit form
   const onSubmit = async (data: KYCFormData) => {
-    console.log("=== KYC FORM SUBMISSION START ===");
+    console.log("=== KYC SUBMISSION START ===");
     console.log("Form data:", data);
     console.log("User:", user?.email);
     console.log("Firebase db available:", !!db);
@@ -238,28 +266,10 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       setSubmitStatus("error");
     }, 30000); // 30 second timeout
 
-    // Remove timeout that was hiding errors
-    // const timeoutId = setTimeout(() => {
-    //   console.log("KYC submission timeout - forcing success");
-    //   setSubmitStatus("success");
-    //   setIsSubmitting(false);
-    //   reset();
-    //   setPreviewImage(null);
-    //   setSelectedFile(null);
-    //   onSuccess?.();
-    // }, 10000); // 10 second timeout
-
     try {
       // Check if Firebase is properly configured
       if (!db) {
         console.error("❌ Firebase not configured");
-        console.error("Environment check:", {
-          apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-          projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        });
-
-        // Don't show success if Firebase is not available - show error instead
         setSubmitStatus("error");
         return;
       }
@@ -267,67 +277,93 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       // Test Firebase connectivity
       console.log("=== TESTING FIREBASE CONNECTIVITY ===");
       console.log("Network status:", navigator.onLine);
-      console.log(
-        "Connection type:",
-        (navigator as Navigator & { connection?: { type?: string } }).connection
-          ?.type
-      );
 
       try {
         firestoreDoc(db, "test", "connectivity");
         console.log("✅ Firestore doc reference created successfully");
       } catch (firestoreError) {
         console.error("❌ Firestore doc reference failed:", firestoreError);
-
-        // Check if it's a network issue
         if (!navigator.onLine) {
           throw new Error("인터넷 연결을 확인해주세요.");
         }
-
-        // Check if it's a mobile-specific issue
-        const isMobile =
-          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            navigator.userAgent
-          );
-        if (isMobile) {
-          console.log("Mobile device detected - using fallback approach");
-          // Continue with submission but log the issue
-        } else {
-          throw new Error("Firestore not accessible");
-        }
+        throw new Error("Firestore not accessible");
       }
 
-      console.log("Starting image upload...");
-      // Upload image (with fallback to base64 if Firebase Storage fails)
-      let imageUrl;
-      try {
-        console.log("=== IMAGE UPLOAD ATTEMPT ===");
-        console.log("File to upload:", data.eyebrowPhoto);
-        console.log("File type:", data.eyebrowPhoto?.type);
-        console.log("File size:", data.eyebrowPhoto?.size);
+      console.log("Starting image uploads...");
 
-        imageUrl = await uploadImage(data.eyebrowPhoto);
-        console.log(
-          "Image processed successfully, URL type:",
-          imageUrl.startsWith("data:") ? "base64" : "firebase-storage"
-        );
-      } catch (uploadError) {
-        console.error("=== IMAGE UPLOAD FAILED ===");
-        console.error("Upload error:", uploadError);
-        console.error("Using fallback to base64...");
+      // Upload all three images
+      const imageUrls: { left: string; front: string; right: string } = {
+        left: "",
+        front: "",
+        right: "",
+      };
 
-        // Fallback: convert to base64
+      const photoTypes = ["left", "front", "right"] as const;
+
+      for (const photoType of photoTypes) {
+        const photoKey = `eyebrowPhoto${
+          photoType.charAt(0).toUpperCase() + photoType.slice(1)
+        }` as keyof KYCFormData;
+        const photoFile = data[photoKey] as File;
+
+        if (!photoFile) {
+          throw new Error(
+            `${
+              photoType === "left"
+                ? "좌측"
+                : photoType === "front"
+                ? "정면"
+                : "우측"
+            } 사진을 업로드해주세요.`
+          );
+        }
+
         try {
-          imageUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(data.eyebrowPhoto);
-          });
-          console.log("✅ Base64 fallback successful");
-        } catch (base64Error) {
-          console.error("❌ Base64 fallback also failed:", base64Error);
-          throw new Error("Image processing completely failed");
+          console.log(
+            `=== ${photoType.toUpperCase()} IMAGE UPLOAD ATTEMPT ===`
+          );
+          console.log("File to upload:", photoFile);
+          console.log("File type:", photoFile?.type);
+          console.log("File size:", photoFile?.size);
+
+          const imageUrl = await uploadImage(photoFile);
+          imageUrls[photoType] = imageUrl;
+          console.log(
+            `${photoType} image processed successfully, URL type:`,
+            imageUrl.startsWith("data:") ? "base64" : "firebase-storage"
+          );
+        } catch (uploadError) {
+          console.error(
+            `=== ${photoType.toUpperCase()} IMAGE UPLOAD FAILED ===`
+          );
+          console.error("Upload error:", uploadError);
+          console.error("Using fallback to base64...");
+
+          // Fallback: convert to base64
+          try {
+            const imageUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(photoFile);
+            });
+            imageUrls[photoType] = imageUrl;
+            console.log(`✅ ${photoType} Base64 fallback successful`);
+          } catch (base64Error) {
+            console.error(
+              `❌ ${photoType} Base64 fallback also failed:`,
+              base64Error
+            );
+            throw new Error(
+              `${
+                photoType === "left"
+                  ? "좌측"
+                  : photoType === "front"
+                  ? "정면"
+                  : "우측"
+              } 사진 처리에 실패했습니다.`
+            );
+          }
         }
       }
 
@@ -336,9 +372,18 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         userId: userId,
         email: userEmail,
         name: data.name,
+        gender: data.gender,
+        birthYear: data.birthYear,
         contact: data.contact,
-        photoURL: imageUrl,
-        photoType: imageUrl.startsWith("data:") ? "base64" : "firebase-storage",
+        skinType: data.skinType,
+        photoURLs: {
+          left: imageUrls.left,
+          front: imageUrls.front,
+          right: imageUrls.right,
+        },
+        photoType: imageUrls.left.startsWith("data:")
+          ? "base64"
+          : "firebase-storage",
         kycStatus: "pending",
         hasPreviousTreatment: data.hasPreviousTreatment === "yes",
         createdAt: serverTimestamp(),
@@ -359,19 +404,6 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         console.log("KYC Status: pending");
       } catch (firestoreError) {
         console.error("❌ Firestore save failed:", firestoreError);
-        console.error("Firestore error details:", {
-          code:
-            firestoreError instanceof Error
-              ? firestoreError.message
-              : "Unknown error",
-          message:
-            firestoreError instanceof Error
-              ? firestoreError.message
-              : "Unknown error",
-          stack:
-            firestoreError instanceof Error ? firestoreError.stack : undefined,
-        });
-        // Don't continue - show error to user
         throw firestoreError;
       }
 
@@ -380,8 +412,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       setSubmitStatus("success");
       setIsSubmitting(false);
       reset();
-      setPreviewImage(null);
-      setSelectedFile(null);
+      setPreviewImages({ left: null, front: null, right: null });
+      setSelectedFiles({ left: null, front: null, right: null });
 
       // Create notifications
       try {
@@ -447,9 +479,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             <CheckCircle className="text-green-500 mx-auto h-16 w-16" />
             <h3 className="text-gray-900 text-xl font-semibold">신청 완료!</h3>
             <p className="text-gray-600">
-              KYC 신청이 성공적으로 제출되었습니다.
-              <br />
-              검토 후 연락드리겠습니다.
+              KYC 신청이 성공적으로 제출되었습니다. 검토 후 연락드리겠습니다.
             </p>
           </div>
         </CardContent>
@@ -457,300 +487,379 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     );
   }
 
-  if (submitStatus === "error") {
-    return (
-      <Card className="mx-auto w-full max-w-md">
-        <CardContent className="pt-6">
-          <div className="space-y-4 text-center">
-            <AlertCircle className="text-red-500 mx-auto h-16 w-16" />
-            <h3 className="text-gray-900 text-xl font-semibold">제출 실패</h3>
-            <p className="text-gray-600">
-              {errorMessage || "KYC 신청 제출 중 오류가 발생했습니다."}
-            </p>
-            <div className="space-y-2">
-              <Button
-                onClick={() => {
-                  setSubmitStatus("idle" as const);
-                  setIsSubmitting(false);
-                  setErrorMessage("");
-                }}
-                className="mt-4"
-              >
-                다시 시도
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSubmitStatus("idle" as const);
-                  setIsSubmitting(false);
-                  setErrorMessage("");
-                  reset();
-                  setPreviewImage(null);
-                  setSelectedFile(null);
-                }}
-                className="mt-2"
-              >
-                처음부터 다시 시작
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Generate birth year options (1950-2010)
+  const birthYears = Array.from({ length: 61 }, (_, i) => 1950 + i).reverse();
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-center text-xl font-light">
-          상담 신청서
-        </CardTitle>
-        <p className="text-gray-600 text-center text-sm">
-          맞춤 상담을 위한 정보를 입력해주세요
-        </p>
+        <CardTitle className="text-center">KYC 신청서</CardTitle>
       </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">기본 정보</h3>
 
-      <CardContent className="space-y-6">
-        <form
-          onSubmit={(e) => {
-            console.log("=== FORM SUBMIT EVENT ===");
-            console.log("Form submit event triggered");
-            console.log("Form validation errors:", errors);
-            console.log("Form is valid:", Object.keys(errors).length === 0);
-            console.log("User state:", user);
-            console.log("User UID:", user?.uid);
-            console.log("Is submitting:", isSubmitting);
-            handleSubmit(onSubmit)(e);
-          }}
-          className="space-y-6"
-        >
-          {/* Name Input */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              이름 *
-            </Label>
-            <Input
-              id="name"
-              {...register("name")}
-              placeholder="이름을 입력해주세요"
-              className="text-base h-12"
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm">{errors.name.message}</p>
-            )}
-          </div>
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">이름 *</Label>
+              <Input
+                id="name"
+                {...register("name")}
+                placeholder="이름을 입력하세요"
+                className={cn(errors.name && "border-red-500")}
+              />
+              {errors.name && (
+                <p className="text-red-500 text-sm">{errors.name.message}</p>
+              )}
+            </div>
 
-          {/* Contact Input */}
-          <div className="space-y-2">
-            <Label htmlFor="contact" className="text-sm font-medium">
-              연락처 *
-            </Label>
-            <Input
-              id="contact"
-              {...register("contact", {
-                required: "연락처를 입력해주세요",
-                pattern: {
-                  value: /^[0-9]{10,11}$/,
-                  message: "올바른 연락처 형식이 아닙니다",
-                },
-                onChange: (e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, "");
-                  e.target.value = value.slice(0, 11);
-                },
-              })}
-              placeholder="01012345678"
-              className="text-base h-12"
-              maxLength={11}
-              type="tel"
-            />
-            {errors.contact && (
-              <p className="text-red-500 text-sm">{errors.contact.message}</p>
-            )}
-          </div>
-
-          {/* Previous Treatment Radio */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">
-              기존 눈썹 시술 경험이 있으신가요? *
-            </Label>
-            <RadioGroup
-              {...register("hasPreviousTreatment")}
-              onValueChange={(value) =>
-                setValue("hasPreviousTreatment", value as "yes" | "no")
-              }
-              className="flex flex-row space-x-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="yes" />
-                <Label htmlFor="yes" className="text-base cursor-pointer">
-                  예
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="no" />
-                <Label htmlFor="no" className="text-base cursor-pointer">
-                  아니오
-                </Label>
-              </div>
-            </RadioGroup>
-            {errors.hasPreviousTreatment && (
-              <p className="text-red-500 text-sm">
-                {errors.hasPreviousTreatment.message}
-              </p>
-            )}
-          </div>
-
-          {/* Photo Upload */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">현재 눈썹 사진 *</Label>
-
-            {previewImage ? (
-              <div className="space-y-3">
-                <div className="relative">
-                  <Image
-                    src={previewImage}
-                    alt="눈썹 미리보기"
-                    width={600}
-                    height={400}
-                    className="h-48 w-full rounded-lg border object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      setPreviewImage(null);
-                      setValue("eyebrowPhoto", undefined as unknown as File);
-                    }}
-                  >
-                    변경
-                  </Button>
+            {/* Gender */}
+            <div className="space-y-2">
+              <Label>성별 *</Label>
+              <RadioGroup
+                onValueChange={(value) =>
+                  setValue("gender", value as "male" | "female" | "other")
+                }
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="male" id="male" />
+                  <Label htmlFor="male">남성</Label>
                 </div>
-              </div>
-            ) : (
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="female" id="female" />
+                  <Label htmlFor="female">여성</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">기타</Label>
+                </div>
+              </RadioGroup>
+              {errors.gender && (
+                <p className="text-red-500 text-sm">{errors.gender.message}</p>
+              )}
+            </div>
+
+            {/* Birth Year */}
+            <div className="space-y-2">
+              <Label htmlFor="birthYear">출생년도 *</Label>
+              <select
+                id="birthYear"
+                {...register("birthYear")}
+                className="border-gray-300 focus:ring-blue-500 w-full rounded-md border p-2 focus:outline-none focus:ring-2"
+              >
+                <option value="">출생년도를 선택하세요</option>
+                {birthYears.map((year) => (
+                  <option key={year} value={year.toString()}>
+                    {year}년
+                  </option>
+                ))}
+              </select>
+              {errors.birthYear && (
+                <p className="text-red-500 text-sm">
+                  {errors.birthYear.message}
+                </p>
+              )}
+            </div>
+
+            {/* Contact */}
+            <div className="space-y-2">
+              <Label htmlFor="contact">연락처 *</Label>
+              <Input
+                id="contact"
+                {...register("contact")}
+                placeholder="연락처를 입력하세요 (예: 010-1234-5678)"
+                className={cn(errors.contact && "border-red-500")}
+              />
+              {errors.contact && (
+                <p className="text-red-500 text-sm">{errors.contact.message}</p>
+              )}
+            </div>
+
+            {/* Skin Type */}
+            <div className="space-y-2">
+              <Label>피부타입 *</Label>
+              <RadioGroup
+                onValueChange={(value) => setValue("skinType", value as any)}
+                className="grid grid-cols-2 gap-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="oily" id="oily" />
+                  <Label htmlFor="oily">지성</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dry" id="dry" />
+                  <Label htmlFor="dry">건성</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="normal" id="normal" />
+                  <Label htmlFor="normal">중성</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="combination" id="combination" />
+                  <Label htmlFor="combination">복합성</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="unknown" id="unknown" />
+                  <Label htmlFor="unknown">모르겠음</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other-skin" />
+                  <Label htmlFor="other-skin">기타</Label>
+                </div>
+              </RadioGroup>
+              {errors.skinType && (
+                <p className="text-red-500 text-sm">
+                  {errors.skinType.message}
+                </p>
+              )}
+            </div>
+
+            {/* Previous Treatment */}
+            <div className="space-y-2">
+              <Label>기존 시술 여부 *</Label>
+              <RadioGroup
+                onValueChange={(value) =>
+                  setValue("hasPreviousTreatment", value as "yes" | "no")
+                }
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="yes" id="yes" />
+                  <Label htmlFor="yes">있음</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="no" id="no" />
+                  <Label htmlFor="no">없음</Label>
+                </div>
+              </RadioGroup>
+              {errors.hasPreviousTreatment && (
+                <p className="text-red-500 text-sm">
+                  {errors.hasPreviousTreatment.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Photo Upload Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">현재 눈썹 사진 *</h3>
+            <p className="text-gray-600 text-sm">
+              좌측, 정면, 우측 각각의 사진을 업로드해주세요.
+            </p>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {/* Left Photo */}
               <div className="space-y-2">
-                <div className="flex flex-col gap-4">
-                  <div
-                    className={cn(
-                      "relative flex flex-col items-center justify-center rounded-lg border border-dashed bg-white p-6",
-                      isDragging && "border-blue-500 bg-blue-50"
-                    )}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 cursor-pointer opacity-0"
-                      required
-                    />
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <ImagePlus className="text-gray-400 h-8 w-8" />
-                      <div>
-                        <p className="text-gray-600 text-sm">
-                          클릭하여 파일 선택 또는 드래그하여 업로드
-                        </p>
-                        <p className="text-gray-500 mt-1 text-xs">
-                          시술받고자 하는 눈썹 정면 사진을 업로드해 주세요
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          JPG, PNG 파일 (최대 5MB)
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-                      <ImageIcon className="text-blue-500 h-5 w-5" />
-                      <span className="text-gray-600 flex-1 truncate text-sm">
-                        {selectedFile.name}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-gray-500 hover:text-red-500 h-8 w-8"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setPreviewImage(null);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                <Label>좌측 사진</Label>
+                <div
+                  className={cn(
+                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    isDragging
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400",
+                    previewImages.left ? "border-green-500 bg-green-50" : ""
                   )}
-                  {/* Image Preview */}
-                  {previewImage && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
+                  onDrop={handleDrop("left")}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  {previewImages.left ? (
+                    <div className="relative">
                       <Image
-                        src={previewImage}
-                        alt="눈썹 사진 미리보기"
-                        fill
-                        className="object-contain"
+                        src={previewImages.left}
+                        alt="좌측 눈썹"
+                        width={200}
+                        height={200}
+                        className="mx-auto rounded-lg object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => {
-                          setPreviewImage(null);
-                          setSelectedFile(null);
+                          setPreviewImages((prev) => ({ ...prev, left: null }));
+                          setSelectedFiles((prev) => ({ ...prev, left: null }));
                         }}
-                        className="shadow-md hover:bg-gray-100 absolute right-2 top-2 rounded-full bg-white p-1"
+                        className="bg-red-500 hover:bg-red-600 absolute -top-2 -right-2 rounded-full p-1 text-white"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <ImagePlus className="text-gray-400 mx-auto h-8 w-8" />
+                      <p className="text-gray-600 text-sm">
+                        드래그 앤 드롭 또는 클릭
+                      </p>
+                    </div>
                   )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange("left")}
+                    className="hidden"
+                    id="left-photo"
+                  />
+                  <label htmlFor="left-photo" className="cursor-pointer">
+                    <span className="text-blue-600 hover:text-blue-800 text-sm">
+                      파일 선택
+                    </span>
+                  </label>
                 </div>
               </div>
-            )}
 
-            {errors.eyebrowPhoto && (
-              <p className="text-red-500 text-sm">
-                {errors.eyebrowPhoto.message?.toString()}
-              </p>
-            )}
+              {/* Front Photo */}
+              <div className="space-y-2">
+                <Label>정면 사진</Label>
+                <div
+                  className={cn(
+                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    isDragging
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400",
+                    previewImages.front ? "border-green-500 bg-green-50" : ""
+                  )}
+                  onDrop={handleDrop("front")}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  {previewImages.front ? (
+                    <div className="relative">
+                      <Image
+                        src={previewImages.front}
+                        alt="정면 눈썹"
+                        width={200}
+                        height={200}
+                        className="mx-auto rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewImages((prev) => ({
+                            ...prev,
+                            front: null,
+                          }));
+                          setSelectedFiles((prev) => ({
+                            ...prev,
+                            front: null,
+                          }));
+                        }}
+                        className="bg-red-500 hover:bg-red-600 absolute -top-2 -right-2 rounded-full p-1 text-white"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <ImagePlus className="text-gray-400 mx-auto h-8 w-8" />
+                      <p className="text-gray-600 text-sm">
+                        드래그 앤 드롭 또는 클릭
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange("front")}
+                    className="hidden"
+                    id="front-photo"
+                  />
+                  <label htmlFor="front-photo" className="cursor-pointer">
+                    <span className="text-blue-600 hover:text-blue-800 text-sm">
+                      파일 선택
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Right Photo */}
+              <div className="space-y-2">
+                <Label>우측 사진</Label>
+                <div
+                  className={cn(
+                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    isDragging
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400",
+                    previewImages.right ? "border-green-500 bg-green-50" : ""
+                  )}
+                  onDrop={handleDrop("right")}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  {previewImages.right ? (
+                    <div className="relative">
+                      <Image
+                        src={previewImages.right}
+                        alt="우측 눈썹"
+                        width={200}
+                        height={200}
+                        className="mx-auto rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewImages((prev) => ({
+                            ...prev,
+                            right: null,
+                          }));
+                          setSelectedFiles((prev) => ({
+                            ...prev,
+                            right: null,
+                          }));
+                        }}
+                        className="bg-red-500 hover:bg-red-600 absolute -top-2 -right-2 rounded-full p-1 text-white"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <ImagePlus className="text-gray-400 mx-auto h-8 w-8" />
+                      <p className="text-gray-600 text-sm">
+                        드래그 앤 드롭 또는 클릭
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange("right")}
+                    className="hidden"
+                    id="right-photo"
+                  />
+                  <label htmlFor="right-photo" className="cursor-pointer">
+                    <span className="text-blue-600 hover:text-blue-800 text-sm">
+                      파일 선택
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-black shadow-lg hover:shadow-xl hover:-translate-y-0.5 group relative h-14 w-full transform text-white transition-all duration-300 disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <div className="bg-gradient-to-r absolute inset-0 rounded-xl from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-            <div className="relative flex items-center justify-center">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin mr-3 h-6 w-6" />
-                  <span>제출 중...</span>
-                </>
-              ) : (
-                <>
-                  <div className="p-1.5 mr-3 rounded-lg bg-white/10 transition-colors duration-300 group-hover:bg-white/20">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                      />
-                    </svg>
-                  </div>
-                  <span>상담 신청하기</span>
-                </>
-              )}
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="bg-red-50 border-red-200 rounded-lg border p-4">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="text-red-500 h-5 w-5" />
+                <p className="text-red-700">{errorMessage}</p>
+              </div>
             </div>
-          </Button>
+          )}
 
-          {/* Error display is handled in the conditional rendering above */}
+          {/* Submit Button */}
+          <Button type="submit" disabled={isSubmitting} className="w-full">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                제출 중...
+              </>
+            ) : (
+              "KYC 신청 제출"
+            )}
+          </Button>
         </form>
       </CardContent>
     </Card>
