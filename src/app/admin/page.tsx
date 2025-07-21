@@ -35,6 +35,7 @@ import { createNotification, notificationTemplates } from "@/lib/notifications";
 
 interface UserData {
   id: string;
+  userId: string; // Firebase Auth UID or "guest"
   email: string;
   name: string;
   contact: string;
@@ -246,7 +247,7 @@ export default function AdminDashboard() {
           rejectReason.trim()
         );
         await createNotification({
-          userId: selectedUserId,
+          userId: user.userId || selectedUserId, // Use the actual userId from user data
           type: "kyc_rejected",
           title: notification.title,
           message: notification.message,
@@ -257,7 +258,7 @@ export default function AdminDashboard() {
         });
         console.log(
           "KYC rejection notification created for user:",
-          selectedUserId
+          user.userId || selectedUserId
         );
       } catch (notificationError) {
         console.error(
