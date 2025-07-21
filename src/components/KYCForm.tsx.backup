@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 
-// 시도별 시군구 데이터
+// 전국 시도별 시군구 데이터
 const districts = {
   seoul: [
     { value: "gangnam", label: "강남구" },
@@ -50,6 +50,68 @@ const districts = {
     { value: "junggu", label: "중구" },
     { value: "jungnang", label: "중랑구" },
   ],
+  busan: [
+    { value: "junggu_busan", label: "중구" },
+    { value: "seogu", label: "서구" },
+    { value: "donggu_busan", label: "동구" },
+    { value: "yeongdo", label: "영도구" },
+    { value: "busanjin", label: "부산진구" },
+    { value: "dongnae", label: "동래구" },
+    { value: "namgu_busan", label: "남구" },
+    { value: "bukgu_busan", label: "북구" },
+    { value: "haeundae", label: "해운대구" },
+    { value: "saha", label: "사하구" },
+    { value: "geumjeong", label: "금정구" },
+    { value: "gangseo_busan", label: "강서구" },
+    { value: "yeonje", label: "연제구" },
+    { value: "suyeong", label: "수영구" },
+    { value: "sasang", label: "사상구" },
+    { value: "gijang", label: "기장군" },
+  ],
+  daegu: [
+    { value: "junggu_daegu", label: "중구" },
+    { value: "donggu_daegu", label: "동구" },
+    { value: "seogu_daegu", label: "서구" },
+    { value: "namgu_daegu", label: "남구" },
+    { value: "bukgu_daegu", label: "북구" },
+    { value: "suseong", label: "수성구" },
+    { value: "dalseo", label: "달서구" },
+    { value: "dalseong", label: "달성군" },
+  ],
+  incheon: [
+    { value: "junggu_incheon", label: "중구" },
+    { value: "donggu_incheon", label: "동구" },
+    { value: "michuhol", label: "미추홀구" },
+    { value: "yeonsu", label: "연수구" },
+    { value: "namdong", label: "남동구" },
+    { value: "bupyeong", label: "부평구" },
+    { value: "gyeyang", label: "계양구" },
+    { value: "seo_incheon", label: "서구" },
+    { value: "ganghwa", label: "강화군" },
+    { value: "ongjin", label: "옹진군" },
+  ],
+  gwangju: [
+    { value: "donggu_gwangju", label: "동구" },
+    { value: "seogu_gwangju", label: "서구" },
+    { value: "namgu_gwangju", label: "남구" },
+    { value: "bukgu_gwangju", label: "북구" },
+    { value: "gwangsan", label: "광산구" },
+  ],
+  daejeon: [
+    { value: "donggu_daejeon", label: "동구" },
+    { value: "junggu_daejeon", label: "중구" },
+    { value: "seogu_daejeon", label: "서구" },
+    { value: "yuseong", label: "유성구" },
+    { value: "daedeok", label: "대덕구" },
+  ],
+  ulsan: [
+    { value: "junggu_ulsan", label: "중구" },
+    { value: "namgu_ulsan", label: "남구" },
+    { value: "donggu_ulsan", label: "동구" },
+    { value: "bukgu_ulsan", label: "북구" },
+    { value: "ulju", label: "울주군" },
+  ],
+  sejong: [{ value: "sejong", label: "세종특별자치시" }],
   gyeonggi: [
     { value: "suwon", label: "수원시" },
     { value: "seongnam", label: "성남시" },
@@ -66,7 +128,6 @@ const districts = {
     { value: "anseong", label: "안성시" },
     { value: "gimpo", label: "김포시" },
     { value: "hwaseong", label: "화성시" },
-    { value: "gwangju_gyeonggi", label: "광주시" },
     { value: "yeoju", label: "여주시" },
     { value: "pocheon", label: "포천시" },
     { value: "dongducheon", label: "동두천시" },
@@ -80,30 +141,168 @@ const districts = {
     { value: "uiwang", label: "의왕시" },
     { value: "gwachon", label: "과천시" },
     { value: "guri", label: "구리시" },
-    { value: "namyangju", label: "남양주시" },
     { value: "yeoncheon", label: "연천군" },
     { value: "gapyeong", label: "가평군" },
     { value: "yangpyeong", label: "양평군" },
   ],
-  incheon: [
-    { value: "junggu_incheon", label: "중구" },
-    { value: "donggu", label: "동구" },
-    { value: "michuhol", label: "미추홀구" },
-    { value: "yeonsu", label: "연수구" },
-    { value: "namdong", label: "남동구" },
-    { value: "bupyeong", label: "부평구" },
-    { value: "gyeyang", label: "계양구" },
-    { value: "seo_incheon", label: "서구" },
-    { value: "ganghwa", label: "강화군" },
-    { value: "ongjin", label: "옹진군" },
+  gangwon: [
+    { value: "chuncheon", label: "춘천시" },
+    { value: "wonju", label: "원주시" },
+    { value: "gangneung", label: "강릉시" },
+    { value: "donghae", label: "동해시" },
+    { value: "taebaek", label: "태백시" },
+    { value: "sokcho", label: "속초시" },
+    { value: "samcheok", label: "삼척시" },
+    { value: "hongcheon", label: "홍천군" },
+    { value: "hoengseong", label: "횡성군" },
+    { value: "yeongwol", label: "영월군" },
+    { value: "pyeongchang", label: "평창군" },
+    { value: "jeongseon", label: "정선군" },
+    { value: "cheorwon", label: "철원군" },
+    { value: "hwacheon", label: "화천군" },
+    { value: "yanggu", label: "양구군" },
+    { value: "inje", label: "인제군" },
+    { value: "goseong_gangwon", label: "고성군" },
+    { value: "yangyang", label: "양양군" },
+  ],
+  chungbuk: [
+    { value: "cheongju", label: "청주시" },
+    { value: "chungju", label: "충주시" },
+    { value: "jecheon", label: "제천시" },
+    { value: "boeun", label: "보은군" },
+    { value: "okcheon", label: "옥천군" },
+    { value: "yeongdong", label: "영동군" },
+    { value: "jincheon", label: "진천군" },
+    { value: "goesan", label: "괴산군" },
+    { value: "eumseong", label: "음성군" },
+    { value: "danyang", label: "단양군" },
+    { value: "jeungpyeong", label: "증평군" },
+  ],
+  chungnam: [
+    { value: "cheonan", label: "천안시" },
+    { value: "gongju", label: "공주시" },
+    { value: "boryeong", label: "보령시" },
+    { value: "asan", label: "아산시" },
+    { value: "seosan", label: "서산시" },
+    { value: "nonsan", label: "논산시" },
+    { value: "gyeryong", label: "계룡시" },
+    { value: "dangjin", label: "당진시" },
+    { value: "geumsan", label: "금산군" },
+    { value: "buyeo", label: "부여군" },
+    { value: "seocheon", label: "서천군" },
+    { value: "cheongyang", label: "청양군" },
+    { value: "hongseong", label: "홍성군" },
+    { value: "yesan", label: "예산군" },
+    { value: "taean", label: "태안군" },
+  ],
+  jeonbuk: [
+    { value: "jeonju", label: "전주시" },
+    { value: "gunsan", label: "군산시" },
+    { value: "iksan", label: "익산시" },
+    { value: "jeongeup", label: "정읍시" },
+    { value: "namwon", label: "남원시" },
+    { value: "gimje", label: "김제시" },
+    { value: "wanju", label: "완주군" },
+    { value: "jangsu", label: "장수군" },
+    { value: "imsil", label: "임실군" },
+    { value: "sunchang", label: "순창군" },
+    { value: "jinan", label: "진안군" },
+    { value: "muju", label: "무주군" },
+    { value: "buan", label: "부안군" },
+    { value: "gochang", label: "고창군" },
+  ],
+  jeonnam: [
+    { value: "mokpo", label: "목포시" },
+    { value: "yeosu", label: "여수시" },
+    { value: "suncheon", label: "순천시" },
+    { value: "naju", label: "나주시" },
+    { value: "gwangyang", label: "광양시" },
+    { value: "damyang", label: "담양군" },
+    { value: "gokseong", label: "곡성군" },
+    { value: "gurye", label: "구례군" },
+    { value: "goheung", label: "고흥군" },
+    { value: "boseong", label: "보성군" },
+    { value: "hwaseong_jeonnam", label: "화순군" },
+    { value: "jangheung", label: "장흥군" },
+    { value: "gangjin", label: "강진군" },
+    { value: "haenam", label: "해남군" },
+    { value: "yeongam", label: "영암군" },
+    { value: "muan", label: "무안군" },
+    { value: "sinan", label: "신안군" },
+    { value: "jindo", label: "진도군" },
+    { value: "wando", label: "완도군" },
+    { value: "jangsung", label: "장성군" },
+    { value: "hwasun", label: "화순군" },
+  ],
+  gyeongbuk: [
+    { value: "pohang", label: "포항시" },
+    { value: "gumi", label: "구미시" },
+    { value: "gimcheon", label: "김천시" },
+    { value: "andong", label: "안동시" },
+    { value: "gyeongju", label: "경주시" },
+    { value: "gyeongsan", label: "경산시" },
+    { value: "yeongju", label: "영주시" },
+    { value: "yeongcheon", label: "영천시" },
+    { value: "sangju", label: "상주시" },
+    { value: "mungyeong", label: "문경시" },
+    { value: "chilgok", label: "칠곡군" },
+    { value: "yeongdeok", label: "영덕군" },
+    { value: "cheongdo", label: "청도군" },
+    { value: "goryeong", label: "고령군" },
+    { value: "seongju", label: "성주군" },
+    { value: "chilgok", label: "칠곡군" },
+    { value: "gimcheon", label: "김천시" },
+    { value: "yeongyang", label: "영양군" },
+    { value: "bonghwa", label: "봉화군" },
+    { value: "uljin", label: "울진군" },
+    { value: "ulleung", label: "울릉군" },
+  ],
+  gyeongnam: [
+    { value: "changwon", label: "창원시" },
+    { value: "jinju", label: "진주시" },
+    { value: "tongyeong", label: "통영시" },
+    { value: "sacheon", label: "사천시" },
+    { value: "gimhae", label: "김해시" },
+    { value: "miryang", label: "밀양시" },
+    { value: "geoje", label: "거제시" },
+    { value: "yangsan", label: "양산시" },
+    { value: "ulsan_gyeongnam", label: "울산시" },
+    { value: "uiryeong", label: "의령군" },
+    { value: "haman", label: "함안군" },
+    { value: "changnyeong", label: "창녕군" },
+    { value: "goseong_gyeongnam", label: "고성군" },
+    { value: "namhae", label: "남해군" },
+    { value: "hadong", label: "하동군" },
+    { value: "sancheong", label: "산청군" },
+    { value: "hamyang", label: "함양군" },
+    { value: "geochang", label: "거창군" },
+    { value: "hapcheon", label: "합천군" },
+  ],
+  jeju: [
+    { value: "jeju", label: "제주시" },
+    { value: "seogwipo", label: "서귀포시" },
   ],
   other: [{ value: "other", label: "기타" }],
 };
 
 const provinces = [
   { value: "seoul", label: "서울특별시" },
-  { value: "gyeonggi", label: "경기도" },
+  { value: "busan", label: "부산광역시" },
+  { value: "daegu", label: "대구광역시" },
   { value: "incheon", label: "인천광역시" },
+  { value: "gwangju", label: "광주광역시" },
+  { value: "daejeon", label: "대전광역시" },
+  { value: "ulsan", label: "울산광역시" },
+  { value: "sejong", label: "세종특별자치시" },
+  { value: "gyeonggi", label: "경기도" },
+  { value: "gangwon", label: "강원도" },
+  { value: "chungbuk", label: "충청북도" },
+  { value: "chungnam", label: "충청남도" },
+  { value: "jeonbuk", label: "전라북도" },
+  { value: "jeonnam", label: "전라남도" },
+  { value: "gyeongbuk", label: "경상북도" },
+  { value: "gyeongnam", label: "경상남도" },
+  { value: "jeju", label: "제주특별자치도" },
   { value: "other", label: "기타" },
 ];
 
@@ -124,9 +323,31 @@ const kycSchema = z.object({
     .string()
     .length(11, "연락처는 11자리로 입력해주세요")
     .regex(/^[0-9]+$/, "숫자만 입력해주세요"),
-  province: z.enum(["seoul", "gyeonggi", "incheon", "other"], {
-    required_error: "시도를 선택해주세요",
-  }),
+  province: z.enum(
+    [
+      "seoul",
+      "busan",
+      "daegu",
+      "incheon",
+      "gwangju",
+      "daejeon",
+      "ulsan",
+      "sejong",
+      "gyeonggi",
+      "gangwon",
+      "chungbuk",
+      "chungnam",
+      "jeonbuk",
+      "jeonnam",
+      "gyeongbuk",
+      "gyeongnam",
+      "jeju",
+      "other",
+    ],
+    {
+      required_error: "시도를 선택해주세요",
+    }
+  ),
   district: z.string().min(1, "시군구를 선택해주세요"),
   detailedAddress: z.string().optional(), // 상세주소는 선택항목
   skinType: z.enum(
@@ -573,45 +794,83 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Privacy Consent */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">
-              개인정보 수집 및 이용 동의
-            </h3>
-            <div className="bg-gray-50 text-gray-700 space-y-2 rounded-lg p-4 text-sm">
-              <p>
-                본 고객등록 신청서에 기입해주신 정보는 당사의 고객 관리 및 내부
-                운영 목적으로만 사용됩니다.
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 space-y-4 rounded-xl border p-6">
+            <div className="flex items-center space-x-2">
+              <div className="bg-blue-500 flex h-8 w-8 items-center justify-center rounded-full">
+                <svg
+                  className="h-5 w-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-gray-800 text-lg font-semibold">
+                개인정보 수집 및 이용 동의
+              </h3>
+            </div>
+            <div className="text-gray-700 border-blue-200 space-y-3 rounded-lg border bg-white p-4 text-sm">
+              <p className="flex items-start space-x-2">
+                <span className="text-blue-500 font-medium">•</span>
+                <span>
+                  본 고객등록 신청서에 기입해주신 정보는 당사의 고객 관리 및
+                  내부 운영 목적으로만 사용됩니다.
+                </span>
               </p>
-              <p>
-                제출해주신 정보는 관련 법령에 따라 3년간 안전하게 보관되며, 보관
-                기간이 만료된 후에는 즉시 폐기됩니다.
+              <p className="flex items-start space-x-2">
+                <span className="text-blue-500 font-medium">•</span>
+                <span>
+                  제출해주신 정보는 관련 법령에 따라 3년간 안전하게 보관되며,
+                  보관 기간이 만료된 후에는 즉시 폐기됩니다.
+                </span>
               </p>
-              <p>
-                본인은 이에 동의하며, 제출한 정보가 내부 관리 목적 외에는
-                사용되지 않음을 확인합니다.
+              <p className="flex items-start space-x-2">
+                <span className="text-blue-500 font-medium">•</span>
+                <span>
+                  본인은 이에 동의하며, 제출한 정보가 내부 관리 목적 외에는
+                  사용되지 않음을 확인합니다.
+                </span>
               </p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="border-blue-200 flex items-center space-x-3 rounded-lg border bg-white p-3">
               <input
                 type="checkbox"
                 id="privacyConsent"
                 {...register("privacyConsent")}
-                className="border-gray-300 text-blue-600 focus:ring-blue-500 rounded"
+                className="border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5 rounded"
               />
-              <Label htmlFor="privacyConsent" className="text-sm">
+              <Label
+                htmlFor="privacyConsent"
+                className="text-gray-700 text-sm font-medium"
+              >
                 위 개인정보 수집 및 이용에 동의합니다 *
               </Label>
             </div>
             {errors.privacyConsent && (
-              <p className="text-red-500 text-sm">
+              <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
                 {errors.privacyConsent.message}
               </p>
             )}
           </div>
 
           {/* Basic Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">기본 정보</h3>
+          <div className="space-y-6 bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">기본 정보</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* Name */}
             <div className="space-y-2">
@@ -657,10 +916,10 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             {/* Birth Year */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="birthYear">출생년도 *</Label>
+                <Label htmlFor="birthYear" className="text-gray-700 font-medium">출생년도 *</Label>
                 <button
                   type="button"
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-600 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold transition-colors duration-200"
+                  className="w-5 h-5 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-200"
                   onClick={() => alert("미성년자 작업 불가")}
                   title="미성년자 작업 불가"
                 >
@@ -670,7 +929,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               <select
                 id="birthYear"
                 {...register("birthYear")}
-                className="border-gray-300 focus:ring-blue-500 w-full rounded-md border p-2 focus:outline-none focus:ring-2"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
               >
                 <option value="">출생년도를 선택하세요</option>
                 {birthYears.map((year) => (
@@ -680,7 +939,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                 ))}
               </select>
               {errors.birthYear && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
                   {errors.birthYear.message}
                 </p>
               )}
@@ -688,13 +947,16 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Contact */}
             <div className="space-y-2">
-              <Label htmlFor="contact">연락처 *</Label>
+              <Label htmlFor="contact" className="text-gray-700 font-medium">연락처 *</Label>
               <Input
                 id="contact"
                 {...register("contact")}
                 placeholder="연락처를 입력하세요 (예: 01012345678)"
                 maxLength={11}
-                className={cn(errors.contact && "border-red-500")}
+                className={cn(
+                  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200",
+                  errors.contact && "border-red-500 focus:border-red-500 focus:ring-red-200"
+                )}
                 onChange={(e) => {
                   // 숫자만 입력 허용
                   const value = e.target.value.replace(/[^0-9]/g, "");
@@ -704,13 +966,15 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               />
               <p className="text-gray-500 text-sm">숫자만 입력하세요</p>
               {errors.contact && (
-                <p className="text-red-500 text-sm">{errors.contact.message}</p>
+                <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+                  {errors.contact.message}
+                </p>
               )}
             </div>
 
             {/* Province and District */}
             <div className="space-y-2">
-              <Label htmlFor="province">시도 *</Label>
+              <Label htmlFor="province" className="text-gray-700 font-medium">시도 *</Label>
               <select
                 id="province"
                 {...register("province")}
@@ -722,8 +986,8 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   setValue("district", ""); // Reset district when province changes
                 }}
                 className={cn(
-                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  errors.province && "border-red-500"
+                  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200",
+                  errors.province && "border-red-500 focus:border-red-500 focus:ring-red-200"
                 )}
               >
                 <option value="">시도를 선택하세요</option>
@@ -734,22 +998,22 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                 ))}
               </select>
               {errors.province && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
                   {errors.province.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="district">시군구 *</Label>
+              <Label htmlFor="district" className="text-gray-700 font-medium">시군구 *</Label>
               <select
                 id="district"
                 {...register("district")}
                 disabled={!watch("province")}
                 className={cn(
-                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  errors.district && "border-red-500",
-                  !watch("province") && "cursor-not-allowed opacity-50"
+                  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200",
+                  errors.district && "border-red-500 focus:border-red-500 focus:ring-red-200",
+                  !watch("province") && "cursor-not-allowed opacity-50 bg-gray-50"
                 )}
               >
                 <option value="">시군구를 선택하세요</option>
@@ -763,109 +1027,128 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   )}
               </select>
               {errors.district && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
                   {errors.district.message}
                 </p>
               )}
             </div>
 
             {/* Detailed Address */}
-            <div className="space-y-2">
-              <Label htmlFor="detailedAddress">상세주소</Label>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="detailedAddress" className="text-gray-700 font-medium">상세주소</Label>
               <Input
                 id="detailedAddress"
                 {...register("detailedAddress")}
                 placeholder="상세주소를 입력하세요 (선택사항)"
-                className={cn(errors.detailedAddress && "border-red-500")}
+                className={cn(
+                  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200",
+                  errors.detailedAddress && "border-red-500 focus:border-red-500 focus:ring-red-200"
+                )}
               />
               <p className="text-gray-500 text-sm">선택사항입니다</p>
               {errors.detailedAddress && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
                   {errors.detailedAddress.message}
                 </p>
               )}
             </div>
+            </div> {/* Close grid */}
+            </div> {/* Close Basic Information section */}
 
-            {/* Skin Type */}
-            <div className="space-y-2">
-              <Label>피부타입 *</Label>
-              <RadioGroup
-                onValueChange={(value) =>
-                  setValue(
-                    "skinType",
-                    value as
-                      | "oily"
-                      | "dry"
-                      | "normal"
-                      | "combination"
-                      | "unknown"
-                      | "other"
-                  )
-                }
-                className="grid grid-cols-2 gap-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="oily" id="oily" />
-                  <Label htmlFor="oily">지성</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="dry" id="dry" />
-                  <Label htmlFor="dry">건성</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="normal" id="normal" />
-                  <Label htmlFor="normal">중성</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="combination" id="combination" />
-                  <Label htmlFor="combination">복합성</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="unknown" id="unknown" />
-                  <Label htmlFor="unknown">모르겠음</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other-skin" />
-                  <Label htmlFor="other-skin">기타</Label>
-                </div>
-              </RadioGroup>
-              {watch("skinType") === "other" && (
-                <div className="bg-blue-50 text-blue-700 rounded-lg p-3 text-sm">
-                  <p>특이 체질이 있으시다면 기타에 적어주세요</p>
-                  <p>예) 켈로이드, 피부염, 아토피 등</p>
-                </div>
-              )}
-              {errors.skinType && (
-                <p className="text-red-500 text-sm">
-                  {errors.skinType.message}
-                </p>
-              )}
+          {/* Skin Type and Treatment Info */}
+          <div className="space-y-6 bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">피부 정보 및 시술 경험</h3>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Skin Type */}
+              <div className="space-y-3">
+                <Label className="text-gray-700 font-medium">피부타입 *</Label>
+                <RadioGroup
+                  onValueChange={(value) =>
+                    setValue(
+                      "skinType",
+                      value as
+                        | "oily"
+                        | "dry"
+                        | "normal"
+                        | "combination"
+                        | "unknown"
+                        | "other"
+                    )
+                  }
+                  className="grid grid-cols-2 gap-3"
+                >
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="oily" id="oily" />
+                    <Label htmlFor="oily" className="text-sm">지성</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="dry" id="dry" />
+                    <Label htmlFor="dry" className="text-sm">건성</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="normal" id="normal" />
+                    <Label htmlFor="normal" className="text-sm">중성</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="combination" id="combination" />
+                    <Label htmlFor="combination" className="text-sm">복합성</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="unknown" id="unknown" />
+                    <Label htmlFor="unknown" className="text-sm">모르겠음</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="other" id="other-skin" />
+                    <Label htmlFor="other-skin" className="text-sm">기타</Label>
+                  </div>
+                </RadioGroup>
+                {watch("skinType") === "other" && (
+                  <div className="bg-blue-50 text-blue-700 rounded-lg p-3 text-sm border border-blue-200">
+                    <p className="font-medium">특이 체질이 있으시다면 기타에 적어주세요</p>
+                    <p className="text-blue-600">예) 켈로이드, 피부염, 아토피 등</p>
+                  </div>
+                )}
+                {errors.skinType && (
+                  <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+                    {errors.skinType.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Previous Treatment */}
-            <div className="space-y-2">
-              <Label>기존 시술 여부 *</Label>
-              <RadioGroup
-                onValueChange={(value) =>
-                  setValue("hasPreviousTreatment", value as "yes" | "no")
-                }
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="yes" />
-                  <Label htmlFor="yes">있음</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="no" />
-                  <Label htmlFor="no">없음</Label>
-                </div>
-              </RadioGroup>
-              {errors.hasPreviousTreatment && (
-                <p className="text-red-500 text-sm">
-                  {errors.hasPreviousTreatment.message}
-                </p>
-              )}
-            </div>
+              {/* Previous Treatment */}
+              <div className="space-y-3">
+                <Label className="text-gray-700 font-medium">기존 시술 여부 *</Label>
+                <RadioGroup
+                  onValueChange={(value) =>
+                    setValue("hasPreviousTreatment", value as "yes" | "no")
+                  }
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="yes" id="yes" />
+                    <Label htmlFor="yes" className="text-sm">있음</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200">
+                    <RadioGroupItem value="no" id="no" />
+                    <Label htmlFor="no" className="text-sm">없음</Label>
+                  </div>
+                </RadioGroup>
+                {errors.hasPreviousTreatment && (
+                  <p className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+                    {errors.hasPreviousTreatment.message}
+                  </p>
+                )}
+              </div>
+            </div> {/* Close grid */}
+            </div> {/* Close Skin Type and Treatment Info section */}
           </div>
 
           {/* Photo Upload Section */}
