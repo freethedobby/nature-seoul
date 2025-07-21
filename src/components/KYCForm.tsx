@@ -25,12 +25,18 @@ import { createNotification, notificationTemplates } from "@/lib/notifications";
 
 // Form validation schema
 const kycSchema = z.object({
-  name: z.string().min(2, "이름은 2글자 이상 입력해주세요"),
+  name: z
+    .string()
+    .min(2, "이름은 2글자 이상 입력해주세요")
+    .max(30, "이름은 30자 이하로 입력해주세요"),
   gender: z.enum(["male", "female", "other"], {
     required_error: "성별을 선택해주세요",
   }),
   birthYear: z.string().min(4, "출생년도를 선택해주세요"),
-  contact: z.string().min(10, "연락처를 정확히 입력해주세요"),
+  contact: z
+    .string()
+    .length(11, "연락처는 11자리로 입력해주세요")
+    .regex(/^[0-9]+$/, "숫자만 입력해주세요"),
   skinType: z.enum(
     ["oily", "dry", "normal", "combination", "unknown", "other"],
     {
@@ -113,7 +119,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   // Handle file drop for specific photo type
   const handleDrop =
     (photoType: "left" | "front" | "right") =>
-    (event: React.DragEvent<HTMLDivElement>) => {
+    (event: React.DragEvent<HTMLLabelElement>) => {
       event.preventDefault();
       setIsDragging(false);
       const file = event.dataTransfer.files[0];
@@ -136,7 +142,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       }
     };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     setIsDragging(true);
   };
@@ -560,9 +566,19 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               <Input
                 id="contact"
                 {...register("contact")}
-                placeholder="연락처를 입력하세요 (예: 010-1234-5678)"
+                placeholder="연락처를 입력하세요 (예: 01012345678)"
+                maxLength={11}
                 className={cn(errors.contact && "border-red-500")}
+                onChange={(e) => {
+                  // 숫자만 입력 허용
+                  const value = e.target.value.replace(/[^0-9]/g, "");
+                  e.target.value = value;
+                  setValue("contact", value);
+                }}
               />
+              <p className="text-gray-500 text-sm">
+                숫자만 입력하세요 (하이픈은 자동으로 추가됩니다)
+              </p>
               {errors.contact && (
                 <p className="text-red-500 text-sm">{errors.contact.message}</p>
               )}
@@ -655,9 +671,17 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               {/* Left Photo */}
               <div className="space-y-2">
                 <Label>좌측 사진</Label>
-                <div
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange("left")}
+                  className="hidden"
+                  id="left-photo"
+                />
+                <label
+                  htmlFor="left-photo"
                   className={cn(
-                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    "block cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
                     isDragging
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400",
@@ -678,7 +702,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setPreviewImages((prev) => ({ ...prev, left: null }));
                           setSelectedFiles((prev) => ({ ...prev, left: null }));
                         }}
@@ -693,29 +719,28 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       <p className="text-gray-600 text-sm">
                         드래그 앤 드롭 또는 클릭
                       </p>
+                      <span className="text-blue-600 hover:text-blue-800 text-sm">
+                        파일 선택
+                      </span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange("left")}
-                    className="hidden"
-                    id="left-photo"
-                  />
-                  <label htmlFor="left-photo" className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-800 text-sm">
-                      파일 선택
-                    </span>
-                  </label>
-                </div>
+                </label>
               </div>
 
               {/* Front Photo */}
               <div className="space-y-2">
                 <Label>정면 사진</Label>
-                <div
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange("front")}
+                  className="hidden"
+                  id="front-photo"
+                />
+                <label
+                  htmlFor="front-photo"
                   className={cn(
-                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    "block cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
                     isDragging
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400",
@@ -736,7 +761,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setPreviewImages((prev) => ({
                             ...prev,
                             front: null,
@@ -757,29 +784,28 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       <p className="text-gray-600 text-sm">
                         드래그 앤 드롭 또는 클릭
                       </p>
+                      <span className="text-blue-600 hover:text-blue-800 text-sm">
+                        파일 선택
+                      </span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange("front")}
-                    className="hidden"
-                    id="front-photo"
-                  />
-                  <label htmlFor="front-photo" className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-800 text-sm">
-                      파일 선택
-                    </span>
-                  </label>
-                </div>
+                </label>
               </div>
 
               {/* Right Photo */}
               <div className="space-y-2">
                 <Label>우측 사진</Label>
-                <div
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange("right")}
+                  className="hidden"
+                  id="right-photo"
+                />
+                <label
+                  htmlFor="right-photo"
                   className={cn(
-                    "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                    "block cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
                     isDragging
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400",
@@ -800,7 +826,9 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setPreviewImages((prev) => ({
                             ...prev,
                             right: null,
@@ -821,21 +849,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                       <p className="text-gray-600 text-sm">
                         드래그 앤 드롭 또는 클릭
                       </p>
+                      <span className="text-blue-600 hover:text-blue-800 text-sm">
+                        파일 선택
+                      </span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange("right")}
-                    className="hidden"
-                    id="right-photo"
-                  />
-                  <label htmlFor="right-photo" className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-800 text-sm">
-                      파일 선택
-                    </span>
-                  </label>
-                </div>
+                </label>
               </div>
             </div>
           </div>
