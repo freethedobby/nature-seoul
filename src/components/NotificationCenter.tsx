@@ -80,17 +80,19 @@ export default function NotificationCenter({
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log(
-        "NotificationCenter snapshot received, count:",
+        "📨 NotificationCenter snapshot received, count:",
         snapshot.size
       );
       const notifs: Notification[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        console.log("Notification data:", {
+        console.log("📋 Notification data:", {
           id: doc.id,
           userId: data.userId,
           type: data.type,
           title: data.title,
+          message: data.message,
+          data: data.data,
         });
         notifs.push({
           id: doc.id,
@@ -99,7 +101,8 @@ export default function NotificationCenter({
         } as Notification);
       });
 
-      console.log("Setting notifications:", notifs.length);
+      console.log("✅ Setting notifications:", notifs.length);
+      console.log("📊 Notifications:", notifs);
       setNotifications(notifs);
       setUnreadCount(notifs.filter((n) => !n.read).length);
     });

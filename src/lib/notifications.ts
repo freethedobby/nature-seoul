@@ -10,8 +10,9 @@ export interface CreateNotificationParams {
 }
 
 export async function createNotification(params: CreateNotificationParams) {
+  console.log("🔔 Creating notification with params:", params);
   try {
-    await addDoc(collection(db, "notifications"), {
+    const notificationData = {
       userId: params.userId,
       type: params.type,
       title: params.title,
@@ -19,9 +20,14 @@ export async function createNotification(params: CreateNotificationParams) {
       data: params.data || null,
       read: false,
       createdAt: serverTimestamp(),
-    });
+    };
+    console.log("📝 Notification data to save:", notificationData);
+    
+    const docRef = await addDoc(collection(db, "notifications"), notificationData);
+    console.log("✅ Notification created successfully with ID:", docRef.id);
   } catch (error) {
-    console.error("Error creating notification:", error);
+    console.error("❌ Error creating notification:", error);
+    throw error; // Re-throw to allow caller to handle
   }
 }
 

@@ -300,6 +300,11 @@ export default function KYCDashboard() {
   const handleReject = async () => {
     if (!selectedUserId || !rejectReason.trim()) return;
 
+    console.log("=== KYC REJECTION START ===");
+    console.log("selectedUserId:", selectedUserId);
+    console.log("rejectReason:", rejectReason.trim());
+    console.log("pendingUsers:", pendingUsers);
+
     try {
       // Get user data before updating
       const user = pendingUsers.find((u) => u.id === selectedUserId);
@@ -307,6 +312,9 @@ export default function KYCDashboard() {
         console.error("User not found");
         return;
       }
+
+      console.log("Found user:", user);
+      console.log("User userId:", user.userId);
 
       // Update user status
       await updateDoc(doc(db, "users", selectedUserId), {
@@ -317,12 +325,18 @@ export default function KYCDashboard() {
 
       // Create notification for the user
       try {
+        console.log("Creating notification...");
         const notification = notificationTemplates.kycRejected(
           user.name,
           rejectReason.trim()
         );
+        console.log("Notification template:", notification);
+
+        const notificationUserId = user.userId || selectedUserId;
+        console.log("Notification userId:", notificationUserId);
+
         await createNotification({
-          userId: user.userId || selectedUserId, // Use the actual userId from user data
+          userId: notificationUserId,
           type: "kyc_rejected",
           title: notification.title,
           message: notification.message,
@@ -332,12 +346,12 @@ export default function KYCDashboard() {
           },
         });
         console.log(
-          "KYC rejection notification created for user:",
-          user.userId || selectedUserId
+          "✅ KYC rejection notification created for user:",
+          notificationUserId
         );
       } catch (notificationError) {
         console.error(
-          "Error creating KYC rejection notification:",
+          "❌ Error creating KYC rejection notification:",
           notificationError
         );
         // Don't fail the rejection if notification fails
