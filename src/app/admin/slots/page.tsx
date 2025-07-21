@@ -398,20 +398,78 @@ export default function SlotManagement() {
           return;
         }
 
-        await addDoc(collection(db, "slots"), {
-          start: Timestamp.now(), // Placeholder for recurring slots
-          end: Timestamp.now(), // Placeholder for recurring slots
-          type: "recurring",
-          recurrence: {
-            daysOfWeek: recurringSlot.daysOfWeek,
-            startTime: recurringSlot.startTime,
-            endTime: recurringSlot.endTime,
-            intervalMinutes: recurringSlot.intervalMinutes,
-          },
-          status: "available",
-          createdBy: user?.email,
-          createdAt: Timestamp.now(),
-        });
+        // Parse start and end times
+        const [startHour, startMinute] = recurringSlot.startTime
+          .split(":")
+          .map(Number);
+        const [endHour, endMinute] = recurringSlot.endTime
+          .split(":")
+          .map(Number);
+
+        // Calculate total duration in minutes
+        const totalDurationMinutes =
+          endHour * 60 + endMinute - (startHour * 60 + startMinute);
+
+        // Calculate number of slots that can fit in the time range
+        const slotsInRange = Math.floor(
+          totalDurationMinutes / recurringSlot.intervalMinutes
+        );
+
+        // Use the minimum of calculated slots and user-selected numberOfSlots
+        const actualNumberOfSlots = Math.min(
+          slotsInRange,
+          recurringSlot.numberOfSlots
+        );
+
+        // Get current date for generating slots
+        const currentDate = new Date();
+
+        // Generate slots for the next 4 weeks (28 days)
+        for (let dayOffset = 0; dayOffset < 28; dayOffset++) {
+          const targetDate = new Date(currentDate);
+          targetDate.setDate(targetDate.getDate() + dayOffset);
+
+          // Check if this day of week is selected
+          if (recurringSlot.daysOfWeek.includes(targetDate.getDay())) {
+            // Create slots for this day
+            for (
+              let slotIndex = 0;
+              slotIndex < actualNumberOfSlots;
+              slotIndex++
+            ) {
+              const slotStart = new Date(targetDate);
+              slotStart.setHours(
+                startHour,
+                startMinute + slotIndex * recurringSlot.intervalMinutes,
+                0,
+                0
+              );
+
+              const slotEnd = new Date(slotStart);
+              slotEnd.setMinutes(
+                slotEnd.getMinutes() + recurringSlot.intervalMinutes
+              );
+
+              // Only create slots that are in the future
+              if (slotStart > new Date()) {
+                await addDoc(collection(db, "slots"), {
+                  start: Timestamp.fromDate(slotStart),
+                  end: Timestamp.fromDate(slotEnd),
+                  type: "recurring",
+                  recurrence: {
+                    daysOfWeek: recurringSlot.daysOfWeek,
+                    startTime: recurringSlot.startTime,
+                    endTime: recurringSlot.endTime,
+                    intervalMinutes: recurringSlot.intervalMinutes,
+                  },
+                  status: "available",
+                  createdBy: user?.email,
+                  createdAt: Timestamp.now(),
+                });
+              }
+            }
+          }
+        }
       }
 
       setShowSlotDialog(false);
