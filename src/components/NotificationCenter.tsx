@@ -47,6 +47,13 @@ export default function NotificationCenter({
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    console.log(
+      "NotificationCenter useEffect - user:",
+      user?.uid,
+      "variant:",
+      variant
+    );
+
     let q;
     if (variant === "admin") {
       // Admin notifications - show all KYC submissions and admin-specific notifications
@@ -72,9 +79,19 @@ export default function NotificationCenter({
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log(
+        "NotificationCenter snapshot received, count:",
+        snapshot.size
+      );
       const notifs: Notification[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+        console.log("Notification data:", {
+          id: doc.id,
+          userId: data.userId,
+          type: data.type,
+          title: data.title,
+        });
         notifs.push({
           id: doc.id,
           ...data,
@@ -82,6 +99,7 @@ export default function NotificationCenter({
         } as Notification);
       });
 
+      console.log("Setting notifications:", notifs.length);
       setNotifications(notifs);
       setUnreadCount(notifs.filter((n) => !n.read).length);
     });
