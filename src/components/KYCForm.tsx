@@ -204,37 +204,84 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   // Upload image function
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      // Compress image first
-      await compressImage(file);
+      console.log("=== UPLOAD IMAGE START ===");
+      console.log("Original file:", file.name, file.size, file.type);
+
+      // Check if Firebase Storage is available
+      if (!storage) {
+        console.log("⚠️ Firebase Storage not available, using Base64 fallback");
+        const compressedImageDataUrl = await compressImage(file);
+        return compressedImageDataUrl;
+      }
 
       // Try Firebase Storage first
-      const storageRef = ref(storage, `kyc-photos/${Date.now()}-${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      try {
+        console.log("Attempting Firebase Storage upload...");
 
-      return new Promise((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log("Upload progress:", progress);
-          },
-          (error) => {
-            console.error("Upload error:", error);
-            reject(error);
-          },
-          async () => {
-            try {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(downloadURL);
-            } catch (error) {
-              reject(error);
-            }
-          }
+        // Compress image first
+        console.log("Compressing image...");
+        const compressedImageDataUrl = await compressImage(file);
+        console.log("Image compressed successfully");
+
+        // Convert data URL back to File object for Firebase Storage
+        console.log("Converting to File object...");
+        const response = await fetch(compressedImageDataUrl);
+        const compressedBlob = await response.blob();
+        const compressedFile = new File([compressedBlob], file.name, {
+          type: "image/jpeg",
+        });
+        console.log(
+          "Converted file:",
+          compressedFile.name,
+          compressedFile.size,
+          compressedFile.type
         );
-      });
+
+        const fileName = `kyc-photos/${Date.now()}-${file.name}`;
+        console.log("Uploading to Firebase Storage:", fileName);
+        const storageRef = ref(storage, fileName);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+
+        return new Promise((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+              const progress =
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log("Upload progress:", progress + "%");
+            },
+            (error) => {
+              console.error("❌ Upload error:", error);
+              console.error("Error code:", error.code);
+              console.error("Error message:", error.message);
+              reject(error);
+            },
+            async () => {
+              try {
+                console.log("✅ Upload completed, getting download URL...");
+                const downloadURL = await getDownloadURL(
+                  uploadTask.snapshot.ref
+                );
+                console.log("✅ Download URL obtained:", downloadURL);
+                resolve(downloadURL);
+              } catch (error) {
+                console.error("❌ Error getting download URL:", error);
+                reject(error);
+              }
+            }
+          );
+        });
+      } catch (firebaseError) {
+        console.error("❌ Firebase Storage upload failed:", firebaseError);
+        console.log("🔄 Falling back to Base64...");
+
+        // Fallback to Base64
+        const compressedImageDataUrl = await compressImage(file);
+        console.log("✅ Base64 fallback successful");
+        return compressedImageDataUrl;
+      }
     } catch (error) {
-      console.error("Image upload failed:", error);
+      console.error("❌ Image upload failed:", error);
       throw error;
     }
   };
@@ -489,7 +536,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   return (
     <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-center">KYC 신청서</CardTitle>
+        <CardTitle className="text-center">고객등록 신청서</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -576,9 +623,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   setValue("contact", value);
                 }}
               />
-              <p className="text-gray-500 text-sm">
-                숫자만 입력하세요 (하이픈은 자동으로 추가됩니다)
-              </p>
+              <p className="text-gray-500 text-sm">숫자만 입력하세요</p>
               {errors.contact && (
                 <p className="text-red-500 text-sm">{errors.contact.message}</p>
               )}
