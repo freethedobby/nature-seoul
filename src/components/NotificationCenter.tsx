@@ -226,15 +226,20 @@ export default function NotificationCenter({
                           <p className="text-gray-600 mt-1 text-sm">
                             {notification.message}
                           </p>
-                          {notification.type === "kyc_rejected" &&
-                            notification.data?.rejectReason &&
-                            typeof notification.data.rejectReason ===
-                              "string" && (
-                              <p className="text-red-600 mt-1 text-sm font-medium">
-                                반려 사유:{" "}
-                                {String(notification.data.rejectReason)}
-                              </p>
-                            )}
+                          {(() => {
+                            if (
+                              notification.type === "kyc_rejected" &&
+                              notification.data?.rejectReason &&
+                              typeof notification.data.rejectReason === "string"
+                            ) {
+                              return (
+                                <p className="text-red-600 mt-1 text-sm font-medium">
+                                  반려 사유: {notification.data.rejectReason}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })()}
                           <p className="text-gray-400 mt-2 text-xs">
                             {formatTime(notification.createdAt)}
                           </p>
