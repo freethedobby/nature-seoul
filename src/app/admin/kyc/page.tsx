@@ -48,8 +48,16 @@ interface UserData {
   userId: string; // Firebase Auth UID or "guest"
   email: string;
   name: string;
+  gender?: string;
+  birthYear?: string;
   contact: string;
-  photoURL: string;
+  skinType?: string;
+  photoURLs?: {
+    left: string;
+    front: string;
+    right: string;
+  };
+  photoURL?: string; // Legacy support
   photoType?: "base64" | "firebase-storage";
   kycStatus: string;
   hasPreviousTreatment?: boolean;
@@ -592,30 +600,204 @@ export default function KYCDashboard() {
                     </div>
                   </CardHeader>
                   {expandedUserId === user.id && (
-                    <CardContent>
-                      {user.photoURL && (
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                          <Image
-                            src={user.photoURL}
-                            alt="시술 부위 사진"
-                            fill
-                            className="object-contain"
-                            unoptimized={user.photoURL.startsWith("data:")}
-                            onError={(e) => {
-                              console.error(
-                                "Failed to load image:",
-                                user.photoURL
-                              );
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                          {user.photoType === "base64" && (
-                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                              Base64
+                    <CardContent className="space-y-6">
+                      {/* Basic Information */}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            기본 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이름</span>
+                              <span className="font-medium">{user.name}</span>
                             </div>
-                          )}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">성별</span>
+                              <span className="font-medium">
+                                {user.gender === "male"
+                                  ? "남성"
+                                  : user.gender === "female"
+                                  ? "여성"
+                                  : user.gender === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">출생년도</span>
+                              <span className="font-medium">
+                                {user.birthYear || "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">연락처</span>
+                              <span className="font-medium">
+                                {user.contact}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이메일</span>
+                              <span className="font-medium">{user.email}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
+
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            시술 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">피부타입</span>
+                              <span className="font-medium">
+                                {user.skinType === "oily"
+                                  ? "지성"
+                                  : user.skinType === "dry"
+                                  ? "건성"
+                                  : user.skinType === "normal"
+                                  ? "중성"
+                                  : user.skinType === "combination"
+                                  ? "복합성"
+                                  : user.skinType === "unknown"
+                                  ? "모르겠음"
+                                  : user.skinType === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                기존 시술 경험
+                              </span>
+                              <span className="font-medium">
+                                {user.hasPreviousTreatment ? "있음" : "없음"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">신청일</span>
+                              <span className="font-medium">
+                                {user.createdAt
+                                  ? user.createdAt.toLocaleString("ko-KR", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "-"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photos */}
+                      <div className="space-y-4">
+                        <h4 className="text-gray-900 font-semibold">
+                          눈썹 사진
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          {/* Left Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              좌측
+                            </h5>
+                            {(user.photoURLs?.left || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.left || user.photoURL || ""
+                                  }
+                                  alt="좌측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.left ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load left image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Front Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              정면
+                            </h5>
+                            {(user.photoURLs?.front || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.front || user.photoURL || ""
+                                  }
+                                  alt="정면 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.front ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load front image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              우측
+                            </h5>
+                            {(user.photoURLs?.right || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.right || user.photoURL || ""
+                                  }
+                                  alt="우측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.right ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load right image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -706,30 +888,218 @@ export default function KYCDashboard() {
                     </div>
                   </CardHeader>
                   {expandedUserId === user.id && (
-                    <CardContent>
-                      {user.photoURL && (
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                          <Image
-                            src={user.photoURL}
-                            alt="시술 부위 사진"
-                            fill
-                            className="object-contain"
-                            unoptimized={user.photoURL.startsWith("data:")}
-                            onError={(e) => {
-                              console.error(
-                                "Failed to load image:",
-                                user.photoURL
-                              );
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                          {user.photoType === "base64" && (
-                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                              Base64
+                    <CardContent className="space-y-6">
+                      {/* Basic Information */}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            기본 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이름</span>
+                              <span className="font-medium">{user.name}</span>
                             </div>
-                          )}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">성별</span>
+                              <span className="font-medium">
+                                {user.gender === "male"
+                                  ? "남성"
+                                  : user.gender === "female"
+                                  ? "여성"
+                                  : user.gender === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">출생년도</span>
+                              <span className="font-medium">
+                                {user.birthYear || "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">연락처</span>
+                              <span className="font-medium">
+                                {user.contact}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이메일</span>
+                              <span className="font-medium">{user.email}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
+
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            시술 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">피부타입</span>
+                              <span className="font-medium">
+                                {user.skinType === "oily"
+                                  ? "지성"
+                                  : user.skinType === "dry"
+                                  ? "건성"
+                                  : user.skinType === "normal"
+                                  ? "중성"
+                                  : user.skinType === "combination"
+                                  ? "복합성"
+                                  : user.skinType === "unknown"
+                                  ? "모르겠음"
+                                  : user.skinType === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                기존 시술 경험
+                              </span>
+                              <span className="font-medium">
+                                {user.hasPreviousTreatment ? "있음" : "없음"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">신청일</span>
+                              <span className="font-medium">
+                                {user.createdAt
+                                  ? user.createdAt.toLocaleString("ko-KR", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "-"}
+                              </span>
+                            </div>
+                            {user.approvedAt && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">승인일</span>
+                                <span className="font-medium">
+                                  {user.approvedAt.toLocaleString("ko-KR", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photos */}
+                      <div className="space-y-4">
+                        <h4 className="text-gray-900 font-semibold">
+                          눈썹 사진
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          {/* Left Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              좌측
+                            </h5>
+                            {(user.photoURLs?.left || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.left || user.photoURL || ""
+                                  }
+                                  alt="좌측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.left ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load left image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Front Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              정면
+                            </h5>
+                            {(user.photoURLs?.front || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.front || user.photoURL || ""
+                                  }
+                                  alt="정면 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.front ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load front image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              우측
+                            </h5>
+                            {(user.photoURLs?.right || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.right || user.photoURL || ""
+                                  }
+                                  alt="우측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.right ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load right image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -823,30 +1193,226 @@ export default function KYCDashboard() {
                     </div>
                   </CardHeader>
                   {expandedUserId === user.id && (
-                    <CardContent>
-                      {user.photoURL && (
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-white">
-                          <Image
-                            src={user.photoURL}
-                            alt="시술 부위 사진"
-                            fill
-                            className="object-contain"
-                            unoptimized={user.photoURL.startsWith("data:")}
-                            onError={(e) => {
-                              console.error(
-                                "Failed to load image:",
-                                user.photoURL
-                              );
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                          {user.photoType === "base64" && (
-                            <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                              Base64
+                    <CardContent className="space-y-6">
+                      {/* Basic Information */}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            기본 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이름</span>
+                              <span className="font-medium">{user.name}</span>
                             </div>
-                          )}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">성별</span>
+                              <span className="font-medium">
+                                {user.gender === "male"
+                                  ? "남성"
+                                  : user.gender === "female"
+                                  ? "여성"
+                                  : user.gender === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">출생년도</span>
+                              <span className="font-medium">
+                                {user.birthYear || "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">연락처</span>
+                              <span className="font-medium">
+                                {user.contact}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">이메일</span>
+                              <span className="font-medium">{user.email}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
+
+                        <div className="space-y-2">
+                          <h4 className="text-gray-900 font-semibold">
+                            시술 정보
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">피부타입</span>
+                              <span className="font-medium">
+                                {user.skinType === "oily"
+                                  ? "지성"
+                                  : user.skinType === "dry"
+                                  ? "건성"
+                                  : user.skinType === "normal"
+                                  ? "중성"
+                                  : user.skinType === "combination"
+                                  ? "복합성"
+                                  : user.skinType === "unknown"
+                                  ? "모르겠음"
+                                  : user.skinType === "other"
+                                  ? "기타"
+                                  : "-"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                기존 시술 경험
+                              </span>
+                              <span className="font-medium">
+                                {user.hasPreviousTreatment ? "있음" : "없음"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">신청일</span>
+                              <span className="font-medium">
+                                {user.createdAt
+                                  ? user.createdAt.toLocaleString("ko-KR", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "-"}
+                              </span>
+                            </div>
+                            {user.rejectedAt && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">반려일</span>
+                                <span className="font-medium">
+                                  {user.rejectedAt.toLocaleString("ko-KR", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                            {user.rejectReason && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">반려 사유</span>
+                                <span className="text-red-600 font-medium">
+                                  {user.rejectReason}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photos */}
+                      <div className="space-y-4">
+                        <h4 className="text-gray-900 font-semibold">
+                          눈썹 사진
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          {/* Left Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              좌측
+                            </h5>
+                            {(user.photoURLs?.left || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.left || user.photoURL || ""
+                                  }
+                                  alt="좌측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.left ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load left image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Front Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              정면
+                            </h5>
+                            {(user.photoURLs?.front || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.front || user.photoURL || ""
+                                  }
+                                  alt="정면 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.front ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load front image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Photo */}
+                          <div className="space-y-2">
+                            <h5 className="text-gray-700 text-sm font-medium">
+                              우측
+                            </h5>
+                            {(user.photoURLs?.right || user.photoURL) && (
+                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                <Image
+                                  src={
+                                    user.photoURLs?.right || user.photoURL || ""
+                                  }
+                                  alt="우측 눈썹"
+                                  fill
+                                  className="object-contain"
+                                  unoptimized={(
+                                    user.photoURLs?.right ||
+                                    user.photoURL ||
+                                    ""
+                                  ).startsWith("data:")}
+                                  onError={(e) => {
+                                    console.error("Failed to load right image");
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                {user.photoType === "base64" && (
+                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                    Base64
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
