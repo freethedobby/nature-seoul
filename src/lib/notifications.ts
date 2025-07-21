@@ -3,7 +3,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export interface CreateNotificationParams {
   userId: string;
-  type: "kyc_submitted" | "kyc_approved" | "kyc_rejected" | "reservation_created" | "reservation_cancelled" | "admin_kyc_new" | "admin_reservation_new" | "admin_reservation_cancelled";
+  type: "kyc_submitted" | "kyc_approved" | "kyc_rejected" | "reservation_created" | "reservation_cancelled" | "admin_kyc_new" | "admin_reservation_new" | "admin_reservation_cancelled" | "payment_required" | "payment_confirmed" | "reservation_approved" | "reservation_rejected";
   title: string;
   message: string;
   data?: Record<string, unknown>;

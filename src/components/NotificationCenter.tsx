@@ -26,7 +26,11 @@ interface Notification {
     | "reservation_cancelled"
     | "admin_kyc_new"
     | "admin_reservation_new"
-    | "admin_reservation_cancelled";
+    | "admin_reservation_cancelled"
+    | "payment_required"
+    | "payment_confirmed"
+    | "reservation_approved"
+    | "reservation_rejected";
   title: string;
   message: string;
   read: boolean;

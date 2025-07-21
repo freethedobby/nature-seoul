@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Calendar,
@@ -23,7 +24,14 @@ import TestNotificationButton from "@/components/TestNotificationButton";
 import NoticeModal from "@/components/NoticeModal";
 import { auth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function DashboardPage() {
@@ -31,6 +39,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [reservation, setReservation] = useState<{
+    id: string;
+    date?: string;
+    time?: string;
+    status?: string;
+    createdAt: Date;
+  } | null>(null);
 
   console.log("user object in DashboardPage:", user);
 
@@ -48,6 +63,34 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  // Fetch user's reservation
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const q = query(
+      collection(db, "reservations"),
+      where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        setReservation(null);
+      } else {
+        const docData = snapshot.docs[0];
+        const data = docData.data();
+        setReservation({
+          id: docData.id,
+          date: data.date,
+          time: data.time,
+          status: data.status,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -307,6 +350,8 @@ export default function DashboardPage() {
                     ? "상담 신청 후 예약이 가능합니다."
                     : user.kycStatus === "approved" && !user.noticeConfirmed
                     ? "공지사항 확인 후 예약이 가능합니다."
+                    : reservation
+                    ? "예약이 진행 중입니다."
                     : "상담 승인 후 예약이 가능합니다."}
                 </p>
 
@@ -352,20 +397,78 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={isLocked || user.kycStatus !== "approved"}
-                  onClick={handleReservationClick}
-                >
-                  {isLocked
-                    ? "상담 신청 필요"
-                    : user.kycStatus === "approved" && !user.noticeConfirmed
-                    ? "공지사항 확인하기"
-                    : user.kycStatus === "approved"
-                    ? "예약하기"
-                    : "승인 대기 중"}
-                </Button>
+                {reservation ? (
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 border-blue-200 rounded-lg border p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-blue-800 text-sm font-medium">
+                          예약 정보
+                        </span>
+                        <Badge
+                          variant={
+                            reservation.status === "approved"
+                              ? "default"
+                              : reservation.status === "payment_confirmed"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {reservation.status === "approved"
+                            ? "확정"
+                            : reservation.status === "payment_confirmed"
+                            ? "입금확인"
+                            : reservation.status === "payment_required"
+                            ? "입금대기"
+                            : reservation.status === "rejected"
+                            ? "거절"
+                            : "대기"}
+                        </Badge>
+                      </div>
+                      <div className="text-blue-700 text-sm">
+                        <div>
+                          {reservation.date} {reservation.time}
+                        </div>
+                        {reservation.status === "payment_required" && (
+                          <div className="text-orange-600 mt-1 text-xs">
+                            💰 예약금 30만원 입금 필요
+                          </div>
+                        )}
+                        {reservation.status === "payment_confirmed" && (
+                          <div className="text-blue-600 mt-1 text-xs">
+                            ⏳ 관리자 확인 대기 중
+                          </div>
+                        )}
+                        {reservation.status === "rejected" && (
+                          <div className="text-red-600 mt-1 text-xs">
+                            ❌ 예약이 거절되었습니다
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => router.push("/user/reserve")}
+                    >
+                      예약 상세보기
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={isLocked || user.kycStatus !== "approved"}
+                    onClick={handleReservationClick}
+                  >
+                    {isLocked
+                      ? "상담 신청 필요"
+                      : user.kycStatus === "approved" && !user.noticeConfirmed
+                      ? "공지사항 확인하기"
+                      : user.kycStatus === "approved"
+                      ? "예약하기"
+                      : "승인 대기 중"}
+                  </Button>
+                )}
               </div>
             </div>
 

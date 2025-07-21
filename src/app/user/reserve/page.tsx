@@ -37,7 +37,15 @@ interface ReservationData {
   userName?: string;
   date?: string;
   time?: string;
-  status?: string;
+  status:
+    | "pending"
+    | "payment_required"
+    | "payment_confirmed"
+    | "approved"
+    | "rejected"
+    | "cancelled";
+  paymentConfirmed?: boolean;
+  paymentConfirmedAt?: Date;
   createdAt: Date;
 }
 
@@ -51,6 +59,7 @@ export default function UserReservePage() {
   const [showReserveBtn, setShowReserveBtn] = useState<string | null>(null);
   const [reserving, setReserving] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null);
 
   // Check KYC authorization
@@ -179,7 +188,8 @@ export default function UserReservePage() {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: "대기",
+        status: "payment_required",
+        paymentConfirmed: false,
         createdAt: new Date(),
       };
 
@@ -196,28 +206,68 @@ export default function UserReservePage() {
         minute: "2-digit",
       });
 
-      // User notification
+      // User notification - 입금 안내
       await createNotification({
         userId: user.uid,
-        type: "reservation_created",
-        title: "예약 완료",
-        message: `${reservationDate} ${reservationTime} 예약이 완료되었습니다.`,
+        type: "payment_required",
+        title: "예약금 입금 안내",
+        message: `${reservationDate} ${reservationTime} 예약을 위해 예약금 30만원을 입금해주세요. 입금 후 '입금확인요청' 버튼을 눌러주세요.`,
       });
 
       // Admin notification
       await createNotification({
         userId: "admin",
         type: "admin_reservation_new",
-        title: "새로운 예약",
+        title: "새로운 예약 신청",
         message: `${
           user.displayName || user.email
-        }님이 ${reservationDate} ${reservationTime}에 예약했습니다.`,
+        }님이 ${reservationDate} ${reservationTime}에 예약을 신청했습니다. 입금 확인 후 승인해주세요.`,
       });
       setShowReserveBtn(null);
     } catch {
       alert("예약에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setReserving(false);
+    }
+  };
+
+  // Confirm payment handler
+  const handleConfirmPayment = async () => {
+    if (!user || !reservation || confirmingPayment) return;
+    setConfirmingPayment(true);
+    try {
+      // Update reservation status
+      await updateDoc(doc(db, "reservations", reservation.id), {
+        status: "payment_confirmed",
+        paymentConfirmed: true,
+        paymentConfirmedAt: new Date(),
+      });
+
+      // Create payment confirmation notifications
+      const reservationDate = reservation.date || "미정";
+      const reservationTime = reservation.time || "미정";
+
+      // User notification
+      await createNotification({
+        userId: user.uid,
+        type: "payment_confirmed",
+        title: "입금 확인 요청 완료",
+        message: `${reservationDate} ${reservationTime} 예약의 입금 확인을 요청했습니다. 관리자 확인 후 예약이 확정됩니다.`,
+      });
+
+      // Admin notification
+      await createNotification({
+        userId: "admin",
+        type: "admin_reservation_new",
+        title: "입금 확인 요청",
+        message: `${
+          user.displayName || user.email
+        }님이 ${reservationDate} ${reservationTime} 예약의 입금 확인을 요청했습니다.`,
+      });
+    } catch {
+      alert("입금 확인 요청에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setConfirmingPayment(false);
     }
   };
 
@@ -324,6 +374,59 @@ export default function UserReservePage() {
                 minute: "2-digit",
               })}
             </div>
+
+            {/* 예약 상태에 따른 버튼 */}
+            {reservation.status === "payment_required" && (
+              <div className="text-center">
+                <div className="bg-orange-100 border-orange-300 text-orange-800 mb-3 rounded-lg border p-3">
+                  <div className="mb-2 font-semibold">💰 예약금 입금 안내</div>
+                  <div className="mb-2 text-sm">
+                    예약금 30만원을 입금해주세요
+                  </div>
+                  <div className="text-orange-600 text-xs">
+                    입금 후 아래 버튼을 눌러주세요
+                  </div>
+                </div>
+                <button
+                  className="border-orange-400 bg-orange-500 hover:bg-orange-600 rounded-full border px-4 py-2 text-sm font-semibold text-white transition"
+                  onClick={handleConfirmPayment}
+                  disabled={confirmingPayment}
+                >
+                  {confirmingPayment ? "처리중..." : "입금확인요청"}
+                </button>
+              </div>
+            )}
+
+            {reservation.status === "payment_confirmed" && (
+              <div className="text-center">
+                <div className="bg-blue-100 border-blue-300 text-blue-800 mb-3 rounded-lg border p-3">
+                  <div className="mb-2 font-semibold">⏳ 관리자 확인 대기</div>
+                  <div className="text-sm">입금 확인 요청이 완료되었습니다</div>
+                  <div className="text-blue-600 mt-1 text-xs">
+                    관리자 확인 후 예약이 확정됩니다
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {reservation.status === "approved" && (
+              <div className="text-center">
+                <div className="bg-green-100 border-green-300 text-green-800 mb-3 rounded-lg border p-3">
+                  <div className="mb-2 font-semibold">✅ 예약 확정</div>
+                  <div className="text-sm">예약이 확정되었습니다</div>
+                </div>
+              </div>
+            )}
+
+            {reservation.status === "rejected" && (
+              <div className="text-center">
+                <div className="bg-red-100 border-red-300 text-red-800 mb-3 rounded-lg border p-3">
+                  <div className="mb-2 font-semibold">❌ 예약 거절</div>
+                  <div className="text-sm">예약이 거절되었습니다</div>
+                </div>
+              </div>
+            )}
+
             <button
               className="border-green-400 text-green-700 hover:bg-green-100 mt-2 rounded-full border bg-white px-4 py-1 text-sm font-semibold"
               onClick={handleCancel}
