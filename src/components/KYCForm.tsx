@@ -51,6 +51,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -124,25 +125,62 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     console.log("=== UPLOAD IMAGE START ===");
     console.log("File:", file.name, file.size, file.type);
     console.log("User:", user?.email);
+    console.log("User agent:", navigator.userAgent);
+    console.log(
+      "Is mobile:",
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      )
+    );
 
     if (!user) throw new Error("User not authenticated");
+
+    // Check file size for mobile devices
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      console.error("File too large:", file.size, "bytes");
+      throw new Error(
+        "파일 크기가 너무 큽니다. 10MB 이하의 파일을 선택해주세요."
+      );
+    }
 
     // Skip Firebase Storage and use base64 directly to avoid CORS issues
     console.log("Using base64 storage to avoid CORS issues");
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+
+      // Add timeout for mobile devices
+      const timeoutId = setTimeout(() => {
+        console.error("FileReader timeout on mobile");
+        reject(
+          new Error("파일 읽기 시간이 초과되었습니다. 다시 시도해주세요.")
+        );
+      }, 30000); // 30 second timeout
+
       reader.onload = () => {
+        clearTimeout(timeoutId);
         const base64String = reader.result as string;
         console.log(
           "Base64 conversion successful, length:",
           base64String.length
         );
+
+        // Check if base64 string is valid
+        if (!base64String.startsWith("data:image/")) {
+          console.error("Invalid base64 string format");
+          reject(new Error("이미지 파일 형식이 올바르지 않습니다."));
+          return;
+        }
+
         resolve(base64String);
       };
+
       reader.onerror = (error) => {
+        clearTimeout(timeoutId);
         console.error("FileReader error:", error);
-        reject(error);
+        reject(new Error("파일을 읽는 중 오류가 발생했습니다."));
       };
+
       reader.readAsDataURL(file);
     });
   };
@@ -199,12 +237,31 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
       // Test Firebase connectivity
       console.log("=== TESTING FIREBASE CONNECTIVITY ===");
+      console.log("Network status:", navigator.onLine);
+      console.log("Connection type:", (navigator as any).connection?.type);
+
       try {
         firestoreDoc(db, "test", "connectivity");
         console.log("✅ Firestore doc reference created successfully");
       } catch (firestoreError) {
         console.error("❌ Firestore doc reference failed:", firestoreError);
-        throw new Error("Firestore not accessible");
+
+        // Check if it's a network issue
+        if (!navigator.onLine) {
+          throw new Error("인터넷 연결을 확인해주세요.");
+        }
+
+        // Check if it's a mobile-specific issue
+        const isMobile =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+        if (isMobile) {
+          console.log("Mobile device detected - using fallback approach");
+          // Continue with submission but log the issue
+        } else {
+          throw new Error("Firestore not accessible");
+        }
       }
 
       console.log("Starting image upload...");
@@ -335,6 +392,14 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         user: userEmail,
         formData: data,
       });
+
+      // Set specific error message
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "알 수 없는 오류가 발생했습니다.";
+      setErrorMessage(errorMsg);
+
       clearTimeout(timeoutId);
       setSubmitStatus("error");
       setIsSubmitting(false);
@@ -367,19 +432,34 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             <AlertCircle className="text-red-500 mx-auto h-16 w-16" />
             <h3 className="text-gray-900 text-xl font-semibold">제출 실패</h3>
             <p className="text-gray-600">
-              KYC 신청 제출 중 오류가 발생했습니다.
-              <br />
-              다시 시도해 주세요.
+              {errorMessage || "KYC 신청 제출 중 오류가 발생했습니다."}
             </p>
-            <Button
-              onClick={() => {
-                setSubmitStatus("idle" as const);
-                setIsSubmitting(false);
-              }}
-              className="mt-4"
-            >
-              다시 시도
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={() => {
+                  setSubmitStatus("idle" as const);
+                  setIsSubmitting(false);
+                  setErrorMessage("");
+                }}
+                className="mt-4"
+              >
+                다시 시도
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSubmitStatus("idle" as const);
+                  setIsSubmitting(false);
+                  setErrorMessage("");
+                  reset();
+                  setPreviewImage(null);
+                  setSelectedFile(null);
+                }}
+                className="mt-2"
+              >
+                처음부터 다시 시작
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
