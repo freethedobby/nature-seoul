@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   AlertTriangle,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
@@ -325,6 +326,32 @@ export default function DashboardPage() {
                   </div>
                 )}
 
+                {user.kycStatus === "approved" && user.noticeConfirmed && (
+                  <div className="bg-green-50 border-green-200 mb-4 rounded-lg border p-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-2">
+                        <Check className="text-green-600 mt-0.5 h-5 w-5 flex-shrink-0" />
+                        <div>
+                          <p className="text-green-800 text-sm font-medium">
+                            공지사항 확인 완료
+                          </p>
+                          <p className="text-green-700 mt-1 text-xs">
+                            예약이 가능합니다.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowNoticeModal(true)}
+                        className="text-green-600 hover:text-green-700 text-xs"
+                      >
+                        다시 보기
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   variant="outline"
                   className="w-full"
@@ -368,6 +395,7 @@ export default function DashboardPage() {
         isOpen={showNoticeModal}
         onClose={() => setShowNoticeModal(false)}
         onConfirm={handleNoticeConfirm}
+        showViewAgain={user?.noticeConfirmed || false}
       />
     </div>
   );
