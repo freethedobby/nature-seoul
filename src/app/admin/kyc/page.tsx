@@ -40,6 +40,7 @@ import {
   onSnapshot,
   Timestamp,
 } from "firebase/firestore";
+import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
 
 interface UserData {
@@ -312,6 +313,34 @@ export default function KYCDashboard() {
         rejectReason: rejectReason.trim(),
         rejectedAt: Timestamp.now(),
       });
+
+      // Create notification for the user
+      try {
+        const notification = notificationTemplates.kycRejected(
+          user.name,
+          rejectReason.trim()
+        );
+        await createNotification({
+          userId: selectedUserId,
+          type: "kyc_rejected",
+          title: notification.title,
+          message: notification.message,
+          data: {
+            rejectReason: rejectReason.trim(),
+            rejectedAt: new Date(),
+          },
+        });
+        console.log(
+          "KYC rejection notification created for user:",
+          selectedUserId
+        );
+      } catch (notificationError) {
+        console.error(
+          "Error creating KYC rejection notification:",
+          notificationError
+        );
+        // Don't fail the rejection if notification fails
+      }
 
       // Send email notification
       try {
