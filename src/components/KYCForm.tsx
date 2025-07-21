@@ -9,14 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import {
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  ImagePlus,
-  Image as ImageIcon,
-  X,
-} from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ImagePlus, X } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import {
@@ -47,9 +40,9 @@ const kycSchema = z.object({
   hasPreviousTreatment: z.enum(["yes", "no"], {
     required_error: "기존 시술 여부를 선택해주세요",
   }),
-  eyebrowPhotoLeft: z.any(), // 좌측 사진
-  eyebrowPhotoFront: z.any(), // 정면 사진
-  eyebrowPhotoRight: z.any(), // 우측 사진
+  eyebrowPhotoLeft: z.instanceof(File).optional(), // 좌측 사진
+  eyebrowPhotoFront: z.instanceof(File).optional(), // 정면 사진
+  eyebrowPhotoRight: z.instanceof(File).optional(), // 우측 사진
 });
 
 type KYCFormData = z.infer<typeof kycSchema>;
@@ -70,7 +63,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     front: string | null;
     right: string | null;
   }>({ left: null, front: null, right: null });
-  const [selectedFiles, setSelectedFiles] = useState<{
+  const [, setSelectedFiles] = useState<{
     left: File | null;
     front: File | null;
     right: File | null;
@@ -103,7 +96,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         setValue(
           `eyebrowPhoto${
             photoType.charAt(0).toUpperCase() + photoType.slice(1)
-          }` as any,
+          }` as keyof KYCFormData,
           file
         );
         const reader = new FileReader();
@@ -129,7 +122,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         setValue(
           `eyebrowPhoto${
             photoType.charAt(0).toUpperCase() + photoType.slice(1)
-          }` as any,
+          }` as keyof KYCFormData,
           file
         );
         const reader = new FileReader();
@@ -153,10 +146,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   };
 
   // Compress image function
-  const compressImage = (
-    file: File,
-    maxSizeBytes: number = 800000
-  ): Promise<string> => {
+  const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -209,7 +199,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
   const uploadImage = async (file: File): Promise<string> => {
     try {
       // Compress image first
-      const compressedImage = await compressImage(file);
+      await compressImage(file);
 
       // Try Firebase Storage first
       const storageRef = ref(storage, `kyc-photos/${Date.now()}-${file.name}`);
@@ -582,7 +572,18 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             <div className="space-y-2">
               <Label>피부타입 *</Label>
               <RadioGroup
-                onValueChange={(value) => setValue("skinType", value as any)}
+                onValueChange={(value) =>
+                  setValue(
+                    "skinType",
+                    value as
+                      | "oily"
+                      | "dry"
+                      | "normal"
+                      | "combination"
+                      | "unknown"
+                      | "other"
+                  )
+                }
                 className="grid grid-cols-2 gap-2"
               >
                 <div className="flex items-center space-x-2">
