@@ -44,7 +44,8 @@ export default function TestNotificationButton() {
     }
   };
 
-  if (!user) {
+  // Only show in development environment
+  if (!user || process.env.NODE_ENV !== "development") {
     return null;
   }
 
