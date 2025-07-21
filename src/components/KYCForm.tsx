@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, AlertCircle, ImagePlus, X } from "lucide-react";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
 import {
   serverTimestamp,
   setDoc,
@@ -207,81 +206,19 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       console.log("=== UPLOAD IMAGE START ===");
       console.log("Original file:", file.name, file.size, file.type);
 
-      // Check if Firebase Storage is available
-      if (!storage) {
-        console.log("⚠️ Firebase Storage not available, using Base64 fallback");
-        const compressedImageDataUrl = await compressImage(file);
-        return compressedImageDataUrl;
-      }
+      // Skip Firebase Storage due to CORS issues and use Base64 directly
+      console.log(
+        "🔄 Using Base64 encoding (Firebase Storage CORS issues detected)"
+      );
 
-      // Try Firebase Storage first
-      try {
-        console.log("Attempting Firebase Storage upload...");
+      // Compress and encode image
+      console.log("Compressing and encoding image...");
+      const compressedImageDataUrl = await compressImage(file);
+      console.log("✅ Image compressed and encoded successfully");
 
-        // Compress image first
-        console.log("Compressing image...");
-        const compressedImageDataUrl = await compressImage(file);
-        console.log("Image compressed successfully");
-
-        // Convert data URL back to File object for Firebase Storage
-        console.log("Converting to File object...");
-        const response = await fetch(compressedImageDataUrl);
-        const compressedBlob = await response.blob();
-        const compressedFile = new File([compressedBlob], file.name, {
-          type: "image/jpeg",
-        });
-        console.log(
-          "Converted file:",
-          compressedFile.name,
-          compressedFile.size,
-          compressedFile.type
-        );
-
-        const fileName = `kyc-photos/${Date.now()}-${file.name}`;
-        console.log("Uploading to Firebase Storage:", fileName);
-        const storageRef = ref(storage, fileName);
-        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
-
-        return new Promise((resolve, reject) => {
-          uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-              const progress =
-                (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              console.log("Upload progress:", progress + "%");
-            },
-            (error) => {
-              console.error("❌ Upload error:", error);
-              console.error("Error code:", error.code);
-              console.error("Error message:", error.message);
-              reject(error);
-            },
-            async () => {
-              try {
-                console.log("✅ Upload completed, getting download URL...");
-                const downloadURL = await getDownloadURL(
-                  uploadTask.snapshot.ref
-                );
-                console.log("✅ Download URL obtained:", downloadURL);
-                resolve(downloadURL);
-              } catch (error) {
-                console.error("❌ Error getting download URL:", error);
-                reject(error);
-              }
-            }
-          );
-        });
-      } catch (firebaseError) {
-        console.error("❌ Firebase Storage upload failed:", firebaseError);
-        console.log("🔄 Falling back to Base64...");
-
-        // Fallback to Base64
-        const compressedImageDataUrl = await compressImage(file);
-        console.log("✅ Base64 fallback successful");
-        return compressedImageDataUrl;
-      }
+      return compressedImageDataUrl;
     } catch (error) {
-      console.error("❌ Image upload failed:", error);
+      console.error("❌ Image processing failed:", error);
       throw error;
     }
   };
@@ -291,7 +228,6 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
     console.log("Form data:", data);
     console.log("User:", user?.email);
     console.log("Firebase db available:", !!db);
-    console.log("Firebase storage available:", !!storage);
 
     // Handle both logged-in users and guests
     const isGuest = !user;
