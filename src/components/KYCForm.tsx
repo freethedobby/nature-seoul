@@ -22,36 +22,96 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 
-// 서울시 시군구 데이터
-const districts = [
-  { value: "gangnam", label: "강남구" },
-  { value: "gangdong", label: "강동구" },
-  { value: "gangbuk", label: "강북구" },
-  { value: "gangseo", label: "강서구" },
-  { value: "gwanak", label: "관악구" },
-  { value: "gwangjin", label: "광진구" },
-  { value: "guro", label: "구로구" },
-  { value: "geumcheon", label: "금천구" },
-  { value: "nowon", label: "노원구" },
-  { value: "dobong", label: "도봉구" },
-  { value: "dongdaemun", label: "동대문구" },
-  { value: "dongjak", label: "동작구" },
-  { value: "mapo", label: "마포구" },
-  { value: "seodaemun", label: "서대문구" },
-  { value: "seocho", label: "서초구" },
-  { value: "seongbuk", label: "성북구" },
-  { value: "songpa", label: "송파구" },
-  { value: "yangcheon", label: "양천구" },
-  { value: "yeongdeungpo", label: "영등포구" },
-  { value: "yongsan", label: "용산구" },
-  { value: "eunpyeong", label: "은평구" },
-  { value: "jongno", label: "종로구" },
-  { value: "junggu", label: "중구" },
-  { value: "jungnang", label: "중랑구" },
+// 시도별 시군구 데이터
+const districts = {
+  seoul: [
+    { value: "gangnam", label: "강남구" },
+    { value: "gangdong", label: "강동구" },
+    { value: "gangbuk", label: "강북구" },
+    { value: "gangseo", label: "강서구" },
+    { value: "gwanak", label: "관악구" },
+    { value: "gwangjin", label: "광진구" },
+    { value: "guro", label: "구로구" },
+    { value: "geumcheon", label: "금천구" },
+    { value: "nowon", label: "노원구" },
+    { value: "dobong", label: "도봉구" },
+    { value: "dongdaemun", label: "동대문구" },
+    { value: "dongjak", label: "동작구" },
+    { value: "mapo", label: "마포구" },
+    { value: "seodaemun", label: "서대문구" },
+    { value: "seocho", label: "서초구" },
+    { value: "seongbuk", label: "성북구" },
+    { value: "songpa", label: "송파구" },
+    { value: "yangcheon", label: "양천구" },
+    { value: "yeongdeungpo", label: "영등포구" },
+    { value: "yongsan", label: "용산구" },
+    { value: "eunpyeong", label: "은평구" },
+    { value: "jongno", label: "종로구" },
+    { value: "junggu", label: "중구" },
+    { value: "jungnang", label: "중랑구" },
+  ],
+  gyeonggi: [
+    { value: "suwon", label: "수원시" },
+    { value: "seongnam", label: "성남시" },
+    { value: "bucheon", label: "부천시" },
+    { value: "anyang", label: "안양시" },
+    { value: "ansan", label: "안산시" },
+    { value: "pyeongtaek", label: "평택시" },
+    { value: "siheung", label: "시흥시" },
+    { value: "gwangmyeong", label: "광명시" },
+    { value: "gwangju_gyeonggi", label: "광주시" },
+    { value: "yongin", label: "용인시" },
+    { value: "paju", label: "파주시" },
+    { value: "icheon", label: "이천시" },
+    { value: "anseong", label: "안성시" },
+    { value: "gimpo", label: "김포시" },
+    { value: "hwaseong", label: "화성시" },
+    { value: "gwangju_gyeonggi", label: "광주시" },
+    { value: "yeoju", label: "여주시" },
+    { value: "pocheon", label: "포천시" },
+    { value: "dongducheon", label: "동두천시" },
+    { value: "goyang", label: "고양시" },
+    { value: "namyangju", label: "남양주시" },
+    { value: "osan", label: "오산시" },
+    { value: "hanam", label: "하남시" },
+    { value: "uijeongbu", label: "의정부시" },
+    { value: "yangju", label: "양주시" },
+    { value: "gunpo", label: "군포시" },
+    { value: "uiwang", label: "의왕시" },
+    { value: "gwachon", label: "과천시" },
+    { value: "guri", label: "구리시" },
+    { value: "namyangju", label: "남양주시" },
+    { value: "yeoncheon", label: "연천군" },
+    { value: "gapyeong", label: "가평군" },
+    { value: "yangpyeong", label: "양평군" },
+  ],
+  incheon: [
+    { value: "junggu_incheon", label: "중구" },
+    { value: "donggu", label: "동구" },
+    { value: "michuhol", label: "미추홀구" },
+    { value: "yeonsu", label: "연수구" },
+    { value: "namdong", label: "남동구" },
+    { value: "bupyeong", label: "부평구" },
+    { value: "gyeyang", label: "계양구" },
+    { value: "seo_incheon", label: "서구" },
+    { value: "ganghwa", label: "강화군" },
+    { value: "ongjin", label: "옹진군" },
+  ],
+  other: [{ value: "other", label: "기타" }],
+};
+
+const provinces = [
+  { value: "seoul", label: "서울특별시" },
+  { value: "gyeonggi", label: "경기도" },
+  { value: "incheon", label: "인천광역시" },
+  { value: "other", label: "기타" },
 ];
 
 // Form validation schema
 const kycSchema = z.object({
+  privacyConsent: z.boolean().refine((val) => val === true, {
+    message: "개인정보 수집 및 이용에 동의해주세요",
+  }),
   name: z
     .string()
     .min(2, "이름은 2글자 이상 입력해주세요")
@@ -64,37 +124,10 @@ const kycSchema = z.object({
     .string()
     .length(11, "연락처는 11자리로 입력해주세요")
     .regex(/^[0-9]+$/, "숫자만 입력해주세요"),
-  district: z.enum(
-    [
-      "gangnam",
-      "gangdong",
-      "gangbuk",
-      "gangseo",
-      "gwanak",
-      "gwangjin",
-      "guro",
-      "geumcheon",
-      "nowon",
-      "dobong",
-      "dongdaemun",
-      "dongjak",
-      "mapo",
-      "seodaemun",
-      "seocho",
-      "seongbuk",
-      "songpa",
-      "yangcheon",
-      "yeongdeungpo",
-      "yongsan",
-      "eunpyeong",
-      "jongno",
-      "junggu",
-      "jungnang",
-    ],
-    {
-      required_error: "시군구를 선택해주세요",
-    }
-  ),
+  province: z.enum(["seoul", "gyeonggi", "incheon", "other"], {
+    required_error: "시도를 선택해주세요",
+  }),
+  district: z.string().min(1, "시군구를 선택해주세요"),
   detailedAddress: z.string().optional(), // 상세주소는 선택항목
   skinType: z.enum(
     ["oily", "dry", "normal", "combination", "unknown", "other"],
@@ -414,6 +447,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
         gender: data.gender,
         birthYear: data.birthYear,
         contact: data.contact,
+        province: data.province,
         district: data.district,
         detailedAddress: data.detailedAddress || "",
         skinType: data.skinType,
@@ -538,6 +572,43 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Privacy Consent */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">
+              개인정보 수집 및 이용 동의
+            </h3>
+            <div className="bg-gray-50 text-gray-700 space-y-2 rounded-lg p-4 text-sm">
+              <p>
+                본 고객등록 신청서에 기입해주신 정보는 당사의 고객 관리 및 내부
+                운영 목적으로만 사용됩니다.
+              </p>
+              <p>
+                제출해주신 정보는 관련 법령에 따라 3년간 안전하게 보관되며, 보관
+                기간이 만료된 후에는 즉시 폐기됩니다.
+              </p>
+              <p>
+                본인은 이에 동의하며, 제출한 정보가 내부 관리 목적 외에는
+                사용되지 않음을 확인합니다.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="privacyConsent"
+                {...register("privacyConsent")}
+                className="border-gray-300 text-blue-600 focus:ring-blue-500 rounded"
+              />
+              <Label htmlFor="privacyConsent" className="text-sm">
+                위 개인정보 수집 및 이용에 동의합니다 *
+              </Label>
+            </div>
+            {errors.privacyConsent && (
+              <p className="text-red-500 text-sm">
+                {errors.privacyConsent.message}
+              </p>
+            )}
+          </div>
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">기본 정보</h3>
@@ -585,7 +656,16 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
 
             {/* Birth Year */}
             <div className="space-y-2">
-              <Label htmlFor="birthYear">출생년도 *</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="birthYear">출생년도 *</Label>
+                <button
+                  type="button"
+                  className="text-blue-500 hover:text-blue-700"
+                  onClick={() => alert("미성년자 작업 불가")}
+                >
+                  ?
+                </button>
+              </div>
               <select
                 id="birthYear"
                 {...register("birthYear")}
@@ -627,23 +707,59 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
               )}
             </div>
 
-            {/* District */}
+            {/* Province and District */}
+            <div className="space-y-2">
+              <Label htmlFor="province">시도 *</Label>
+              <select
+                id="province"
+                {...register("province")}
+                onChange={(e) => {
+                  setValue(
+                    "province",
+                    e.target.value as "seoul" | "gyeonggi" | "incheon" | "other"
+                  );
+                  setValue("district", ""); // Reset district when province changes
+                }}
+                className={cn(
+                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  errors.province && "border-red-500"
+                )}
+              >
+                <option value="">시도를 선택하세요</option>
+                {provinces.map((province) => (
+                  <option key={province.value} value={province.value}>
+                    {province.label}
+                  </option>
+                ))}
+              </select>
+              {errors.province && (
+                <p className="text-red-500 text-sm">
+                  {errors.province.message}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="district">시군구 *</Label>
               <select
                 id="district"
                 {...register("district")}
+                disabled={!watch("province")}
                 className={cn(
                   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  errors.district && "border-red-500"
+                  errors.district && "border-red-500",
+                  !watch("province") && "cursor-not-allowed opacity-50"
                 )}
               >
                 <option value="">시군구를 선택하세요</option>
-                {districts.map((district) => (
-                  <option key={district.value} value={district.value}>
-                    {district.label}
-                  </option>
-                ))}
+                {watch("province") &&
+                  districts[watch("province") as keyof typeof districts]?.map(
+                    (district) => (
+                      <option key={district.value} value={district.value}>
+                        {district.label}
+                      </option>
+                    )
+                  )}
               </select>
               {errors.district && (
                 <p className="text-red-500 text-sm">
@@ -712,6 +828,12 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   <Label htmlFor="other-skin">기타</Label>
                 </div>
               </RadioGroup>
+              {watch("skinType") === "other" && (
+                <div className="bg-blue-50 text-blue-700 rounded-lg p-3 text-sm">
+                  <p>특이 체질이 있으시다면 기타에 적어주세요</p>
+                  <p>예) 켈로이드, 피부염, 아토피 등</p>
+                </div>
+              )}
               {errors.skinType && (
                 <p className="text-red-500 text-sm">
                   {errors.skinType.message}
