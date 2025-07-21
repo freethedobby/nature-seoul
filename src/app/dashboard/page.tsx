@@ -219,6 +219,14 @@ export default function DashboardPage() {
                       : "미신청"}
                   </span>
                 </div>
+                {user.kycStatus === "rejected" && user.rejectReason && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">반려 사유</span>
+                    <span className="text-red-600 font-medium">
+                      {user.rejectReason}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -317,11 +317,11 @@ export default function KYCDashboard() {
       // Create notification for the user
       try {
         const notification = notificationTemplates.kycRejected(
-          user.name, // This is the rejected user's name from the found user object
+          user.name,
           rejectReason.trim()
         );
         await createNotification({
-          userId: selectedUserId, // This is correct - the rejected user's ID
+          userId: selectedUserId,
           type: "kyc_rejected",
           title: notification.title,
           message: notification.message,

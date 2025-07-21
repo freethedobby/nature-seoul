@@ -8,6 +8,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 export interface User extends FirebaseUser {
   kycStatus?: "pending" | "approved" | "rejected" | "none";
   treatmentDone?: boolean;
+  rejectReason?: string;
 }
 
 interface AuthContextType {
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...userData, // Merge all Firestore fields (including kycStatus, treatmentDone, etc.)
                 kycStatus: userData.kycStatus || "none",
                 treatmentDone: userData.treatmentDone || false,
+                rejectReason: userData.rejectReason || "",
               };
               console.log("Merged user object:", mergedUser);
               console.log("Final kycStatus:", mergedUser.kycStatus);
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...firebaseUser,
                 kycStatus: "none",
                 treatmentDone: false,
+                rejectReason: "",
               });
             }
           },

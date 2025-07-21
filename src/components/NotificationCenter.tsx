@@ -12,6 +12,7 @@ import {
   orderBy,
   doc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 interface Notification {
@@ -120,6 +121,21 @@ export default function NotificationCenter({
     }
   };
 
+  const deleteAllNotifications = async () => {
+    try {
+      const deletePromises = notifications.map((notification) =>
+        deleteDoc(doc(db, "notifications", notification.id))
+      );
+      await Promise.all(deletePromises);
+
+      // Optimistically update local state for immediate UI feedback
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error deleting all notifications:", error);
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "kyc_approved":
@@ -184,13 +200,23 @@ export default function NotificationCenter({
               <div className="flex items-center justify-between">
                 <h3 className="text-gray-900 text-lg font-semibold">알림</h3>
                 <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      모두 읽음
-                    </button>
+                  {notifications.length > 0 && (
+                    <>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          모두 읽음
+                        </button>
+                      )}
+                      <button
+                        onClick={deleteAllNotifications}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        모두 지움
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
