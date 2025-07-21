@@ -9,6 +9,8 @@ export interface User extends FirebaseUser {
   kycStatus?: "pending" | "approved" | "rejected" | "none";
   treatmentDone?: boolean;
   rejectReason?: string;
+  noticeConfirmed?: boolean;
+  noticeConfirmedAt?: Date;
 }
 
 interface AuthContextType {
@@ -76,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 kycStatus: userData.kycStatus || "none",
                 treatmentDone: userData.treatmentDone || false,
                 rejectReason: userData.rejectReason || "",
+                noticeConfirmed: userData.noticeConfirmed || false,
+                noticeConfirmedAt: userData.noticeConfirmedAt || undefined,
               };
               console.log("Merged user object:", mergedUser);
               console.log("Final kycStatus:", mergedUser.kycStatus);
@@ -93,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 kycStatus: "none",
                 treatmentDone: false,
                 rejectReason: "",
+                noticeConfirmed: false,
+                noticeConfirmedAt: undefined,
               });
             }
           },

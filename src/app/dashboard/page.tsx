@@ -12,19 +12,24 @@ import {
   Menu,
   X,
   LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
 import TestNotificationButton from "@/components/TestNotificationButton";
+import NoticeModal from "@/components/NoticeModal";
 import { auth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
 
   console.log("user object in DashboardPage:", user);
 
@@ -49,6 +54,30 @@ export default function DashboardPage() {
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
+    }
+  };
+
+  const handleNoticeConfirm = async () => {
+    if (!user?.uid) return;
+
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        noticeConfirmed: true,
+        noticeConfirmedAt: new Date(),
+      });
+      setShowNoticeModal(false);
+      // 페이지 새로고침으로 상태 업데이트
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating notice confirmation:", error);
+    }
+  };
+
+  const handleReservationClick = () => {
+    if (user?.kycStatus === "approved" && !user?.noticeConfirmed) {
+      setShowNoticeModal(true);
+    } else {
+      router.push("/user/reserve");
     }
   };
 
@@ -103,7 +132,7 @@ export default function DashboardPage() {
                     {user?.kycStatus === "approved"
                       ? "승인된 사용자"
                       : user?.kycStatus === "pending"
-                      ? "검토 중"
+                      ? "확인중"
                       : user?.kycStatus === "rejected"
                       ? "거절됨"
                       : "미신청"}
@@ -256,7 +285,7 @@ export default function DashboardPage() {
                     }
                   >
                     {user.kycStatus === "pending"
-                      ? "리뷰중"
+                      ? "확인중"
                       : isLocked
                       ? "상담 신청하기"
                       : "신청 완료"}
@@ -275,23 +304,41 @@ export default function DashboardPage() {
                 <p className="text-gray-600 mb-4 text-sm">
                   {isLocked
                     ? "상담 신청 후 예약이 가능합니다."
+                    : user.kycStatus === "approved" && !user.noticeConfirmed
+                    ? "공지사항 확인 후 예약이 가능합니다."
                     : "상담 승인 후 예약이 가능합니다."}
                 </p>
-                <Link
-                  href={user.kycStatus === "approved" ? "/user/reserve" : "#"}
+
+                {user.kycStatus === "approved" && !user.noticeConfirmed && (
+                  <div className="bg-orange-50 border-orange-200 mb-4 rounded-lg border p-3">
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="text-orange-600 mt-0.5 h-5 w-5 flex-shrink-0" />
+                      <div>
+                        <p className="text-orange-800 text-sm font-medium">
+                          공지사항 확인 필수
+                        </p>
+                        <p className="text-orange-700 mt-1 text-xs">
+                          예약하기 전에 반드시 공지사항을 확인해주세요.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={isLocked || user.kycStatus !== "approved"}
+                  onClick={handleReservationClick}
                 >
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    disabled={isLocked || user.kycStatus !== "approved"}
-                  >
-                    {isLocked
-                      ? "상담 신청 필요"
-                      : user.kycStatus === "approved"
-                      ? "예약하기"
-                      : "승인 대기 중"}
-                  </Button>
-                </Link>
+                  {isLocked
+                    ? "상담 신청 필요"
+                    : user.kycStatus === "approved" && !user.noticeConfirmed
+                    ? "공지사항 확인하기"
+                    : user.kycStatus === "approved"
+                    ? "예약하기"
+                    : "승인 대기 중"}
+                </Button>
               </div>
             </div>
 
@@ -315,6 +362,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Notice Modal */}
+      <NoticeModal
+        isOpen={showNoticeModal}
+        onClose={() => setShowNoticeModal(false)}
+        onConfirm={handleNoticeConfirm}
+      />
     </div>
   );
 }
