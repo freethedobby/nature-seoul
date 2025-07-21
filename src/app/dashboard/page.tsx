@@ -17,6 +17,7 @@ import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
+import TestNotificationButton from "@/components/TestNotificationButton";
 import { auth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
 
@@ -308,6 +309,9 @@ export default function DashboardPage() {
                 </p>
               </div>
             )}
+
+            {/* Test Notification Button (Development Only) */}
+            <TestNotificationButton />
           </div>
         </div>
       </main>
