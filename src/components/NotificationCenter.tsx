@@ -48,10 +48,12 @@ export default function NotificationCenter({
 
   useEffect(() => {
     console.log(
-      "NotificationCenter useEffect - user:",
+      "🔍 NotificationCenter useEffect - user:",
       user?.uid,
       "variant:",
-      variant
+      variant,
+      "user object:",
+      user
     );
 
     let q;
@@ -59,22 +61,22 @@ export default function NotificationCenter({
       // Admin notifications - show all KYC submissions and admin-specific notifications
       q = query(
         collection(db, "notifications"),
-        where("userId", "==", "admin"),
-        orderBy("createdAt", "desc")
+        where("userId", "==", "admin")
+        // Removed orderBy to avoid index requirement
       );
     } else if (user?.uid) {
       // Customer notifications - show only user's notifications
       q = query(
         collection(db, "notifications"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid)
+        // Removed orderBy to avoid index requirement
       );
     } else {
       // Guest notifications - show notifications for anonymous users
       q = query(
         collection(db, "notifications"),
-        where("userId", "==", "guest"),
-        orderBy("createdAt", "desc")
+        where("userId", "==", "guest")
+        // Removed orderBy to avoid index requirement
       );
     }
 
@@ -101,11 +103,41 @@ export default function NotificationCenter({
         } as Notification);
       });
 
+      // Sort notifications by createdAt in descending order (newest first)
+      notifs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
       console.log("✅ Setting notifications:", notifs.length);
       console.log("📊 Notifications:", notifs);
       setNotifications(notifs);
       setUnreadCount(notifs.filter((n) => !n.read).length);
     });
+
+    // Debug: Also listen to all notifications to see what's in the database
+    const debugQuery = query(
+      collection(db, "notifications"),
+      orderBy("createdAt", "desc")
+    );
+    const debugUnsubscribe = onSnapshot(debugQuery, (snapshot) => {
+      console.log(
+        "🔍 DEBUG: All notifications in database, count:",
+        snapshot.size
+      );
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log("🔍 DEBUG: All notification:", {
+          id: doc.id,
+          userId: data.userId,
+          type: data.type,
+          title: data.title,
+          createdAt: data.createdAt?.toDate(),
+        });
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      debugUnsubscribe();
+    };
 
     return () => unsubscribe();
   }, [user, variant]);
