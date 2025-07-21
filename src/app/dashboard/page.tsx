@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
+import NotificationCenter from "@/components/NotificationCenter";
 import { auth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
 
@@ -85,6 +86,8 @@ export default function DashboardPage() {
 
             {/* Desktop User Info */}
             <div className="hidden items-center space-x-4 md:flex">
+              <NotificationCenter variant="customer" />
+
               <div className="shadow-sm border-gray-200 flex items-center gap-2 rounded-lg border bg-white px-3 py-2">
                 <div className="bg-gradient-to-br from-blue-400 to-purple-500 flex h-8 w-8 items-center justify-center rounded-full">
                   <span className="text-sm font-medium text-white">
@@ -118,7 +121,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="flex items-center space-x-2 md:hidden">
+              <NotificationCenter variant="customer" />
+
               <Button
                 variant="ghost"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
