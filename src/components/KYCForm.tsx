@@ -238,7 +238,11 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
       // Test Firebase connectivity
       console.log("=== TESTING FIREBASE CONNECTIVITY ===");
       console.log("Network status:", navigator.onLine);
-      console.log("Connection type:", (navigator as any).connection?.type);
+      console.log(
+        "Connection type:",
+        (navigator as Navigator & { connection?: { type?: string } }).connection
+          ?.type
+      );
 
       try {
         firestoreDoc(db, "test", "connectivity");
