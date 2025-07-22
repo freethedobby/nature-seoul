@@ -1348,60 +1348,48 @@ export const dongs: { [key: string]: AddressOption[] } = {
       "label": "왕십리동"
     },
     {
-      "value": "wangsimni2",
-      "label": "왕십리2동"
+      "value": "doseon",
+      "label": "도선동"
     },
     {
-      "value": "wangsimni3",
-      "label": "왕십리3동"
+      "value": "majang",
+      "label": "마장동"
     },
     {
-      "value": "wangsimni4",
-      "label": "왕십리4동"
+      "value": "yongdap",
+      "label": "용답동"
     },
     {
-      "value": "wangsimni5",
-      "label": "왕십리5동"
+      "value": "seongsu1",
+      "label": "성수동1가"
     },
     {
-      "value": "wangsimni6",
-      "label": "왕십리6동"
+      "value": "seongsu2",
+      "label": "성수동2가"
     },
     {
-      "value": "wangsimni7",
-      "label": "왕십리7동"
+      "value": "hwanghak",
+      "label": "황학동"
     },
     {
-      "value": "wangsimni8",
-      "label": "왕십리8동"
+      "value": "euljiro",
+      "label": "을지로동"
     },
     {
-      "value": "wangsimni9",
-      "label": "왕십리9동"
+      "value": "sindang",
+      "label": "신당동"
     },
     {
-      "value": "wangsimni10",
-      "label": "왕십리10동"
+      "value": "sangwangsimni",
+      "label": "상왕십리동"
     },
     {
-      "value": "wangsimni11",
-      "label": "왕십리11동"
+      "value": "haengdang",
+      "label": "행당동"
     },
     {
-      "value": "wangsimni12",
-      "label": "왕십리12동"
-    },
-    {
-      "value": "wangsimni13",
-      "label": "왕십리13동"
-    },
-    {
-      "value": "wangsimni14",
-      "label": "왕십리14동"
-    },
-    {
-      "value": "wangsimni15",
-      "label": "왕십리15동"
+      "value": "seongsu",
+      "label": "성수동"
     }
   ],
   "suwon": [
