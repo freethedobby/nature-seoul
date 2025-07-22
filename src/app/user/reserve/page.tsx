@@ -512,6 +512,7 @@ export default function UserReservePage() {
                           deadline={reservation.paymentDeadline}
                           onExpired={handleCountdownExpired}
                           compact={true}
+                          testMode={process.env.NODE_ENV === "development"}
                         />
                       </div>
 

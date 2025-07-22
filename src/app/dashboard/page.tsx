@@ -43,6 +43,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import CountdownTimer from "@/components/CountdownTimer";
+import { createNotification } from "@/lib/notifications";
 
 // KYC 데이터 타입 정의
 interface KYCData {
@@ -761,11 +762,37 @@ export default function DashboardPage() {
                             <div className="mt-2">
                               <CountdownTimer
                                 deadline={reservation.paymentDeadline}
-                                onExpired={() => {
+                                onExpired={async () => {
                                   // 타이머 만료 시 예약 취소 처리
                                   console.log("예약 타이머 만료");
+
+                                  if (!reservation) return;
+
+                                  try {
+                                    await updateDoc(
+                                      doc(db, "reservations", reservation.id),
+                                      {
+                                        status: "cancelled",
+                                      }
+                                    );
+
+                                    // Create admin notification
+                                    await createNotification({
+                                      userId: "admin",
+                                      type: "admin_reservation_cancelled",
+                                      title: "입금 시간 만료",
+                                      message: `${
+                                        user?.displayName || user?.email
+                                      }님의 예약이 입금 시간 만료로 자동 취소되었습니다.`,
+                                    });
+                                  } catch (error) {
+                                    console.error("자동 취소 실패:", error);
+                                  }
                                 }}
                                 compact={true}
+                                testMode={
+                                  process.env.NODE_ENV === "development"
+                                }
                               />
                             </div>
                           )}

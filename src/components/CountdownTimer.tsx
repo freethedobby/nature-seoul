@@ -7,12 +7,14 @@ interface CountdownTimerProps {
   deadline: Date | { toDate: () => Date } | number; // Firestore Timestamp or Date or number
   onExpired: () => void;
   compact?: boolean; // For integration into payment guide box
+  testMode?: boolean; // For development testing
 }
 
 export default function CountdownTimer({
   deadline,
   onExpired,
   compact = false,
+  testMode = false,
 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     hours: number;
@@ -78,6 +80,33 @@ export default function CountdownTimer({
 
   const isWarning = timeLeft.hours === 0 && timeLeft.minutes < 30;
   const isCritical = timeLeft.hours === 0 && timeLeft.minutes < 10;
+
+  // 개발 모드에서 테스트용 시간 조정 함수
+  const adjustTimeForTesting = (seconds: number) => {
+    if (!testMode) return;
+
+    const now = new Date().getTime();
+    const newDeadline = new Date(now + seconds * 1000);
+
+    // 강제로 새로운 deadline 설정
+    const calculateTimeLeft = () => {
+      const difference = newDeadline.getTime() - now;
+
+      if (difference <= 0) {
+        setIsExpired(true);
+        onExpired();
+        return { hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      const hours = Math.floor(difference / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      return { hours, minutes, seconds };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+  };
 
   if (isExpired) {
     return (
@@ -192,6 +221,41 @@ export default function CountdownTimer({
               : "⏰ 입금 시간이 얼마 남지 않았습니다."}
           </p>
         )}
+
+        {/* 개발 모드 테스트 버튼 */}
+        {testMode && (
+          <div className="mt-3 space-y-2">
+            <div className="text-gray-500 text-xs font-medium">
+              🧪 개발 모드 테스트
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => adjustTimeForTesting(10)}
+                className="bg-blue-500 hover:bg-blue-600 rounded px-2 py-1 text-xs text-white transition-colors"
+              >
+                10초
+              </button>
+              <button
+                onClick={() => adjustTimeForTesting(30)}
+                className="bg-orange-500 hover:bg-orange-600 rounded px-2 py-1 text-xs text-white transition-colors"
+              >
+                30초
+              </button>
+              <button
+                onClick={() => adjustTimeForTesting(60)}
+                className="bg-yellow-500 hover:bg-yellow-600 rounded px-2 py-1 text-xs text-white transition-colors"
+              >
+                1분
+              </button>
+              <button
+                onClick={() => adjustTimeForTesting(300)}
+                className="bg-green-500 hover:bg-green-600 rounded px-2 py-1 text-xs text-white transition-colors"
+              >
+                5분
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -286,6 +350,41 @@ export default function CountdownTimer({
             ? "⚠️ 긴급: 입금 시간이 곧 만료됩니다!"
             : "⏰ 입금 시간이 얼마 남지 않았습니다."}
         </p>
+      )}
+
+      {/* 개발 모드 테스트 버튼 */}
+      {testMode && (
+        <div className="mt-4 space-y-2">
+          <div className="text-gray-500 text-sm font-medium">
+            🧪 개발 모드 테스트
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => adjustTimeForTesting(10)}
+              className="bg-blue-500 hover:bg-blue-600 rounded px-3 py-1 text-sm text-white transition-colors"
+            >
+              10초
+            </button>
+            <button
+              onClick={() => adjustTimeForTesting(30)}
+              className="bg-orange-500 hover:bg-orange-600 rounded px-3 py-1 text-sm text-white transition-colors"
+            >
+              30초
+            </button>
+            <button
+              onClick={() => adjustTimeForTesting(60)}
+              className="bg-yellow-500 hover:bg-yellow-600 rounded px-3 py-1 text-sm text-white transition-colors"
+            >
+              1분
+            </button>
+            <button
+              onClick={() => adjustTimeForTesting(300)}
+              className="bg-green-500 hover:bg-green-600 rounded px-3 py-1 text-sm text-white transition-colors"
+            >
+              5분
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
