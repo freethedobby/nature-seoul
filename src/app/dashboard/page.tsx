@@ -356,60 +356,71 @@ export default function DashboardPage() {
                 </p>
 
                 {user.kycStatus === "approved" && !user.noticeConfirmed && (
-                  <div className="bg-orange-50 border-orange-200 mb-4 rounded-lg border p-3">
+                  <button
+                    onClick={() => setShowNoticeModal(true)}
+                    className="bg-orange-50 hover:bg-orange-100 border-orange-200 group mb-4 w-full rounded-lg border p-3 text-left transition-colors duration-200"
+                  >
                     <div className="flex items-start space-x-2">
-                      <AlertTriangle className="text-orange-600 mt-0.5 h-5 w-5 flex-shrink-0" />
-                      <div>
-                        <p className="text-orange-800 text-sm font-medium">
+                      <AlertTriangle className="text-orange-600 mt-0.5 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                      <div className="flex-1">
+                        <p className="text-orange-800 group-hover:text-orange-900 text-sm font-medium transition-colors">
                           공지사항 확인 필수
                         </p>
-                        <p className="text-orange-700 mt-1 text-xs">
+                        <p className="text-orange-700 group-hover:text-orange-800 mt-1 text-xs transition-colors">
                           예약하기 전에 반드시 공지사항을 확인해주세요.
                         </p>
                       </div>
+                      <div className="text-orange-400 group-hover:text-orange-600 transition-colors">
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 )}
 
                 {user.kycStatus === "approved" && user.noticeConfirmed && (
-                  <div className="bg-green-50 border-green-200 mb-4 rounded-lg border p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-2">
-                        <Check className="text-green-600 mt-0.5 h-5 w-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-green-800 text-sm font-medium">
-                            공지사항 확인 완료
-                          </p>
-                          <p className="text-green-700 mt-1 text-xs">
-                            예약이 가능합니다.
-                          </p>
-                        </div>
+                  <button
+                    onClick={() => setShowNoticeModal(true)}
+                    className="bg-green-50 hover:bg-green-100 border-green-200 group mb-4 w-full rounded-lg border p-3 text-left transition-colors duration-200"
+                  >
+                    <div className="flex items-start space-x-2">
+                      <Check className="text-green-600 mt-0.5 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                      <div className="flex-1">
+                        <p className="text-green-800 group-hover:text-green-900 text-sm font-medium transition-colors">
+                          공지사항 확인 완료
+                        </p>
+                        <p className="text-green-700 group-hover:text-green-800 mt-1 text-xs transition-colors">
+                          예약이 가능합니다.
+                        </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowNoticeModal(true)}
-                        className="text-green-600 hover:text-green-700 text-xs"
-                      >
-                        다시 보기
-                      </Button>
+                      <div className="text-green-400 group-hover:text-green-600 transition-colors">
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {/* 공지사항 확인 버튼 - KYC 승인된 사용자에게 항상 표시 */}
-                {user.kycStatus === "approved" && !reservation && (
-                  <div className="mb-4">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setShowNoticeModal(true)}
-                    >
-                      {user.noticeConfirmed
-                        ? "공지사항 다시 보기"
-                        : "공지사항 확인하기"}
-                    </Button>
-                  </div>
+                  </button>
                 )}
 
                 {reservation ? (
@@ -460,6 +471,18 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* 예약 후에도 공지사항 버튼 표시 */}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowNoticeModal(true)}
+                    >
+                      {user.noticeConfirmed
+                        ? "공지사항 다시 보기"
+                        : "공지사항 확인하기"}
+                    </Button>
+
                     <Button
                       variant="outline"
                       className="w-full"
