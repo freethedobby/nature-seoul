@@ -273,8 +273,10 @@ export default function AddressSelector({
               </Button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">{renderStepContent()}</div>
+            {/* Content - Fixed height with scroll */}
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="pb-4">{renderStepContent()}</div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
