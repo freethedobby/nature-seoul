@@ -278,8 +278,11 @@ export default function KYCDashboard() {
       setRejectedUsers(users);
     });
 
-    // Subscribe to reservations
-    const reservationsQuery = query(collection(db, "reservations"));
+    // Subscribe to reservations (excluding cancelled ones)
+    const reservationsQuery = query(
+      collection(db, "reservations"),
+      where("status", "!=", "cancelled")
+    );
 
     const unsubReservations = onSnapshot(reservationsQuery, (snapshot) => {
       const reservs: ReservationData[] = [];
