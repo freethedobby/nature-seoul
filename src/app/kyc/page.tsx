@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import KYCForm from "@/components/KYCForm";
+import KYCFormNew from "@/components/KYCFormNew";
 import FirebaseDebug from "@/components/FirebaseDebug";
 import Logo from "@/components/Logo";
 import { db } from "@/lib/firebase";
@@ -130,9 +130,9 @@ export default function KYCPage() {
         </header>
 
         {/* Main Content */}
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl">
-            <div className="mb-8 text-center">
+            {/* <div className="mb-8 text-center">
               <h2 className="text-gray-900 mb-2 text-2xl font-light">
                 맞춤 상담 신청
               </h2>
@@ -141,7 +141,7 @@ export default function KYCPage() {
                 <br />
                 최적의 시술 방법을 제안해드리겠습니다.
               </p>
-            </div>
+            </div> */}
 
             <Card className="border-green-200 bg-green-50">
               <CardHeader>
@@ -230,7 +230,7 @@ export default function KYCPage() {
         </header>
 
         {/* Main Content */}
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl">
             <div className="mb-8 text-center">
               <h2 className="text-gray-900 mb-2 text-2xl font-light">
@@ -282,20 +282,20 @@ export default function KYCPage() {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
-          <div className="mb-8 text-center">
+          {/* <div className="mb-8 text-center">
             <h2 className="text-gray-900 mb-2 text-2xl font-light">
               맞춤 상담 신청
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-6">
               고객님의 눈썹 상태를 정확히 파악하여
               <br />
               최적의 시술 방법을 제안해드리겠습니다.
             </p>
-          </div>
+          </div> */}
 
-          <KYCForm
+          <KYCFormNew
             onSuccess={() => {
               // 성공 후 대시보드로 이동
               setTimeout(() => {

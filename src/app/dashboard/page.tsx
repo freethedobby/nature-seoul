@@ -65,6 +65,161 @@ interface KYCData {
   };
 }
 
+// 주소 변환 함수들
+const getProvinceLabel = (value: string): string => {
+  const provinces = [
+    { value: "seoul", label: "서울특별시" },
+    { value: "busan", label: "부산광역시" },
+    { value: "daegu", label: "대구광역시" },
+    { value: "incheon", label: "인천광역시" },
+    { value: "gwangju", label: "광주광역시" },
+    { value: "daejeon", label: "대전광역시" },
+    { value: "ulsan", label: "울산광역시" },
+    { value: "sejong", label: "세종특별자치시" },
+    { value: "gyeonggi", label: "경기도" },
+    { value: "gangwon", label: "강원도" },
+    { value: "chungbuk", label: "충청북도" },
+    { value: "chungnam", label: "충청남도" },
+    { value: "jeonbuk", label: "전라북도" },
+    { value: "jeonnam", label: "전라남도" },
+    { value: "gyeongbuk", label: "경상북도" },
+    { value: "gyeongnam", label: "경상남도" },
+    { value: "jeju", label: "제주특별자치도" },
+  ];
+  return provinces.find((p) => p.value === value)?.label || value;
+};
+
+const getDistrictLabel = (
+  provinceValue: string,
+  districtValue: string
+): string => {
+  const districts: { [key: string]: { value: string; label: string }[] } = {
+    seoul: [
+      { value: "gangnam", label: "강남구" },
+      { value: "gangdong", label: "강동구" },
+      { value: "gangbuk", label: "강북구" },
+      { value: "gangseo", label: "강서구" },
+      { value: "gwanak", label: "관악구" },
+      { value: "gwangjin", label: "광진구" },
+      { value: "guro", label: "구로구" },
+      { value: "geumcheon", label: "금천구" },
+      { value: "nowon", label: "노원구" },
+      { value: "dobong", label: "도봉구" },
+      { value: "dongdaemun", label: "동대문구" },
+      { value: "dongjak", label: "동작구" },
+      { value: "mapo", label: "마포구" },
+      { value: "seodaemun", label: "서대문구" },
+      { value: "seocho", label: "서초구" },
+      { value: "seongbuk", label: "성북구" },
+      { value: "songpa", label: "송파구" },
+      { value: "yangcheon", label: "양천구" },
+      { value: "yeongdeungpo", label: "영등포구" },
+      { value: "yongsan", label: "용산구" },
+      { value: "eunpyeong", label: "은평구" },
+      { value: "jongno", label: "종로구" },
+      { value: "junggu", label: "중구" },
+      { value: "jungnang", label: "중랑구" },
+    ],
+    gyeonggi: [
+      { value: "suwon", label: "수원시" },
+      { value: "seongnam", label: "성남시" },
+      { value: "bucheon", label: "부천시" },
+      { value: "anyang", label: "안양시" },
+      { value: "ansan", label: "안산시" },
+      { value: "pyeongtaek", label: "평택시" },
+      { value: "siheung", label: "시흥시" },
+      { value: "gwangmyeong", label: "광명시" },
+      { value: "gwangju_gyeonggi", label: "광주시" },
+      { value: "yongin", label: "용인시" },
+      { value: "paju", label: "파주시" },
+      { value: "icheon", label: "이천시" },
+      { value: "anseong", label: "안성시" },
+      { value: "gimpo", label: "김포시" },
+      { value: "hwaseong", label: "화성시" },
+      { value: "yeoju", label: "여주시" },
+      { value: "pocheon", label: "포천시" },
+      { value: "dongducheon", label: "동두천시" },
+      { value: "goyang", label: "고양시" },
+      { value: "namyangju", label: "남양주시" },
+      { value: "osan", label: "오산시" },
+      { value: "hanam", label: "하남시" },
+      { value: "uijeongbu", label: "의정부시" },
+      { value: "yangju", label: "양주시" },
+      { value: "gunpo", label: "군포시" },
+      { value: "uiwang", label: "의왕시" },
+      { value: "gwachon", label: "과천시" },
+      { value: "guri", label: "구리시" },
+      { value: "yeoncheon", label: "연천군" },
+      { value: "gapyeong", label: "가평군" },
+      { value: "yangpyeong", label: "양평군" },
+    ],
+    incheon: [
+      { value: "junggu_incheon", label: "중구" },
+      { value: "donggu", label: "동구" },
+      { value: "michuhol", label: "미추홀구" },
+      { value: "yeonsu", label: "연수구" },
+      { value: "namdong", label: "남동구" },
+      { value: "bupyeong", label: "부평구" },
+      { value: "gyeyang", label: "계양구" },
+      { value: "seo_incheon", label: "서구" },
+      { value: "ganghwa", label: "강화군" },
+      { value: "ongjin", label: "옹진군" },
+    ],
+  };
+
+  const provinceDistricts = districts[provinceValue];
+  if (!provinceDistricts) return districtValue;
+
+  return (
+    provinceDistricts.find((d) => d.value === districtValue)?.label ||
+    districtValue
+  );
+};
+
+const getDongLabel = (districtValue: string, dongValue: string): string => {
+  const dongs: { [key: string]: { value: string; label: string }[] } = {
+    gangnam: [
+      { value: "apgujeong", label: "압구정동" },
+      { value: "cheongdam", label: "청담동" },
+      { value: "daechi", label: "대치동" },
+      { value: "dogok", label: "도곡동" },
+      { value: "gaepo", label: "개포동" },
+      { value: "irwon", label: "일원동" },
+      { value: "jamsil", label: "잠실동" },
+      { value: "jamwon", label: "잠원동" },
+      { value: "nonhyeon", label: "논현동" },
+      { value: "samseong", label: "삼성동" },
+      { value: "seocho", label: "서초동" },
+      { value: "sinsa", label: "신사동" },
+      { value: "songpa", label: "송파동" },
+      { value: "yangjae", label: "양재동" },
+    ],
+    seocho: [
+      { value: "banpo", label: "반포동" },
+      { value: "bangbae", label: "방배동" },
+      { value: "seocho", label: "서초동" },
+      { value: "yangjae", label: "양재동" },
+      { value: "yeouido", label: "여의도동" },
+    ],
+    suwon: [
+      { value: "gwonseon", label: "권선구" },
+      { value: "yeongtong", label: "영통구" },
+      { value: "jangan", label: "장안구" },
+      { value: "paldal", label: "팔달구" },
+    ],
+    seongnam: [
+      { value: "bundang", label: "분당구" },
+      { value: "jungwon", label: "중원구" },
+      { value: "sujeong", label: "수정구" },
+    ],
+  };
+
+  const districtDongs = dongs[districtValue];
+  if (!districtDongs) return dongValue;
+
+  return districtDongs.find((d) => d.value === dongValue)?.label || dongValue;
+};
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -129,22 +284,55 @@ export default function DashboardPage() {
   // Fetch KYC data
   useEffect(() => {
     const fetchKycData = async () => {
-      if (user?.email) {
+      if (user?.uid) {
         try {
-          const kycDoc = await getDoc(doc(db, "kyc", user.email));
-          if (kycDoc.exists()) {
-            setKycData(kycDoc.data() as KYCData);
+          console.log("대시보드 - KYC 데이터 조회 시작:", user.uid);
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          console.log("대시보드 - 사용자 문서 존재 여부:", userDoc.exists());
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            console.log("대시보드 - 사용자 데이터:", data);
+
+            // KYC 데이터 형식에 맞게 변환
+            const kycData: KYCData = {
+              name: data.name || "",
+              gender: data.gender || "",
+              birthYear: data.birthYear || "",
+              contact: data.contact || "",
+              province: data.province || "",
+              district: data.district || "",
+              dong: data.dong || "",
+              detailedAddress: data.detailedAddress || "",
+              skinType: data.skinType || "",
+              skinTypeOther: data.skinTypeOther || "",
+              hasPreviousTreatment: data.hasPreviousTreatment ? "yes" : "no",
+              eyebrowPhotoLeft: data.photoURLs?.left || "",
+              eyebrowPhotoFront: data.photoURLs?.front || "",
+              eyebrowPhotoRight: data.photoURLs?.right || "",
+              status: data.kycStatus || "",
+              submittedAt: data.submittedAt,
+            };
+
+            console.log("대시보드 - 변환된 KYC 데이터:", kycData);
+            setKycData(kycData);
+            console.log("대시보드 - kycData 상태 설정 완료");
+          } else {
+            console.log("대시보드 - 사용자 문서가 존재하지 않음");
+            setKycData(null);
           }
         } catch (error) {
           console.error("KYC 데이터 조회 실패:", error);
+          setKycData(null);
         }
+      } else {
+        console.log("대시보드 - user.uid가 없음");
       }
     };
 
-    if (user?.email) {
+    if (user?.uid) {
       fetchKycData();
     }
-  }, [user?.email]);
+  }, [user?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -394,17 +582,27 @@ export default function DashboardPage() {
                     >
                       신청 완료
                     </Button>
-                    {kycData && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowKycData(true)}
-                        className="text-blue-700 border-blue-300 hover:bg-blue-50 w-full"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        신청 내용 보기
-                      </Button>
-                    )}
+                    {(() => {
+                      console.log("대시보드 - 상담신청 섹션 렌더링:", {
+                        kycData: !!kycData,
+                        kycDataValue: kycData,
+                        isLocked,
+                        userKycStatus: user.kycStatus,
+                      });
+                      return (
+                        kycData && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowKycData(true)}
+                            className="text-blue-700 border-blue-300 hover:bg-blue-50 w-full"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            신청 내용 보기
+                          </Button>
+                        )
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -548,7 +746,7 @@ export default function DashboardPage() {
                         </div>
                         {reservation.status === "payment_required" && (
                           <div className="text-orange-600 mt-1 text-xs">
-                            💰 예약금 30만원 입금 필요
+                            💰 예약금 20만원 입금 필요
                           </div>
                         )}
                         {reservation.status === "payment_confirmed" && (
@@ -705,19 +903,25 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="text-gray-700 text-sm font-medium">시도</label>
-              <p className="text-gray-900">{kycData.province}</p>
+              <p className="text-gray-900">
+                {getProvinceLabel(kycData.province)}
+              </p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 시군구
               </label>
-              <p className="text-gray-900">{kycData.district}</p>
+              <p className="text-gray-900">
+                {getDistrictLabel(kycData.province, kycData.district)}
+              </p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 읍면동
               </label>
-              <p className="text-gray-900">{kycData.dong}</p>
+              <p className="text-gray-900">
+                {getDongLabel(kycData.district, kycData.dong)}
+              </p>
             </div>
             {kycData.detailedAddress && (
               <div>

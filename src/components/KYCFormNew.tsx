@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import { getProvinces, getDistricts, getDongs } from "@/lib/address-data";
+import AddressSelector from "@/components/AddressSelector";
 
 // 주소 데이터 가져오기
 const provinces = getProvinces();
@@ -108,11 +109,24 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
   console.log("Form errors:", errors);
 
   // Handle file change for specific photo type
+  // 파일 크기 검증 함수 (50MB = 50 * 1024 * 1024 bytes)
+  const validateFileSize = (file: File): boolean => {
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    return file.size <= maxSize;
+  };
+
   const handleFileChange =
     (photoType: "left" | "front" | "right") =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file) {
+        // 파일 크기 검증
+        if (!validateFileSize(file)) {
+          alert("파일 크기가 50MB를 초과합니다. 더 작은 파일을 선택해주세요.");
+          event.target.value = ""; // 파일 선택 초기화
+          return;
+        }
+
         setSelectedFiles((prev) => ({ ...prev, [photoType]: file }));
         setValue(
           `eyebrowPhoto${
@@ -139,6 +153,12 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
       setIsDragging(false);
       const file = event.dataTransfer.files[0];
       if (file) {
+        // 파일 크기 검증
+        if (!validateFileSize(file)) {
+          alert("파일 크기가 50MB를 초과합니다. 더 작은 파일을 선택해주세요.");
+          return;
+        }
+
         setSelectedFiles((prev) => ({ ...prev, [photoType]: file }));
         setValue(
           `eyebrowPhoto${
@@ -203,7 +223,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             } else {
-              reject(new Error("Failed to compress image"));
+              reject(new Error("이미지 압축에 실패했습니다"));
             }
           },
           "image/jpeg",
@@ -299,6 +319,19 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
           );
         }
 
+        // 파일 크기 재검증 (제출 시점)
+        if (!validateFileSize(photoFile)) {
+          throw new Error(
+            `${
+              photoType === "left"
+                ? "좌측"
+                : photoType === "front"
+                ? "정면"
+                : "우측"
+            } 사진의 크기가 50MB를 초과합니다. 더 작은 파일을 선택해주세요.`
+          );
+        }
+
         try {
           console.log(
             `=== ${photoType.toUpperCase()} IMAGE UPLOAD ATTEMPT ===`
@@ -325,7 +358,8 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
             const imageUrl = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
+              reader.onerror = () =>
+                reject(new Error("파일 읽기에 실패했습니다"));
               reader.readAsDataURL(photoFile);
             });
             imageUrls[photoType] = imageUrl;
@@ -342,7 +376,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                   : photoType === "front"
                   ? "정면"
                   : "우측"
-              } 사진 처리에 실패했습니다.`
+              } 사진 처리에 실패했습니다. 파일 형식을 확인해주세요.`
             );
           }
         }
@@ -458,33 +492,34 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
   };
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-4xl p-2 sm:p-4">
       <Card className="shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-gray-800 text-2xl font-bold">
+        <CardHeader className="pb-2 pt-4 text-center">
+          <CardTitle className="text-gray-800 text-xl font-bold sm:text-2xl">
             고객등록 신청서
           </CardTitle>
-          <p className="text-gray-600">
+          <p className="text-gray-600 sm:text-base text-sm">
             정확한 정보를 입력해주시면 빠른 상담이 가능합니다.
           </p>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <CardContent className="pt-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Privacy Consent */}
-            <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
+            <div className="border-blue-300 shadow-sm rounded-lg border-2 bg-white p-4">
               <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 rounded-full p-1">
+                <div className="bg-blue-100 p-1.5 rounded-full">
                   <CheckCircle className="text-blue-600 h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-blue-800 mb-2 font-semibold">
+                  <h3 className="text-gray-900 sm:text-base mb-2 text-sm font-bold">
                     개인정보 동의서
                   </h3>
-                  <p className="text-blue-700 text-sm leading-relaxed">
-                    본 고객등록 신청서에 기입해주신 정보는 당사의 고객 관리 및
-                    내부 운영 목적으로만 사용됩니다. 제출해주신 정보는 관련
-                    법령에 따라 3년간 안전하게 보관되며, 보관 기간이 만료된
+                  <p className="text-gray-900 text-xs leading-relaxed sm:text-sm">
+                    본 고객등록 신청서에 기입해주신 정보는 당사의{" "}
+                    <strong>고객 관리 및 내부 운영 목적</strong>으로만
+                    사용됩니다. 제출해주신 정보는 관련 법령에 따라{" "}
+                    <strong>3년</strong>간 안전하게 보관되며, 보관 기간이 만료된
                     후에는 즉시 폐기됩니다. 본인은 이에 동의하며, 제출한 정보가
                     내부 관리 목적 외에는 사용되지 않음을 확인합니다.
                   </p>
@@ -493,8 +528,8 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
             </div>
 
             {/* Basic Information */}
-            <div className="bg-gray-50 border-gray-200 rounded-lg border p-6">
-              <h3 className="text-gray-800 mb-4 flex items-center text-lg font-semibold">
+            <div className="bg-gray-50 border-gray-200 rounded-lg border p-4 sm:p-6">
+              <h3 className="text-gray-800 text-base mb-4 flex items-center font-semibold sm:text-lg">
                 <div className="bg-gray-200 mr-2 rounded-full p-1">
                   <CheckCircle className="text-gray-600 h-4 w-4" />
                 </div>
@@ -506,7 +541,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                 <div className="space-y-2">
                   <Label
                     htmlFor="name"
-                    className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+                    className="text-gray-800 text-xs font-semibold uppercase tracking-wide sm:text-sm"
                   >
                     이름 *
                   </Label>
@@ -515,13 +550,13 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     {...register("name")}
                     placeholder="이름을 입력하세요"
                     className={cn(
-                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
+                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm",
                       errors.name &&
                         "border-red-500 focus:border-red-500 focus:ring-red-200"
                     )}
                   />
                   {errors.name && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-xs sm:text-sm">
                       {errors.name.message}
                     </p>
                   )}
@@ -529,30 +564,30 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
 
                 {/* Gender */}
                 <div className="space-y-2">
-                  <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                  <Label className="text-gray-800 text-xs font-semibold uppercase tracking-wide sm:text-sm">
                     성별 *
                   </Label>
                   <RadioGroup
                     onValueChange={(value) =>
                       setValue("gender", value as "male" | "female" | "other")
                     }
-                    className="flex space-x-4"
+                    className="flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0"
                   >
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="male" id="male" />
-                      <Label htmlFor="male" className="text-sm">
+                      <Label htmlFor="male" className="text-xs sm:text-sm">
                         남성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="female" id="female" />
-                      <Label htmlFor="female" className="text-sm">
+                      <Label htmlFor="female" className="text-xs sm:text-sm">
                         여성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="other" id="other" />
-                      <Label htmlFor="other" className="text-sm">
+                      <Label htmlFor="other" className="text-xs sm:text-sm">
                         기타
                       </Label>
                     </div>
@@ -569,7 +604,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                   <div className="flex items-center gap-2">
                     <Label
                       htmlFor="birthYear"
-                      className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+                      className="text-gray-800 text-xs font-semibold uppercase tracking-wide sm:text-sm"
                     >
                       출생년도 *
                     </Label>
@@ -585,7 +620,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                   <select
                     id="birthYear"
                     {...register("birthYear")}
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm"
                   >
                     <option value="">출생년도를 선택하세요</option>
                     {birthYears.map((year) => (
@@ -595,7 +630,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     ))}
                   </select>
                   {errors.birthYear && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-xs sm:text-sm">
                       {errors.birthYear.message}
                     </p>
                   )}
@@ -605,7 +640,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                 <div className="space-y-2">
                   <Label
                     htmlFor="contact"
-                    className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
+                    className="text-gray-800 text-xs font-semibold uppercase tracking-wide sm:text-sm"
                   >
                     연락처 *
                   </Label>
@@ -615,7 +650,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     placeholder="연락처를 입력하세요 (예: 01012345678)"
                     maxLength={11}
                     className={cn(
-                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
+                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm",
                       errors.contact &&
                         "border-red-500 focus:border-red-500 focus:ring-red-200"
                     )}
@@ -626,9 +661,11 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                       setValue("contact", value);
                     }}
                   />
-                  <p className="text-gray-500 text-sm">숫자만 입력하세요</p>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    숫자만 입력하세요
+                  </p>
                   {errors.contact && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-xs sm:text-sm">
                       {errors.contact.message}
                     </p>
                   )}
@@ -637,122 +674,33 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
             </div>
 
             {/* Address Information */}
-            <div className="bg-gray-50 border-gray-200 rounded-lg border p-6">
-              <h3 className="text-gray-800 mb-4 flex items-center text-lg font-semibold">
+            <div className="bg-gray-50 border-gray-200 rounded-lg border p-4 sm:p-6">
+              <h3 className="text-gray-800 text-base mb-4 flex items-center font-semibold sm:text-lg">
                 <div className="bg-gray-200 mr-2 rounded-full p-1">
                   <CheckCircle className="text-gray-600 h-4 w-4" />
                 </div>
                 주소 정보
               </h3>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {/* Province */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="province"
-                    className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
-                  >
-                    시도 *
-                  </Label>
-                  <select
-                    id="province"
-                    {...register("province")}
-                    onChange={(e) => {
-                      setValue("province", e.target.value);
-                      setValue("district", ""); // Reset district when province changes
-                      setValue("dong", ""); // Reset dong when province changes
-                    }}
-                    className={cn(
-                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
-                      errors.province &&
-                        "border-red-500 focus:border-red-500 focus:ring-red-200"
-                    )}
-                  >
-                    <option value="">시도를 선택하세요</option>
-                    {provinces.map((province) => (
-                      <option key={province.value} value={province.value}>
-                        {province.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.province && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
-                      {errors.province.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* District */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="district"
-                    className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
-                  >
-                    시군구 *
-                  </Label>
-                  <select
-                    id="district"
-                    {...register("district")}
-                    disabled={!watch("province")}
-                    onChange={(e) => {
-                      setValue("district", e.target.value);
-                      setValue("dong", ""); // Reset dong when district changes
-                    }}
-                    className={cn(
-                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
-                      errors.district &&
-                        "border-red-500 focus:border-red-500 focus:ring-red-200",
-                      !watch("province") && "cursor-not-allowed opacity-50"
-                    )}
-                  >
-                    <option value="">시군구를 선택하세요</option>
-                    {watch("province") &&
-                      getDistricts(watch("province")).map((district) => (
-                        <option key={district.value} value={district.value}>
-                          {district.label}
-                        </option>
-                      ))}
-                  </select>
-                  {errors.district && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
-                      {errors.district.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Dong */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="dong"
-                    className="text-gray-800 text-sm font-semibold uppercase tracking-wide"
-                  >
-                    읍면동 *
-                  </Label>
-                  <select
-                    id="dong"
-                    {...register("dong")}
-                    disabled={!watch("district")}
-                    className={cn(
-                      "border-gray-300 focus:border-blue-500 focus:ring-blue-200 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2",
-                      errors.dong &&
-                        "border-red-500 focus:border-red-500 focus:ring-red-200",
-                      !watch("district") && "cursor-not-allowed opacity-50"
-                    )}
-                  >
-                    <option value="">읍면동을 선택하세요</option>
-                    {watch("district") &&
-                      getDongs(watch("district")).map((dong) => (
-                        <option key={dong.value} value={dong.value}>
-                          {dong.label}
-                        </option>
-                      ))}
-                  </select>
-                  {errors.dong && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
-                      {errors.dong.message}
-                    </p>
-                  )}
-                </div>
+              <div className="space-y-4">
+                {/* Address Selector */}
+                <AddressSelector
+                  value={{
+                    province: watch("province") || "",
+                    district: watch("district") || "",
+                    dong: watch("dong") || "",
+                  }}
+                  onChange={(address) => {
+                    setValue("province", address.province);
+                    setValue("district", address.district);
+                    setValue("dong", address.dong);
+                  }}
+                  error={
+                    errors.province?.message ||
+                    errors.district?.message ||
+                    errors.dong?.message
+                  }
+                />
               </div>
 
               {/* Detailed Address */}
@@ -773,8 +721,8 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
             </div>
 
             {/* Skin Type and Previous Treatment */}
-            <div className="bg-gray-50 border-gray-200 rounded-lg border p-6">
-              <h3 className="text-gray-800 mb-4 flex items-center text-lg font-semibold">
+            <div className="bg-gray-50 border-gray-200 rounded-lg border p-4 sm:p-6">
+              <h3 className="text-gray-800 text-base mb-4 flex items-center font-semibold sm:text-lg">
                 <div className="bg-gray-200 mr-2 rounded-full p-1">
                   <CheckCircle className="text-gray-600 h-4 w-4" />
                 </div>
@@ -784,7 +732,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Skin Type */}
                 <div className="space-y-2">
-                  <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                  <Label className="text-gray-800 text-xs font-semibold uppercase tracking-wide sm:text-sm">
                     피부타입 *
                   </Label>
                   <RadioGroup
@@ -800,59 +748,65 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                           | "other"
                       )
                     }
-                    className="grid grid-cols-2 gap-2"
+                    className="grid grid-cols-1 gap-2 sm:grid-cols-2"
                   >
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="oily" id="oily" />
-                      <Label htmlFor="oily" className="text-sm">
+                      <Label htmlFor="oily" className="text-xs sm:text-sm">
                         지성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="dry" id="dry" />
-                      <Label htmlFor="dry" className="text-sm">
+                      <Label htmlFor="dry" className="text-xs sm:text-sm">
                         건성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="normal" id="normal" />
-                      <Label htmlFor="normal" className="text-sm">
+                      <Label htmlFor="normal" className="text-xs sm:text-sm">
                         중성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="combination" id="combination" />
-                      <Label htmlFor="combination" className="text-sm">
+                      <Label
+                        htmlFor="combination"
+                        className="text-xs sm:text-sm"
+                      >
                         복합성
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="unknown" id="unknown" />
-                      <Label htmlFor="unknown" className="text-sm">
+                      <Label htmlFor="unknown" className="text-xs sm:text-sm">
                         모르겠음
                       </Label>
                     </div>
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="other" id="other-skin" />
-                      <Label htmlFor="other-skin" className="text-sm">
+                      <Label
+                        htmlFor="other-skin"
+                        className="text-xs sm:text-sm"
+                      >
                         기타
                       </Label>
                     </div>
                   </RadioGroup>
                   {watch("skinType") === "other" && (
                     <div className="space-y-3">
-                      <div className="bg-blue-50 text-blue-700 border-blue-200 rounded-lg border p-3 text-sm">
+                      <div className="bg-gray-50 text-gray-700 border-gray-200 rounded-lg border p-3 text-xs sm:text-sm">
                         <p className="font-medium">
                           특이 체질이 있으시다면 기타에 적어주세요
                         </p>
-                        <p className="text-blue-600">
+                        <p className="text-gray-600">
                           예) 켈로이드, 피부염, 아토피 등
                         </p>
                       </div>
                       <div className="space-y-2">
                         <Label
                           htmlFor="skinTypeOther"
-                          className="text-gray-700 text-sm font-medium"
+                          className="text-gray-700 text-xs font-medium sm:text-sm"
                         >
                           상세 내용
                         </Label>
@@ -860,13 +814,13 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                           id="skinTypeOther"
                           {...register("skinTypeOther")}
                           placeholder="특이 체질이나 피부 상태를 자세히 적어주세요"
-                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 min-h-[80px] w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2"
+                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 min-h-[80px] w-full resize-none rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm"
                         />
                       </div>
                     </div>
                   )}
                   {errors.skinType && (
-                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
+                    <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-xs sm:text-sm">
                       {errors.skinType.message}
                     </p>
                   )}
@@ -881,7 +835,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     onValueChange={(value) =>
                       setValue("hasPreviousTreatment", value as "yes" | "no")
                     }
-                    className="flex space-x-4"
+                    className="flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0"
                   >
                     <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
                       <RadioGroupItem value="yes" id="yes" />
@@ -906,7 +860,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
             </div>
 
             {/* Photo Upload Section */}
-            <div className="bg-gray-50 border-gray-200 rounded-lg border p-6">
+            <div className="bg-gray-50 border-gray-200 rounded-lg border p-4 sm:p-6">
               <h3 className="text-gray-800 mb-4 flex items-center text-lg font-semibold">
                 <div className="bg-gray-200 mr-2 rounded-full p-1">
                   <ImagePlus className="text-gray-600 h-4 w-4" />
@@ -915,7 +869,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
               </h3>
               <p className="text-gray-600 mb-4 text-sm">
                 좌측, 정면, 우측 사진을 각각 업로드해주세요. (JPG, PNG, 최대
-                5MB)
+                50MB)
               </p>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -1109,7 +1063,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 rounded-lg px-8 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-gray-900 hover:bg-gray-800 w-full rounded-lg px-6 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-8"
               >
                 {isSubmitting ? (
                   <>
