@@ -14,13 +14,21 @@ import {
   onSnapshot,
   query,
   where,
-  deleteDoc,
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import CountdownTimer from "@/components/CountdownTimer";
+import {
+  Calendar,
+  Clock,
+  CreditCard,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 interface SlotData {
   id: string;
@@ -47,6 +55,7 @@ interface ReservationData {
   paymentConfirmed?: boolean;
   paymentConfirmedAt?: Date;
   createdAt: Date;
+  paymentDeadline?: Date;
 }
 
 export default function UserReservePage() {
@@ -103,199 +112,157 @@ export default function UserReservePage() {
       setSlots(slotList);
       setLoading(false);
     });
+
     return () => unsub();
   }, []);
 
-  // Real-time reservation updates for this user
+  // Real-time reservation updates
   useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, "reservations"),
-      where("userId", "==", user.uid)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      if (snap.empty) {
-        setReservation(null);
-      } else {
-        const docData = snap.docs[0];
-        setReservation({
-          ...(docData.data() as ReservationData),
-          id: docData.id,
-          createdAt: docData.data().createdAt?.toDate?.() || new Date(),
-        });
+
+    const unsub = onSnapshot(
+      query(
+        collection(db, "reservations"),
+        where("userId", "==", user.uid),
+        where("status", "in", [
+          "pending",
+          "payment_required",
+          "payment_confirmed",
+          "approved",
+        ])
+      ),
+      (snap) => {
+        if (snap.empty) {
+          setReservation(null);
+          return;
+        }
+
+        const reservationData = snap.docs[0].data() as ReservationData;
+        reservationData.id = snap.docs[0].id;
+        setReservation(reservationData);
       }
-    });
+    );
+
     return () => unsub();
   }, [user]);
 
-  // Click-away handler for popup
+  // Click away handler for popup
   useEffect(() => {
-    if (!showReserveBtn) return;
     function handleClickAway(e: MouseEvent | TouchEvent) {
       if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
         setShowReserveBtn(null);
       }
     }
+
     document.addEventListener("mousedown", handleClickAway);
     document.addEventListener("touchstart", handleClickAway);
+
     return () => {
       document.removeEventListener("mousedown", handleClickAway);
       document.removeEventListener("touchstart", handleClickAway);
     };
-  }, [showReserveBtn]);
+  }, []);
 
-  // Get slots for selected day
-  const slotsForSelectedDay = slots.filter((slot) => {
-    if (!selectedDate) return false;
-    const slotDate = new Date(slot.start);
-    return (
-      slotDate.getFullYear() === selectedDate.getFullYear() &&
-      slotDate.getMonth() === selectedDate.getMonth() &&
-      slotDate.getDate() === selectedDate.getDate() &&
-      slot.status === "available"
-    );
-  });
-
-  // Find the reserved slot (if any)
-  const reservedSlot = reservation
-    ? slots.find((s) => s.id === reservation.slotId)
-    : null;
-
-  // Reservation handler
   const handleReserve = async (slot: SlotData) => {
-    if (!user || reserving) return;
+    if (!user) return;
+
     setReserving(true);
     try {
-      // Double-check: only allow if user has no reservation
-      if (reservation) {
-        alert("이미 예약이 있습니다. 취소 후 다시 시도하세요.");
-        return;
-      }
-      // Mark slot as booked and create reservation
-      await updateDoc(doc(db, "slots", slot.id), { status: "booked" });
+      // Create payment deadline (3 hours from now)
+      const paymentDeadline = new Date();
+      paymentDeadline.setHours(paymentDeadline.getHours() + 3);
 
       const reservationData = {
         slotId: slot.id,
         userId: user.uid,
-        userEmail: user.email,
+        userEmail: user.email || "",
         userName: user.displayName || "",
-        date: slot.start.toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
+        date: slot.start.toLocaleDateString("ko-KR"),
         time: slot.start.toLocaleTimeString("ko-KR", {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: "payment_required",
-        paymentConfirmed: false,
+        status: "payment_required" as const,
         createdAt: new Date(),
+        paymentDeadline: paymentDeadline,
       };
 
       await addDoc(collection(db, "reservations"), reservationData);
 
-      // Create notifications for user and admin
-      const reservationDate = slot.start.toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      const reservationTime = slot.start.toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
+      // Update slot status
+      await updateDoc(doc(db, "slots", slot.id), {
+        status: "booked",
       });
 
-      // User notification - 입금 안내
-      await createNotification({
-        userId: user.uid,
-        type: "payment_required",
-        title: "예약금 입금 안내",
-        message: `${reservationDate} ${reservationTime} 예약을 위해 예약금 30만원을 입금해주세요. 입금 후 '입금확인요청' 버튼을 눌러주세요.`,
-      });
-
-      // Admin notification
+      // Create admin notification
       await createNotification({
         userId: "admin",
         type: "admin_reservation_new",
-        title: "새로운 예약 신청",
-        message: `${
-          user.displayName || user.email
-        }님이 ${reservationDate} ${reservationTime}에 예약을 신청했습니다. 입금 확인 후 승인해주세요.`,
+        title: "새로운 예약 요청",
+        message: `${user.displayName || user.email}님이 ${
+          reservationData.date
+        } ${reservationData.time}에 예약을 요청했습니다.`,
       });
+
       setShowReserveBtn(null);
-    } catch {
+    } catch (error) {
+      console.error("예약 실패:", error);
       alert("예약에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setReserving(false);
     }
   };
 
-  // Confirm payment handler
   const handleConfirmPayment = async () => {
-    if (!user || !reservation || confirmingPayment) return;
+    if (!reservation) return;
+
     setConfirmingPayment(true);
     try {
-      // Update reservation status
       await updateDoc(doc(db, "reservations", reservation.id), {
         status: "payment_confirmed",
         paymentConfirmed: true,
         paymentConfirmedAt: new Date(),
       });
 
-      // Create payment confirmation notifications
-      const reservationDate = reservation.date || "미정";
-      const reservationTime = reservation.time || "미정";
-
-      // User notification
-      await createNotification({
-        userId: user.uid,
-        type: "payment_confirmed",
-        title: "입금 확인 요청 완료",
-        message: `${reservationDate} ${reservationTime} 예약의 입금 확인을 요청했습니다. 관리자 확인 후 예약이 확정됩니다.`,
-      });
-
-      // Admin notification
+      // Create admin notification
       await createNotification({
         userId: "admin",
         type: "admin_reservation_new",
         title: "입금 확인 요청",
         message: `${
-          user.displayName || user.email
-        }님이 ${reservationDate} ${reservationTime} 예약의 입금 확인을 요청했습니다.`,
+          user?.displayName || user?.email
+        }님이 입금 확인을 요청했습니다.`,
       });
-    } catch {
+
+      alert("입금 확인 요청이 완료되었습니다.");
+    } catch (error) {
+      console.error("입금 확인 요청 실패:", error);
       alert("입금 확인 요청에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setConfirmingPayment(false);
     }
   };
 
-  // Cancel reservation handler
   const handleCancel = async () => {
-    if (!user || !reservation || canceling) return;
+    if (!reservation || !user) return;
+
+    if (!confirm("정말로 예약을 취소하시겠습니까?")) return;
+
     setCanceling(true);
     try {
-      // Mark slot as available
+      await updateDoc(doc(db, "reservations", reservation.id), {
+        status: "cancelled",
+      });
+
+      // Free up the slot
       await updateDoc(doc(db, "slots", reservation.slotId), {
         status: "available",
       });
-      // Delete reservation
-      await deleteDoc(doc(db, "reservations", reservation.id));
 
-      // Create cancellation notifications
-      const reservationDate = reservation.date || "미정";
-      const reservationTime = reservation.time || "미정";
+      const reservationDate = reservation.date;
+      const reservationTime = reservation.time;
 
-      // User notification
-      await createNotification({
-        userId: user.uid,
-        type: "reservation_cancelled",
-        title: "예약 취소",
-        message: `${reservationDate} ${reservationTime} 예약이 취소되었습니다.`,
-      });
-
-      // Admin notification
+      // Create admin notification
       await createNotification({
         userId: "admin",
         type: "admin_reservation_cancelled",
@@ -311,10 +278,38 @@ export default function UserReservePage() {
     }
   };
 
+  // Handle countdown expiration
+  const handleCountdownExpired = async () => {
+    if (!reservation) return;
+
+    try {
+      await updateDoc(doc(db, "reservations", reservation.id), {
+        status: "cancelled",
+      });
+
+      // Free up the slot
+      await updateDoc(doc(db, "slots", reservation.slotId), {
+        status: "available",
+      });
+
+      // Create admin notification
+      await createNotification({
+        userId: "admin",
+        type: "admin_reservation_cancelled",
+        title: "입금 시간 만료",
+        message: `${
+          user?.displayName || user?.email
+        }님의 예약이 입금 시간 만료로 자동 취소되었습니다.`,
+      });
+    } catch (error) {
+      console.error("자동 취소 실패:", error);
+    }
+  };
+
   // Show loading while checking authorization
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="bg-gradient-to-br from-gray-50 flex min-h-screen items-center justify-center to-white">
         <div className="animate-spin border-gray-900 h-8 w-8 rounded-full border-b-2"></div>
       </div>
     );
@@ -323,7 +318,7 @@ export default function UserReservePage() {
   // Show unauthorized message
   if (!user || user.kycStatus !== "approved") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="bg-gradient-to-br from-gray-50 flex min-h-screen items-center justify-center to-white">
         <div className="text-center">
           <h2 className="text-gray-900 mb-2 text-xl font-semibold">
             접근 권한이 없습니다
@@ -339,12 +334,26 @@ export default function UserReservePage() {
     );
   }
 
+  const reservedSlot = reservation
+    ? slots.find((s) => s.id === reservation.slotId)
+    : null;
+  const slotsForSelectedDay = selectedDate
+    ? slots.filter(
+        (slot) =>
+          slot.status === "available" &&
+          slot.start.getDate() === selectedDate.getDate() &&
+          slot.start.getMonth() === selectedDate.getMonth() &&
+          slot.start.getFullYear() === selectedDate.getFullYear()
+      )
+    : [];
+
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
       <div className="container mx-auto max-w-7xl">
-        <div className="mb-4 flex items-center gap-2">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-2">
           <Link href="/dashboard">
-            <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 shadow rounded-full px-4 py-2 text-sm font-semibold transition">
+            <button className="hover:bg-gray-50 text-gray-700 shadow-sm border-gray-200 rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-all duration-200">
               대시보드로
             </button>
           </Link>
@@ -352,93 +361,173 @@ export default function UserReservePage() {
             예약하기
           </h1>
           <button
-            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 ml-auto rounded-full border px-4 py-2 text-sm font-semibold transition"
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 ml-auto rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200"
             onClick={() => setSelectedDate(new Date())}
             type="button"
           >
             오늘
           </button>
         </div>
+
         {/* Show user's reservation if exists */}
         {reservation && reservedSlot && (
-          <div className="border-green-200 bg-green-50 text-green-800 mb-6 flex flex-col items-center gap-2 rounded-xl border p-4">
-            <div className="font-semibold">내 예약</div>
-            <div>
-              {reservedSlot.start.toLocaleDateString("ko-KR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              {reservedSlot.start.toLocaleTimeString("ko-KR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-sm rounded-2xl border p-6">
+              <div className="mb-4 flex items-center space-x-3">
+                <div className="bg-green-100 rounded-full p-2">
+                  <Calendar className="text-green-600 h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-green-800 text-lg font-bold">내 예약</h2>
+                  <p className="text-green-600 text-sm">
+                    {reservedSlot.start.toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}{" "}
+                    {reservedSlot.start.toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
 
-            {/* 예약 상태에 따른 버튼 */}
-            {reservation.status === "payment_required" && (
-              <div className="text-center">
-                <div className="bg-orange-100 border-orange-300 text-orange-800 mb-3 rounded-lg border p-3">
-                  <div className="mb-2 font-semibold">💰 예약금 입금 안내</div>
-                  <div className="mb-2 text-sm">
-                    예약금 20만원을 입금해주세요
+              {/* 예약 상태에 따른 컨텐츠 */}
+              {reservation.status === "payment_required" &&
+                reservation.paymentDeadline && (
+                  <div className="space-y-4">
+                    <CountdownTimer
+                      deadline={reservation.paymentDeadline}
+                      onExpired={handleCountdownExpired}
+                    />
+
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200 rounded-xl border p-5">
+                      <div className="mb-3 flex items-center space-x-3">
+                        <div className="bg-orange-100 rounded-full p-2">
+                          <CreditCard className="text-orange-600 h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-orange-800 text-lg font-semibold">
+                            예약금 입금 안내
+                          </h3>
+                          <p className="text-orange-600 text-sm">
+                            입금 후 확인 요청을 해주세요
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4 rounded-lg bg-white p-4">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-gray-600 text-sm">예약금</span>
+                          <span className="text-orange-600 text-lg font-bold">
+                            200,000원
+                          </span>
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          입금 계좌: 123-456-789012 (예금주: 네이처서울)
+                        </div>
+                      </div>
+
+                      <button
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md hover:shadow-lg w-full rounded-lg px-6 py-3 font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={handleConfirmPayment}
+                        disabled={confirmingPayment}
+                      >
+                        {confirmingPayment ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin h-4 w-4 rounded-full border-b-2 border-white"></div>
+                            <span>처리중...</span>
+                          </div>
+                        ) : (
+                          "입금확인요청"
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-orange-600 text-xs">
-                    입금 후 아래 버튼을 눌러주세요
+                )}
+
+              {reservation.status === "payment_confirmed" && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 rounded-xl border p-5">
+                  <div className="mb-3 flex items-center space-x-3">
+                    <div className="bg-blue-100 rounded-full p-2">
+                      <Clock className="text-blue-600 h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-blue-800 text-lg font-semibold">
+                        관리자 확인 대기
+                      </h3>
+                      <p className="text-blue-600 text-sm">
+                        입금 확인 요청이 완료되었습니다
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-blue-600 text-sm">
+                    관리자 확인 후 예약이 확정됩니다
+                  </p>
+                </div>
+              )}
+
+              {reservation.status === "approved" && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 rounded-xl border p-5">
+                  <div className="mb-3 flex items-center space-x-3">
+                    <div className="bg-green-100 rounded-full p-2">
+                      <CheckCircle className="text-green-600 h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-green-800 text-lg font-semibold">
+                        예약 확정
+                      </h3>
+                      <p className="text-green-600 text-sm">
+                        예약이 확정되었습니다
+                      </p>
+                    </div>
                   </div>
                 </div>
+              )}
+
+              {reservation.status === "rejected" && (
+                <div className="bg-gradient-to-r from-red-50 to-pink-50 border-red-200 rounded-xl border p-5">
+                  <div className="mb-3 flex items-center space-x-3">
+                    <div className="bg-red-100 rounded-full p-2">
+                      <XCircle className="text-red-600 h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-red-800 text-lg font-semibold">
+                        예약 거절
+                      </h3>
+                      <p className="text-red-600 text-sm">
+                        예약이 거절되었습니다
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 flex justify-center">
                 <button
-                  className="border-orange-400 bg-orange-500 hover:bg-orange-600 rounded-full border px-4 py-2 text-sm font-semibold text-white transition"
-                  onClick={handleConfirmPayment}
-                  disabled={confirmingPayment}
+                  className="hover:bg-gray-50 text-gray-700 border-gray-300 shadow-sm hover:shadow-md rounded-lg border bg-white px-6 py-2 text-sm font-semibold transition-all duration-200"
+                  onClick={handleCancel}
+                  disabled={canceling}
                 >
-                  {confirmingPayment ? "처리중..." : "입금확인요청"}
+                  {canceling ? "취소중..." : "예약 취소"}
                 </button>
               </div>
-            )}
-
-            {reservation.status === "payment_confirmed" && (
-              <div className="text-center">
-                <div className="bg-blue-100 border-blue-300 text-blue-800 mb-3 rounded-lg border p-3">
-                  <div className="mb-2 font-semibold">⏳ 관리자 확인 대기</div>
-                  <div className="text-sm">입금 확인 요청이 완료되었습니다</div>
-                  <div className="text-blue-600 mt-1 text-xs">
-                    관리자 확인 후 예약이 확정됩니다
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {reservation.status === "approved" && (
-              <div className="text-center">
-                <div className="bg-green-100 border-green-300 text-green-800 mb-3 rounded-lg border p-3">
-                  <div className="mb-2 font-semibold">✅ 예약 확정</div>
-                  <div className="text-sm">예약이 확정되었습니다</div>
-                </div>
-              </div>
-            )}
-
-            {reservation.status === "rejected" && (
-              <div className="text-center">
-                <div className="bg-red-100 border-red-300 text-red-800 mb-3 rounded-lg border p-3">
-                  <div className="mb-2 font-semibold">❌ 예약 거절</div>
-                  <div className="text-sm">예약이 거절되었습니다</div>
-                </div>
-              </div>
-            )}
-
-            <button
-              className="border-green-400 text-green-700 hover:bg-green-100 mt-2 rounded-full border bg-white px-4 py-1 text-sm font-semibold"
-              onClick={handleCancel}
-              disabled={canceling}
-            >
-              예약 취소
-            </button>
+            </div>
           </div>
         )}
-        <div className="shadow flex flex-col items-center rounded-xl bg-white p-4">
+
+        {/* Calendar Section */}
+        <div className="shadow-lg mb-6 rounded-2xl bg-white p-6">
+          <div className="mb-4 flex items-center justify-center">
+            <h2 className="text-gray-800 text-xl font-bold">날짜 선택</h2>
+          </div>
+
           {loading || authLoading ? (
-            <div className="py-8 text-center">로딩 중...</div>
+            <div className="py-8 text-center">
+              <div className="animate-spin border-gray-900 mx-auto mb-4 h-8 w-8 rounded-full border-b-2"></div>
+              <p className="text-gray-600">로딩 중...</p>
+            </div>
           ) : (
             <DayPicker
               mode="single"
@@ -451,8 +540,8 @@ export default function UserReservePage() {
                 hasSlots: Object.keys(slotCountByDate).map((d) => new Date(d)),
               }}
               modifiersClassNames={{
-                selected: "",
-                today: "",
+                selected: "bg-green-500 text-white rounded-lg",
+                today: "bg-blue-100 text-blue-700 rounded-lg",
                 hasSlots: "has-slots",
               }}
               className="mx-auto w-full max-w-xs sm:max-w-md"
@@ -471,27 +560,34 @@ export default function UserReservePage() {
             />
           )}
         </div>
-        {/* Show available slots for selected day */}
-        <div className="mt-6 w-full">
-          <div className="text-gray-700 mb-2 text-sm font-semibold">
-            예약 가능 슬롯
+
+        {/* Available Slots Section */}
+        <div className="shadow-lg rounded-2xl bg-white p-6">
+          <div className="mb-4 flex items-center space-x-2">
+            <Clock className="text-gray-600 h-5 w-5" />
+            <h2 className="text-gray-800 text-xl font-bold">예약 가능 슬롯</h2>
           </div>
+
           {selectedDate && slotsForSelectedDay.length === 0 && (
-            <div className="text-gray-400 py-4 text-center">
-              이 날에는 예약 가능한 슬롯이 없습니다.
+            <div className="py-8 text-center">
+              <AlertCircle className="text-gray-400 mx-auto mb-4 h-12 w-12" />
+              <p className="text-gray-500 text-lg">
+                이 날에는 예약 가능한 슬롯이 없습니다.
+              </p>
             </div>
           )}
+
           {slotsForSelectedDay.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slotsForSelectedDay.map((slot) => {
                 const isReserved = !!reservation;
                 return (
                   <div key={slot.id} className="relative">
                     <button
-                      className={`border-gray-300 shadow-sm focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 ${
+                      className={`focus:ring-green-400 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                         isReserved
-                          ? "cursor-not-allowed opacity-50"
-                          : "hover:bg-green-50"
+                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          : "border-green-200 text-green-700 hover:border-green-300 hover:bg-green-50 hover:shadow-md bg-white"
                       }`}
                       disabled={isReserved}
                       onClick={() => setShowReserveBtn(slot.id)}
@@ -502,22 +598,34 @@ export default function UserReservePage() {
                         minute: "2-digit",
                       })}
                     </button>
+
                     {/* 예약 버튼 */}
                     {showReserveBtn === slot.id && !isReserved && (
                       <div
                         ref={popupRef}
-                        className="border-green-200 p-1.5 shadow-lg absolute left-1/2 z-10 mt-2 min-w-[140px] -translate-x-1/2 rounded-lg border bg-white"
+                        className="border-gray-200 shadow-xl absolute left-1/2 z-10 mt-2 min-w-[200px] -translate-x-1/2 rounded-xl border bg-white p-3"
                       >
-                        <div className="flex w-full flex-row flex-nowrap justify-center gap-2">
+                        <div className="mb-3 text-center">
+                          <p className="text-gray-700 text-sm font-medium">
+                            이 시간에 예약하시겠습니까?
+                          </p>
+                          <p className="text-gray-500 mt-1 text-xs">
+                            {slot.start.toLocaleTimeString("ko-KR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
                           <button
-                            className="border-green-400 bg-green-500 hover:bg-green-600 min-w-[56px] rounded-md border px-3 py-1 text-[11px] font-semibold text-white transition-all"
+                            className="bg-green-500 hover:bg-green-600 flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-all duration-200"
                             onClick={() => handleReserve(slot)}
                             disabled={reserving}
                           >
-                            예약
+                            {reserving ? "예약중..." : "예약"}
                           </button>
                           <button
-                            className="border-gray-300 text-gray-700 hover:bg-gray-100 min-w-[56px] rounded-md border bg-white px-3 py-1 text-[11px] font-semibold transition-all"
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200"
                             onClick={() => setShowReserveBtn(null)}
                           >
                             취소
