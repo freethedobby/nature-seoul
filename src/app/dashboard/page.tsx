@@ -42,6 +42,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import CountdownTimer from "@/components/CountdownTimer";
 
 // KYC 데이터 타입 정의
 interface KYCData {
@@ -231,6 +232,7 @@ export default function DashboardPage() {
     time?: string;
     status?: string;
     createdAt: Date;
+    paymentDeadline?: Date;
   } | null>(null);
 
   const [kycData, setKycData] = useState<KYCData | null>(null);
@@ -274,6 +276,8 @@ export default function DashboardPage() {
           time: data.time,
           status: data.status,
           createdAt: data.createdAt?.toDate?.() || new Date(),
+          paymentDeadline:
+            data.paymentDeadline?.toDate?.() || data.paymentDeadline,
         });
       }
     });
@@ -749,6 +753,19 @@ export default function DashboardPage() {
                             💰 예약금 20만원 입금 필요
                           </div>
                         )}
+                        {reservation.status === "payment_required" &&
+                          reservation.paymentDeadline && (
+                            <div className="mt-2">
+                              <CountdownTimer
+                                deadline={reservation.paymentDeadline}
+                                onExpired={() => {
+                                  // 타이머 만료 시 예약 취소 처리
+                                  console.log("예약 타이머 만료");
+                                }}
+                                compact={true}
+                              />
+                            </div>
+                          )}
                         {reservation.status === "payment_confirmed" && (
                           <div className="text-blue-600 mt-1 text-xs">
                             ⏳ 관리자 확인 대기 중
