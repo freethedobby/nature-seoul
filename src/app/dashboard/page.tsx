@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft,
-  Calendar,
   Clock,
   Lock,
   Menu,
@@ -23,6 +22,7 @@ import {
   AlertTriangle,
   Check,
   Eye,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
@@ -556,7 +556,7 @@ export default function DashboardPage() {
               <div className="border-gray-100 shadow-sm hover:shadow-md rounded-2xl border bg-white p-6 transition-all duration-300">
                 <div className="mb-4 flex items-center">
                   <div className="bg-black mr-3 rounded-lg p-2">
-                    <Calendar className="h-5 w-5 text-white" />
+                    <User className="h-5 w-5 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold">고객등록 신청</h3>
                 </div>
