@@ -1038,6 +1038,10 @@ export const dongs: { [key: string]: AddressOption[] } = {
     {
       "value": "suseo",
       "label": "수서동"
+    },
+    {
+      "value": "sego",
+      "label": "세곡동"
     }
   ],
   "seocho": [
@@ -1060,6 +1064,10 @@ export const dongs: { [key: string]: AddressOption[] } = {
     {
       "value": "jamwon",
       "label": "잠원동"
+    },
+    {
+      "value": "naego",
+      "label": "내곡동"
     }
   ],
   "yongsan": [

@@ -297,6 +297,7 @@ async function updateAddressData() {
         { value: "samseong", label: "삼성동" },
         { value: "sinsa", label: "신사동" },
         { value: "suseo", label: "수서동" },
+        { value: "sego", label: "세곡동" },
       ],
       // 서울 서초구
       seocho: [
@@ -305,6 +306,7 @@ async function updateAddressData() {
         { value: "seocho", label: "서초동" },
         { value: "yangjae", label: "양재동" },
         { value: "jamwon", label: "잠원동" },
+        { value: "naego", label: "내곡동" },
       ],
       // 서울 용산구
       yongsan: [
