@@ -397,11 +397,6 @@ export default function UserReservePage() {
               {reservation.status === "payment_required" &&
                 reservation.paymentDeadline && (
                   <div className="space-y-4">
-                    <CountdownTimer
-                      deadline={reservation.paymentDeadline}
-                      onExpired={handleCountdownExpired}
-                    />
-
                     <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
                       <div className="mb-4 flex items-center space-x-3">
                         <div className="bg-black rounded-full p-2">
@@ -415,6 +410,15 @@ export default function UserReservePage() {
                             입금 후 확인 요청을 해주세요
                           </p>
                         </div>
+                      </div>
+
+                      {/* 카운트다운 타이머 통합 */}
+                      <div className="mb-5">
+                        <CountdownTimer
+                          deadline={reservation.paymentDeadline}
+                          onExpired={handleCountdownExpired}
+                          compact={true}
+                        />
                       </div>
 
                       <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
