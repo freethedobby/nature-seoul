@@ -425,30 +425,50 @@ export default function DashboardPage() {
 
                 {reservation ? (
                   <div className="space-y-3">
-                    <div className="bg-blue-50 border-blue-200 rounded-lg border p-3">
+                    <button
+                      onClick={() => router.push("/user/reserve")}
+                      className="bg-blue-50 hover:bg-blue-100 border-blue-200 group w-full rounded-lg border p-3 text-left transition-colors duration-200"
+                    >
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-blue-800 text-sm font-medium">
+                        <span className="text-blue-800 group-hover:text-blue-900 text-sm font-medium transition-colors">
                           예약 정보
                         </span>
-                        <Badge
-                          variant={
-                            reservation.status === "approved"
-                              ? "default"
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant={
+                              reservation.status === "approved"
+                                ? "default"
+                                : reservation.status === "payment_confirmed"
+                                ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {reservation.status === "approved"
+                              ? "확정"
                               : reservation.status === "payment_confirmed"
-                              ? "secondary"
-                              : "outline"
-                          }
-                        >
-                          {reservation.status === "approved"
-                            ? "확정"
-                            : reservation.status === "payment_confirmed"
-                            ? "입금확인"
-                            : reservation.status === "payment_required"
-                            ? "입금대기"
-                            : reservation.status === "rejected"
-                            ? "거절"
-                            : "대기"}
-                        </Badge>
+                              ? "입금확인"
+                              : reservation.status === "payment_required"
+                              ? "입금대기"
+                              : reservation.status === "rejected"
+                              ? "거절"
+                              : "대기"}
+                          </Badge>
+                          <div className="text-blue-400 group-hover:text-blue-600 transition-colors">
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
                       <div className="text-blue-700 text-sm">
                         <div>
@@ -470,26 +490,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* 예약 후에도 공지사항 버튼 표시 */}
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setShowNoticeModal(true)}
-                    >
-                      {user.noticeConfirmed
-                        ? "공지사항 다시 보기"
-                        : "공지사항 확인하기"}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push("/user/reserve")}
-                    >
-                      예약 상세보기
-                    </Button>
+                    </button>
                   </div>
                 ) : (
                   <Button
