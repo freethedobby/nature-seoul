@@ -82,10 +82,18 @@ export default function UserReservePage() {
   }, [user, authLoading, router]);
 
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
+  // Only show future dates for users (current date and later)
   const slotCountByDate: Record<string, number> = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+
   slots.forEach((slot) => {
     if (slot.status !== "available") return;
     const d = slot.start;
+
+    // Only include slots from today onwards for users
+    if (d < today) return;
+
     const key =
       d.getFullYear() +
       "-" +
