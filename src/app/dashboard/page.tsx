@@ -174,7 +174,7 @@ export default function DashboardPage() {
                   </span>
                   <span className="text-gray-500 text-xs">
                     {user?.kycStatus === "approved"
-                      ? "승인된 사용자"
+                      ? "인증완료 회원"
                       : user?.kycStatus === "pending"
                       ? "확인중"
                       : user?.kycStatus === "rejected"
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                     </span>
                     <span className="text-gray-500 text-xs">
                       {user?.kycStatus === "approved"
-                        ? "승인된 사용자"
+                        ? "인증완료 회원"
                         : user?.kycStatus === "pending"
                         ? "검토 중"
                         : user?.kycStatus === "rejected"
