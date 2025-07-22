@@ -10,7 +10,8 @@
     "setup": "node setup.js",
     "add-test-data": "node add-test-reservation.js",
     "add-test-kyc": "node add-test-kyc.js",
-    "update-address-data": "node scripts/update-address-data.js"
+    "update-address-data": "node scripts/update-address-data.js",
+    "check-missing-dongs": "node scripts/check-missing-dongs.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

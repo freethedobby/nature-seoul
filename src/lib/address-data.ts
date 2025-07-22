@@ -1242,6 +1242,14 @@ export const dongs: { [key: string]: AddressOption[] } = {
     {
       "value": "macheon",
       "label": "마천동"
+    },
+    {
+      "value": "jangji2",
+      "label": "장지2동"
+    },
+    {
+      "value": "geoyeo2",
+      "label": "거여2동"
     }
   ],
   "gangseo": [

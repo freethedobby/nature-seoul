@@ -358,6 +358,8 @@ async function updateAddressData() {
         { value: "jangji", label: "장지동" },
         { value: "geoyeo", label: "거여동" },
         { value: "macheon", label: "마천동" },
+        { value: "jangji2", label: "장지2동" },
+        { value: "geoyeo2", label: "거여2동" },
       ],
       // 서울 강서구
       gangseo: [
