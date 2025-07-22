@@ -381,7 +381,7 @@ export default function UserReservePage() {
                 <div className="bg-orange-100 border-orange-300 text-orange-800 mb-3 rounded-lg border p-3">
                   <div className="mb-2 font-semibold">💰 예약금 입금 안내</div>
                   <div className="mb-2 text-sm">
-                    예약금 30만원을 입금해주세요
+                    예약금 20만원을 입금해주세요
                   </div>
                   <div className="text-orange-600 text-xs">
                     입금 후 아래 버튼을 눌러주세요
