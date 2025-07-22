@@ -23,32 +23,40 @@ export default function CountdownTimer({
   }>({ hours: 0, minutes: 0, seconds: 0 });
 
   const [isExpired, setIsExpired] = useState(false);
+  const [testDeadline, setTestDeadline] = useState<Date | null>(null);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
 
-      // Convert deadline to Date object if it's a Firestore Timestamp
+      // 테스트 모드에서는 testDeadline 사용, 아니면 원래 deadline 사용
       let deadlineTime: number;
-      if (deadline && typeof deadline === "object" && "toDate" in deadline) {
-        // Firestore Timestamp
-        deadlineTime = deadline.toDate().getTime();
-      } else if (
-        deadline &&
-        typeof deadline === "object" &&
-        "getTime" in deadline
-      ) {
-        // Date object
-        deadlineTime = (deadline as Date).getTime();
-      } else if (deadline && typeof deadline === "number") {
-        // Timestamp number
-        deadlineTime = deadline;
+
+      if (testMode && testDeadline) {
+        // 테스트 모드에서 설정된 deadline 사용
+        deadlineTime = testDeadline.getTime();
       } else {
-        // Invalid deadline
-        console.error("Invalid deadline format:", deadline);
-        setIsExpired(true);
-        onExpired();
-        return { hours: 0, minutes: 0, seconds: 0 };
+        // 원래 deadline 사용
+        if (deadline && typeof deadline === "object" && "toDate" in deadline) {
+          // Firestore Timestamp
+          deadlineTime = deadline.toDate().getTime();
+        } else if (
+          deadline &&
+          typeof deadline === "object" &&
+          "getTime" in deadline
+        ) {
+          // Date object
+          deadlineTime = (deadline as Date).getTime();
+        } else if (deadline && typeof deadline === "number") {
+          // Timestamp number
+          deadlineTime = deadline;
+        } else {
+          // Invalid deadline
+          console.error("Invalid deadline format:", deadline);
+          setIsExpired(true);
+          onExpired();
+          return { hours: 0, minutes: 0, seconds: 0 };
+        }
       }
 
       const difference = deadlineTime - now;
@@ -76,7 +84,7 @@ export default function CountdownTimer({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [deadline, onExpired]);
+  }, [deadline, onExpired, testMode, testDeadline]);
 
   const isWarning = timeLeft.hours === 0 && timeLeft.minutes < 30;
   const isCritical = timeLeft.hours === 0 && timeLeft.minutes < 10;
@@ -85,27 +93,12 @@ export default function CountdownTimer({
   const adjustTimeForTesting = (seconds: number) => {
     if (!testMode) return;
 
-    const now = new Date().getTime();
-    const newDeadline = new Date(now + seconds * 1000);
+    const now = new Date();
+    const newDeadline = new Date(now.getTime() + seconds * 1000);
 
-    // 강제로 새로운 deadline 설정
-    const calculateTimeLeft = () => {
-      const difference = newDeadline.getTime() - now;
-
-      if (difference <= 0) {
-        setIsExpired(true);
-        onExpired();
-        return { hours: 0, minutes: 0, seconds: 0 };
-      }
-
-      const hours = Math.floor(difference / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      return { hours, minutes, seconds };
-    };
-
-    setTimeLeft(calculateTimeLeft());
+    // 테스트 deadline 설정
+    setTestDeadline(newDeadline);
+    setIsExpired(false); // 만료 상태 초기화
   };
 
   if (isExpired) {
@@ -253,6 +246,15 @@ export default function CountdownTimer({
               >
                 5분
               </button>
+              <button
+                onClick={() => {
+                  setTestDeadline(null);
+                  setIsExpired(false);
+                }}
+                className="bg-gray-500 hover:bg-gray-600 rounded px-2 py-1 text-xs text-white transition-colors"
+              >
+                원래
+              </button>
             </div>
           </div>
         )}
@@ -382,6 +384,15 @@ export default function CountdownTimer({
               className="bg-green-500 hover:bg-green-600 rounded px-3 py-1 text-sm text-white transition-colors"
             >
               5분
+            </button>
+            <button
+              onClick={() => {
+                setTestDeadline(null);
+                setIsExpired(false);
+              }}
+              className="bg-gray-500 hover:bg-gray-600 rounded px-3 py-1 text-sm text-white transition-colors"
+            >
+              원래
             </button>
           </div>
         </div>
