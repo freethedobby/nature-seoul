@@ -579,13 +579,16 @@ export default function DashboardPage() {
                   </Link>
                 ) : (
                   <div className="space-y-3">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      disabled={true}
-                    >
-                      신청 완료
-                    </Button>
+                    {/* '신청 완료' 버튼은 kycData가 없을 때만 노출 */}
+                    {!kycData && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled={true}
+                      >
+                        신청 완료
+                      </Button>
+                    )}
                     {(() => {
                       console.log("대시보드 - 상담신청 섹션 렌더링:", {
                         kycData: !!kycData,
