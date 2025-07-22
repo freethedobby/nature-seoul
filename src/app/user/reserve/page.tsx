@@ -657,36 +657,32 @@ export default function UserReservePage() {
         </div>
 
         {/* Available Slots Section */}
-        <div className="shadow-lg rounded-2xl bg-white p-6">
-          <div className="mb-4 flex items-center space-x-2">
-            <Clock className="text-gray-600 h-5 w-5" />
-            <h2 className="text-gray-800 text-xl font-bold">예약 가능 슬롯</h2>
-          </div>
-
-          {selectedDate && slotsForSelectedDay.length === 0 && (
-            <div className="py-8 text-center">
-              <AlertCircle className="text-gray-400 mx-auto mb-4 h-12 w-12" />
-              <p className="text-gray-500 text-lg">
-                이 날에는 예약 가능한 슬롯이 없습니다.
-              </p>
+        {!reservation && (
+          <div className="shadow-lg rounded-2xl bg-white p-6">
+            <div className="mb-4 flex items-center space-x-2">
+              <Clock className="text-gray-600 h-5 w-5" />
+              <h2 className="text-gray-800 text-xl font-bold">
+                예약 가능 슬롯
+              </h2>
             </div>
-          )}
 
-          {slotsForSelectedDay.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {slotsForSelectedDay.map((slot) => {
-                const isReserved = !!reservation;
-                return (
+            {selectedDate && slotsForSelectedDay.length === 0 && (
+              <div className="py-8 text-center">
+                <AlertCircle className="text-gray-400 mx-auto mb-4 h-12 w-12" />
+                <p className="text-gray-500 text-lg">
+                  이 날에는 예약 가능한 슬롯이 없습니다.
+                </p>
+              </div>
+            )}
+
+            {slotsForSelectedDay.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {slotsForSelectedDay.map((slot) => (
                   <div key={slot.id} className="relative">
                     <button
-                      className={`focus:ring-green-400 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                        isReserved
-                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : "border-green-200 text-green-700 hover:border-green-300 hover:bg-green-50 hover:shadow-md bg-white"
-                      }`}
-                      disabled={isReserved}
+                      className="border-green-200 text-green-700 hover:border-green-300 hover:bg-green-50 hover:shadow-md focus:ring-green-400 w-full rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
                       onClick={() => setShowReserveBtn(slot.id)}
-                      title={isReserved ? "이미 예약이 있습니다." : "예약하기"}
+                      title="예약하기"
                     >
                       {slot.start.toLocaleTimeString("ko-KR", {
                         hour: "2-digit",
@@ -695,7 +691,7 @@ export default function UserReservePage() {
                     </button>
 
                     {/* 예약 버튼 */}
-                    {showReserveBtn === slot.id && !isReserved && (
+                    {showReserveBtn === slot.id && (
                       <div
                         ref={popupRef}
                         className="border-gray-200 shadow-xl absolute left-1/2 z-10 mt-2 min-w-[200px] -translate-x-1/2 rounded-xl border bg-white p-3"
@@ -729,11 +725,28 @@ export default function UserReservePage() {
                       </div>
                     )}
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 예약이 있을 때 표시할 메시지 */}
+        {reservation && (
+          <div className="shadow-lg rounded-2xl bg-white p-6">
+            <div className="py-8 text-center">
+              <div className="bg-blue-100 mx-auto mb-4 w-fit rounded-full p-3">
+                <Clock className="text-blue-600 h-6 w-6" />
+              </div>
+              <p className="text-gray-700 mb-2 text-lg font-medium">
+                이미 예약이 있습니다
+              </p>
+              <p className="text-gray-500 text-sm">
+                새로운 예약을 하려면 기존 예약을 취소해주세요.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* 2단계 확정 다이얼로그 */}
         {showConfirmDialog && (
