@@ -215,7 +215,11 @@ export default function UserReservePage() {
         paymentDeadline: paymentDeadline,
       };
 
-      await addDoc(collection(db, "reservations"), reservationData);
+      // Create reservation and get the document reference
+      const docRef = await addDoc(
+        collection(db, "reservations"),
+        reservationData
+      );
 
       // Update slot status
       await updateDoc(doc(db, "slots", slot.id), {
@@ -231,6 +235,13 @@ export default function UserReservePage() {
           reservationData.date
         } ${reservationData.time}에 예약을 요청했습니다.`,
       });
+
+      // Immediately update the reservation state with the new reservation
+      const newReservation: ReservationData = {
+        id: docRef.id,
+        ...reservationData,
+      };
+      setReservation(newReservation);
 
       setShowReserveBtn(null);
     } catch (error) {
