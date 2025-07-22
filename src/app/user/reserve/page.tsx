@@ -63,6 +63,7 @@ export default function UserReservePage() {
   const router = useRouter();
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [reservation, setReservation] = useState<ReservationData | null>(null);
   const [showReserveBtn, setShowReserveBtn] = useState<string | null>(null);
@@ -372,7 +373,11 @@ export default function UserReservePage() {
           </h1>
           <button
             className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 ml-auto rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200"
-            onClick={() => setSelectedDate(new Date())}
+            onClick={() => {
+              const today = new Date();
+              setSelectedDate(today);
+              setCurrentMonth(today);
+            }}
             type="button"
           >
             오늘
@@ -557,6 +562,8 @@ export default function UserReservePage() {
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
+              month={currentMonth}
+              onMonthChange={setCurrentMonth}
               locale={ko}
               weekStartsOn={0}
               disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
