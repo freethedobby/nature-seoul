@@ -546,7 +546,7 @@ export default function SlotManagement() {
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
   const slotCountByDate: Record<string, number> = {};
   slots.forEach((slot) => {
-    if (slot.status !== "available") return;
+    // 모든 슬롯을 포함 (available + booked)
     const d = slot.start;
     const key =
       d.getFullYear() +
@@ -835,14 +835,11 @@ export default function SlotManagement() {
                                   {reservation.userEmail}
                                 </div>
                                 <div className="text-green-600 mb-1 break-all text-sm">
-                                  {" "}
+                                  연락처:{" "}
                                   {kycContacts[reservation.userId] || "-"}
                                 </div>
                                 <div className="text-gray-500 mb-1 text-xs">
-                                  KYC 제출: -
-                                </div>
-                                <div className="text-gray-500 mb-1 text-xs">
-                                  {" "}
+                                  예약 생성:{" "}
                                   {reservation.createdAt
                                     ? new Date(
                                         reservation.createdAt
@@ -853,8 +850,7 @@ export default function SlotManagement() {
                                         hour: "2-digit",
                                         minute: "2-digit",
                                       })
-                                    : "-"}{" "}
-                                  예약
+                                    : "-"}
                                 </div>
                                 {/* Eyebrow photo */}
                                 {reservation.userId && (
