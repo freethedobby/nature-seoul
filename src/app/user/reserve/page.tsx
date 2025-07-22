@@ -165,7 +165,14 @@ export default function UserReservePage() {
       if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
         setShowReserveBtn(null);
       }
-      // 확정 다이얼로그는 클릭해도 닫히지 않도록 하지 않음 (매크로 방지)
+      // 확정 다이얼로그도 외부 클릭 시 닫기
+      if (
+        confirmRef.current &&
+        !confirmRef.current.contains(e.target as Node)
+      ) {
+        setShowConfirmDialog(false);
+        setPendingSlot(null);
+      }
     }
 
     document.addEventListener("mousedown", handleClickAway);
@@ -341,6 +348,7 @@ export default function UserReservePage() {
   // 1단계: 예약 확인 다이얼로그
   const handleReserveClick = (slot: SlotData) => {
     setPendingSlot(slot);
+    setShowReserveBtn(null); // 1단계 다이얼로그 닫기
     setShowConfirmDialog(true);
     setConfirmPosition(generateRandomPosition());
   };
