@@ -614,13 +614,16 @@ export default function UserReservePage() {
               )}
 
               <div className="mt-4 flex justify-center">
-                <button
-                  className="hover:bg-gray-50 text-gray-700 border-gray-300 shadow-sm hover:shadow-md rounded-lg border bg-white px-6 py-2 text-sm font-semibold transition-all duration-200"
-                  onClick={handleCancel}
-                  disabled={canceling}
-                >
-                  {canceling ? "취소중..." : "예약 취소"}
-                </button>
+                {/* 예약이 확정된 경우 취소 버튼 숨김 */}
+                {reservation.status !== "approved" && (
+                  <button
+                    className="hover:bg-gray-50 text-gray-700 border-gray-300 shadow-sm hover:shadow-md rounded-lg border bg-white px-6 py-2 text-sm font-semibold transition-all duration-200"
+                    onClick={handleCancel}
+                    disabled={canceling}
+                  >
+                    {canceling ? "취소중..." : "예약 취소"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
