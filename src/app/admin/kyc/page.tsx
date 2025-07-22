@@ -612,7 +612,7 @@ export default function KYCDashboard() {
                 뒤로
               </Button>
               <h1 className="text-gray-900 font-sans text-3xl font-extrabold tracking-tight">
-                KYC 관리
+                고객관리
               </h1>
             </div>
           </div>
