@@ -397,6 +397,21 @@ export default function DashboardPage() {
                   </div>
                 )}
 
+                {/* 공지사항 확인 버튼 - KYC 승인된 사용자에게 항상 표시 */}
+                {user.kycStatus === "approved" && !reservation && (
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowNoticeModal(true)}
+                    >
+                      {user.noticeConfirmed
+                        ? "공지사항 다시 보기"
+                        : "공지사항 확인하기"}
+                    </Button>
+                  </div>
+                )}
+
                 {reservation ? (
                   <div className="space-y-3">
                     <div className="bg-blue-50 border-blue-200 rounded-lg border p-3">
