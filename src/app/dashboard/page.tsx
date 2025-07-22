@@ -555,8 +555,8 @@ export default function DashboardPage() {
               {/* KYC Status Card */}
               <div className="border-gray-100 shadow-sm hover:shadow-md rounded-2xl border bg-white p-6 transition-all duration-300">
                 <div className="mb-4 flex items-center">
-                  <div className="bg-blue-100 mr-3 rounded-lg p-2">
-                    <Calendar className="text-blue-600 h-5 w-5" />
+                  <div className="bg-black mr-3 rounded-lg p-2">
+                    <Calendar className="h-5 w-5 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold">고객등록 신청</h3>
                 </div>
