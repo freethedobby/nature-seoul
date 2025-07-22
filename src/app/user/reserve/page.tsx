@@ -142,6 +142,7 @@ export default function UserReservePage() {
           "payment_required",
           "payment_confirmed",
           "approved",
+          "cancelled", // 취소된 예약도 포함하여 UI 업데이트
         ])
       ),
       (snap) => {
@@ -152,7 +153,13 @@ export default function UserReservePage() {
 
         const reservationData = snap.docs[0].data() as ReservationData;
         reservationData.id = snap.docs[0].id;
-        setReservation(reservationData);
+
+        // 취소된 예약인 경우 reservation을 null로 설정하여 예약하기 버튼 표시
+        if (reservationData.status === "cancelled") {
+          setReservation(null);
+        } else {
+          setReservation(reservationData);
+        }
       }
     );
 
