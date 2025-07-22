@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Clock, AlertTriangle } from "lucide-react";
 
 interface CountdownTimerProps {
-  deadline: Date;
+  deadline: Date | { toDate: () => Date } | number; // Firestore Timestamp or Date or number
   onExpired: () => void;
 }
 
@@ -23,7 +23,30 @@ export default function CountdownTimer({
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
-      const deadlineTime = deadline.getTime();
+
+      // Convert deadline to Date object if it's a Firestore Timestamp
+      let deadlineTime: number;
+      if (deadline && typeof deadline === "object" && "toDate" in deadline) {
+        // Firestore Timestamp
+        deadlineTime = deadline.toDate().getTime();
+      } else if (
+        deadline &&
+        typeof deadline === "object" &&
+        "getTime" in deadline
+      ) {
+        // Date object
+        deadlineTime = (deadline as Date).getTime();
+      } else if (deadline && typeof deadline === "number") {
+        // Timestamp number
+        deadlineTime = deadline;
+      } else {
+        // Invalid deadline
+        console.error("Invalid deadline format:", deadline);
+        setIsExpired(true);
+        onExpired();
+        return { hours: 0, minutes: 0, seconds: 0 };
+      }
+
       const difference = deadlineTime - now;
 
       if (difference <= 0) {
