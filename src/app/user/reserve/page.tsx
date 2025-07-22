@@ -67,10 +67,14 @@ export default function UserReservePage() {
   const [loading, setLoading] = useState(true);
   const [reservation, setReservation] = useState<ReservationData | null>(null);
   const [showReserveBtn, setShowReserveBtn] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmPosition, setConfirmPosition] = useState({ x: 0, y: 0 });
+  const [pendingSlot, setPendingSlot] = useState<SlotData | null>(null);
   const [reserving, setReserving] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const confirmRef = useRef<HTMLDivElement | null>(null);
 
   // Check KYC authorization
   useEffect(() => {
@@ -161,6 +165,7 @@ export default function UserReservePage() {
       if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
         setShowReserveBtn(null);
       }
+      // 확정 다이얼로그는 클릭해도 닫히지 않도록 하지 않음 (매크로 방지)
     }
 
     document.addEventListener("mousedown", handleClickAway);
@@ -313,6 +318,39 @@ export default function UserReservePage() {
     } catch (error) {
       console.error("자동 취소 실패:", error);
     }
+  };
+
+  // 랜덤 위치 계산 함수 (화면 내에서)
+  const generateRandomPosition = () => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const buttonWidth = 120; // 확정 버튼의 대략적인 너비
+    const buttonHeight = 40; // 확정 버튼의 대략적인 높이
+
+    // 화면 경계에서 버튼이 벗어나지 않도록 여백 확보
+    const margin = 20;
+    const maxX = viewportWidth - buttonWidth - margin;
+    const maxY = viewportHeight - buttonHeight - margin;
+
+    const x = Math.max(margin, Math.min(maxX, Math.random() * maxX));
+    const y = Math.max(margin, Math.min(maxY, Math.random() * maxY));
+
+    return { x, y };
+  };
+
+  // 1단계: 예약 확인 다이얼로그
+  const handleReserveClick = (slot: SlotData) => {
+    setPendingSlot(slot);
+    setShowConfirmDialog(true);
+    setConfirmPosition(generateRandomPosition());
+  };
+
+  // 2단계: 확정 버튼 클릭
+  const handleConfirmReserve = async () => {
+    if (!pendingSlot) return;
+    setShowConfirmDialog(false);
+    setPendingSlot(null);
+    await handleReserve(pendingSlot);
   };
 
   // Show loading while checking authorization
@@ -650,10 +688,10 @@ export default function UserReservePage() {
                         <div className="flex space-x-2">
                           <button
                             className="bg-green-500 hover:bg-green-600 flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-all duration-200"
-                            onClick={() => handleReserve(slot)}
+                            onClick={() => handleReserveClick(slot)}
                             disabled={reserving}
                           >
-                            {reserving ? "예약중..." : "예약"}
+                            예약
                           </button>
                           <button
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200"
@@ -670,6 +708,32 @@ export default function UserReservePage() {
             </div>
           )}
         </div>
+
+        {/* 2단계 확정 다이얼로그 */}
+        {showConfirmDialog && (
+          <div
+            ref={confirmRef}
+            className="shadow-2xl border-gray-200 fixed z-50 rounded-lg border bg-white p-4"
+            style={{
+              left: `${confirmPosition.x}px`,
+              top: `${confirmPosition.y}px`,
+              minWidth: "120px",
+            }}
+          >
+            <div className="text-center">
+              <p className="text-gray-700 mb-3 text-sm font-medium">
+                확정하시겠습니까?
+              </p>
+              <button
+                className="bg-red-500 hover:bg-red-600 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all duration-200"
+                onClick={handleConfirmReserve}
+                disabled={reserving}
+              >
+                {reserving ? "예약중..." : "확정"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
