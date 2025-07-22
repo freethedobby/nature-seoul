@@ -558,7 +558,7 @@ export default function DashboardPage() {
                   <div className="bg-blue-100 mr-3 rounded-lg p-2">
                     <Calendar className="text-blue-600 h-5 w-5" />
                   </div>
-                  <h3 className="text-lg font-semibold">상담 신청</h3>
+                  <h3 className="text-lg font-semibold">고객등록 신청</h3>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm">
                   {isLocked
@@ -574,7 +574,7 @@ export default function DashboardPage() {
                     >
                       {user.kycStatus === "pending"
                         ? "확인중"
-                        : "상담 신청하기"}
+                        : "고객등록 신청하기"}
                     </Button>
                   </Link>
                 ) : (
@@ -621,7 +621,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-gray-600 mb-4 text-sm">
                   {isLocked
-                    ? "고객등록 후 예약이 가능합니다."
+                    ? "고객등록 신청 후 예약이 가능합니다."
                     : user.kycStatus === "approved" && !user.noticeConfirmed
                     ? "공지사항 확인 후 예약이 가능합니다."
                     : reservation
@@ -787,7 +787,7 @@ export default function DashboardPage() {
                     onClick={handleReservationClick}
                   >
                     {isLocked
-                      ? "상담 신청 필요"
+                      ? "고객등록 신청 필요"
                       : user.kycStatus === "approved" && !user.noticeConfirmed
                       ? "공지사항 확인하기"
                       : user.kycStatus === "approved"
