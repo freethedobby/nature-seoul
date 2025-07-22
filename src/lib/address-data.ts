@@ -1068,6 +1068,22 @@ export const dongs: { [key: string]: AddressOption[] } = {
     {
       "value": "naego",
       "label": "내곡동"
+    },
+    {
+      "value": "umyeon",
+      "label": "우면동"
+    },
+    {
+      "value": "yeomgok",
+      "label": "염곡동"
+    },
+    {
+      "value": "wonji",
+      "label": "원지동"
+    },
+    {
+      "value": "sinwon",
+      "label": "신원동"
     }
   ],
   "yongsan": [

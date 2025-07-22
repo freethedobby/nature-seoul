@@ -307,6 +307,10 @@ async function updateAddressData() {
         { value: "yangjae", label: "양재동" },
         { value: "jamwon", label: "잠원동" },
         { value: "naego", label: "내곡동" },
+        { value: "umyeon", label: "우면동" },
+        { value: "yeomgok", label: "염곡동" },
+        { value: "wonji", label: "원지동" },
+        { value: "sinwon", label: "신원동" },
       ],
       // 서울 용산구
       yongsan: [
