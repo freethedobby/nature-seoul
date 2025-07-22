@@ -723,7 +723,7 @@ export default function DashboardPage() {
                             {reservation.status === "approved"
                               ? "확정"
                               : reservation.status === "payment_confirmed"
-                              ? "입금확인"
+                              ? "입금확인중"
                               : reservation.status === "payment_required"
                               ? "입금대기"
                               : reservation.status === "rejected"
@@ -771,7 +771,7 @@ export default function DashboardPage() {
                           )}
                         {reservation.status === "payment_confirmed" && (
                           <div className="text-gray-600 mt-1 text-xs">
-                            ⏳ 관리자 확인 대기 중
+                            확인 요청 되었습니다.
                           </div>
                         )}
                         {reservation.status === "rejected" && (
