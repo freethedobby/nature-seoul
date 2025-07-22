@@ -21,11 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
-import { getProvinces, getDistricts, getDongs } from "@/lib/address-data";
 import AddressSelector from "@/components/AddressSelector";
-
-// 주소 데이터 가져오기
-const provinces = getProvinces();
 
 // 출생년도 생성 (1950년부터 현재까지)
 const currentYear = new Date().getFullYear();

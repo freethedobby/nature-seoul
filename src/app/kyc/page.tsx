@@ -359,23 +359,25 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="text-gray-700 text-sm font-medium">이름</label>
-              <p className="text-gray-900">{kycData.name}</p>
+              <p className="text-gray-900 font-bold">{kycData.name}</p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">성별</label>
-              <p className="text-gray-900">{getGenderText(kycData.gender)}</p>
+              <p className="text-gray-900 font-bold">
+                {getGenderText(kycData.gender)}
+              </p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 출생년도
               </label>
-              <p className="text-gray-900">{kycData.birthYear}년</p>
+              <p className="text-gray-900 font-bold">{kycData.birthYear}년</p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 연락처
               </label>
-              <p className="text-gray-900">{kycData.contact}</p>
+              <p className="text-gray-900 font-bold">{kycData.contact}</p>
             </div>
           </div>
         </CardContent>
@@ -390,26 +392,28 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="text-gray-700 text-sm font-medium">시도</label>
-              <p className="text-gray-900">{kycData.province}</p>
+              <p className="text-gray-900 font-bold">{kycData.province}</p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 시군구
               </label>
-              <p className="text-gray-900">{kycData.district}</p>
+              <p className="text-gray-900 font-bold">{kycData.district}</p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
                 읍면동
               </label>
-              <p className="text-gray-900">{kycData.dong}</p>
+              <p className="text-gray-900 font-bold">{kycData.dong}</p>
             </div>
             {kycData.detailedAddress && (
               <div>
                 <label className="text-gray-700 text-sm font-medium">
                   상세주소
                 </label>
-                <p className="text-gray-900">{kycData.detailedAddress}</p>
+                <p className="text-gray-900 font-bold">
+                  {kycData.detailedAddress}
+                </p>
               </div>
             )}
           </div>
@@ -427,7 +431,7 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
               <label className="text-gray-700 text-sm font-medium">
                 피부타입
               </label>
-              <p className="text-gray-900">
+              <p className="text-gray-900 font-bold">
                 {getSkinTypeText(kycData.skinType)}
                 {kycData.skinType === "other" && kycData.skinTypeOther && (
                   <span className="text-gray-600 ml-2">
@@ -440,7 +444,7 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
               <label className="text-gray-700 text-sm font-medium">
                 기존 시술경험
               </label>
-              <p className="text-gray-900">
+              <p className="text-gray-900 font-bold">
                 {getPreviousTreatmentText(kycData.hasPreviousTreatment)}
               </p>
             </div>
@@ -512,14 +516,14 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
               <label className="text-gray-700 text-sm font-medium">
                 제출일
               </label>
-              <p className="text-gray-900">
+              <p className="text-gray-900 font-bold">
                 {kycData.submittedAt?.toDate?.()?.toLocaleDateString() ||
                   "날짜 정보 없음"}
               </p>
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">상태</label>
-              <p className="text-gray-900">
+              <p className="text-gray-900 font-bold">
                 {kycData.status === "approved"
                   ? "승인됨"
                   : kycData.status === "rejected"
