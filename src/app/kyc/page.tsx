@@ -52,9 +52,15 @@ export default function KYCPage() {
     const fetchKycData = async () => {
       if (user?.email) {
         try {
+          console.log("KYC 데이터 조회 시작:", user.email);
           const kycDoc = await getDoc(doc(db, "kyc", user.email));
+          console.log("KYC 문서 존재 여부:", kycDoc.exists());
           if (kycDoc.exists()) {
-            setKycData(kycDoc.data() as KYCData);
+            const data = kycDoc.data() as KYCData;
+            console.log("KYC 데이터:", data);
+            setKycData(data);
+          } else {
+            console.log("KYC 문서가 존재하지 않음");
           }
         } catch (error) {
           console.error("KYC 데이터 조회 실패:", error);
@@ -80,6 +86,15 @@ export default function KYCPage() {
   if (!user) {
     return null;
   }
+
+  // 디버깅 로그
+  console.log("KYC 페이지 상태:", {
+    kycData: !!kycData,
+    showKycData,
+    loading,
+    loadingKyc,
+    user: !!user,
+  });
 
   // KYC가 이미 제출된 경우
   if (kycData && !showKycData) {
