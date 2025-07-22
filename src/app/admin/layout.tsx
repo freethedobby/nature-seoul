@@ -69,7 +69,7 @@ export default function AdminLayout({
                   className="flex items-center space-x-2"
                 >
                   <Users className="h-4 w-4" />
-                  <span>KYC 관리</span>
+                  <span>고객관리</span>
                 </Button>
 
                 <Button
@@ -78,7 +78,7 @@ export default function AdminLayout({
                   className="flex items-center space-x-2"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span>슬롯 관리</span>
+                  <span>예약관리</span>
                 </Button>
               </nav>
             </div>
@@ -129,7 +129,7 @@ export default function AdminLayout({
                   className="flex items-center justify-start space-x-2"
                 >
                   <Users className="h-4 w-4" />
-                  <span>KYC 관리</span>
+                  <span>고객관리</span>
                 </Button>
 
                 <Button
@@ -141,7 +141,7 @@ export default function AdminLayout({
                   className="flex items-center justify-start space-x-2"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span>슬롯 관리</span>
+                  <span>예약관리</span>
                 </Button>
 
                 <div className="mt-2 border-t pt-2">

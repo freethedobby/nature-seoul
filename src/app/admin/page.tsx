@@ -439,7 +439,7 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                KYC
+                고객관리
               </CardTitle>
               <CardDescription>KYC 승인, 반려, 예약 관리</CardDescription>
             </CardHeader>

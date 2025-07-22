@@ -104,6 +104,7 @@ interface ReservationData {
   userEmail: string;
   date: string;
   time: string;
+  slotId?: string; // Add slotId for slot management
   status:
     | "pending"
     | "payment_required"
@@ -525,6 +526,18 @@ export default function KYCDashboard() {
         rejectReason: reservationRejectReason.trim(),
         rejectedAt: Timestamp.now(),
       });
+
+      // Free up the slot if slotId exists
+      if (reservation.slotId) {
+        try {
+          await updateDoc(doc(db, "slots", reservation.slotId), {
+            status: "available",
+          });
+          console.log("Slot freed up:", reservation.slotId);
+        } catch (slotError) {
+          console.error("Error freeing up slot:", slotError);
+        }
+      }
 
       // Create notification for the user
       try {
@@ -1616,7 +1629,7 @@ export default function KYCDashboard() {
                           {reservation.status === "approved"
                             ? "확정"
                             : reservation.status === "payment_confirmed"
-                            ? "입금확인"
+                            ? "입금확인중"
                             : reservation.status === "payment_required"
                             ? "입금대기"
                             : reservation.status === "rejected"
