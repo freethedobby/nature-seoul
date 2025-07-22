@@ -402,35 +402,45 @@ export default function UserReservePage() {
                       onExpired={handleCountdownExpired}
                     />
 
-                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200 rounded-xl border p-5">
-                      <div className="mb-3 flex items-center space-x-3">
-                        <div className="bg-orange-100 rounded-full p-2">
-                          <CreditCard className="text-orange-600 h-5 w-5" />
+                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
+                      <div className="mb-4 flex items-center space-x-3">
+                        <div className="bg-black rounded-full p-2">
+                          <CreditCard className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-orange-800 text-lg font-semibold">
+                          <h3 className="text-gray-900 text-lg font-semibold">
                             예약금 입금 안내
                           </h3>
-                          <p className="text-orange-600 text-sm">
+                          <p className="text-gray-600 text-sm">
                             입금 후 확인 요청을 해주세요
                           </p>
                         </div>
                       </div>
 
-                      <div className="mb-4 rounded-lg bg-white p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="text-gray-600 text-sm">예약금</span>
-                          <span className="text-orange-600 text-lg font-bold">
+                      <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-gray-700 text-sm font-medium">
+                            예약금
+                          </span>
+                          <span className="text-gray-900 text-xl font-bold">
                             200,000원
                           </span>
                         </div>
-                        <div className="text-gray-500 text-xs">
-                          입금 계좌: 123-456-789012 (예금주: 네이처서울)
+                        <div className="bg-gray-50 rounded-md p-3">
+                          <div className="text-gray-600 mb-1 text-xs font-medium">
+                            입금 계좌 정보
+                          </div>
+                          <div className="text-gray-800 font-mono text-sm">
+                            123-456-789012
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            예금주: 네이처서울
+                          </div>
                         </div>
                       </div>
 
                       <button
-                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md hover:shadow-lg w-full rounded-lg px-6 py-3 font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="bg-black hover:bg-gray-800 shadow-lg hover:shadow-xl w-full transform rounded-lg px-6 py-4 font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={handleConfirmPayment}
                         disabled={confirmingPayment}
                       >
