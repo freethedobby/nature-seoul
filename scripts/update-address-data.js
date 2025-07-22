@@ -298,6 +298,9 @@ async function updateAddressData() {
         { value: "sinsa", label: "신사동" },
         { value: "suseo", label: "수서동" },
         { value: "sego", label: "세곡동" },
+        { value: "yeoksam", label: "역삼동" },
+        { value: "jagok", label: "자곡동" },
+        { value: "yulhyeon", label: "율현동" },
       ],
       // 서울 서초구
       seocho: [

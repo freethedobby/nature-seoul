@@ -1042,6 +1042,18 @@ export const dongs: { [key: string]: AddressOption[] } = {
     {
       "value": "sego",
       "label": "세곡동"
+    },
+    {
+      "value": "yeoksam",
+      "label": "역삼동"
+    },
+    {
+      "value": "jagok",
+      "label": "자곡동"
+    },
+    {
+      "value": "yulhyeon",
+      "label": "율현동"
     }
   ],
   "seocho": [
