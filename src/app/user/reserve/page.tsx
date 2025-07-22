@@ -93,7 +93,7 @@ export default function UserReservePage() {
   today.setHours(0, 0, 0, 0); // Start of today
 
   slots.forEach((slot) => {
-    if (slot.status !== "available") return;
+    // 모든 슬롯을 포함 (available + booked) - 캔슬된 예약도 표시하기 위해
     const d = slot.start;
 
     // Only include slots from today onwards for users
@@ -429,7 +429,7 @@ export default function UserReservePage() {
     ? slots
         .filter(
           (slot) =>
-            slot.status === "available" &&
+            // 모든 슬롯을 포함 (available + booked) - 캔슬된 예약도 표시하기 위해
             slot.start.getDate() === selectedDate.getDate() &&
             slot.start.getMonth() === selectedDate.getMonth() &&
             slot.start.getFullYear() === selectedDate.getFullYear()
@@ -694,18 +694,38 @@ export default function UserReservePage() {
           {slotsForSelectedDay.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slotsForSelectedDay.map((slot) => {
-                const isReserved = !!reservation;
+                // 현재 사용자가 이 슬롯에 대한 활성 예약이 있는지 확인
+                const isReserved =
+                  reservation &&
+                  reservation.slotId === slot.id &&
+                  reservation.status !== "cancelled";
+                const isBookedByOthers =
+                  slot.status === "booked" &&
+                  (!reservation || reservation.slotId !== slot.id);
+
                 return (
                   <div key={slot.id} className="relative">
                     <button
                       className={`focus:ring-green-400 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                         isReserved
                           ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          : isBookedByOthers
+                          ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed"
                           : "border-green-200 text-green-700 hover:border-green-300 hover:bg-green-50 hover:shadow-md bg-white"
                       }`}
-                      disabled={isReserved}
-                      onClick={() => setShowReserveBtn(slot.id)}
-                      title={isReserved ? "이미 예약이 있습니다." : "예약하기"}
+                      disabled={isReserved || isBookedByOthers}
+                      onClick={() =>
+                        !isReserved &&
+                        !isBookedByOthers &&
+                        setShowReserveBtn(slot.id)
+                      }
+                      title={
+                        isReserved
+                          ? "이미 예약이 있습니다."
+                          : isBookedByOthers
+                          ? "다른 사용자가 예약했습니다."
+                          : "예약하기"
+                      }
                     >
                       {slot.start.toLocaleTimeString("ko-KR", {
                         hour: "2-digit",
@@ -714,39 +734,41 @@ export default function UserReservePage() {
                     </button>
 
                     {/* 예약 버튼 */}
-                    {showReserveBtn === slot.id && !isReserved && (
-                      <div
-                        ref={popupRef}
-                        className="border-gray-200 shadow-xl absolute left-1/2 z-10 mt-2 min-w-[200px] -translate-x-1/2 rounded-xl border bg-white p-3"
-                      >
-                        <div className="mb-3 text-center">
-                          <p className="text-gray-700 text-sm font-medium">
-                            이 시간에 예약하시겠습니까?
-                          </p>
-                          <p className="text-gray-500 mt-1 text-xs">
-                            {slot.start.toLocaleTimeString("ko-KR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                    {showReserveBtn === slot.id &&
+                      !isReserved &&
+                      !isBookedByOthers && (
+                        <div
+                          ref={popupRef}
+                          className="border-gray-200 shadow-xl absolute left-1/2 z-10 mt-2 min-w-[200px] -translate-x-1/2 rounded-xl border bg-white p-3"
+                        >
+                          <div className="mb-3 text-center">
+                            <p className="text-gray-700 text-sm font-medium">
+                              이 시간에 예약하시겠습니까?
+                            </p>
+                            <p className="text-gray-500 mt-1 text-xs">
+                              {slot.start.toLocaleTimeString("ko-KR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              className="bg-green-500 hover:bg-green-600 flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-all duration-200"
+                              onClick={() => handleReserveClick(slot)}
+                              disabled={reserving}
+                            >
+                              예약
+                            </button>
+                            <button
+                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200"
+                              onClick={() => setShowReserveBtn(null)}
+                            >
+                              취소
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            className="bg-green-500 hover:bg-green-600 flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-all duration-200"
-                            onClick={() => handleReserveClick(slot)}
-                            disabled={reserving}
-                          >
-                            예약
-                          </button>
-                          <button
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200"
-                            onClick={() => setShowReserveBtn(null)}
-                          >
-                            취소
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 );
               })}
