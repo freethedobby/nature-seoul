@@ -338,13 +338,15 @@ export default function UserReservePage() {
     ? slots.find((s) => s.id === reservation.slotId)
     : null;
   const slotsForSelectedDay = selectedDate
-    ? slots.filter(
-        (slot) =>
-          slot.status === "available" &&
-          slot.start.getDate() === selectedDate.getDate() &&
-          slot.start.getMonth() === selectedDate.getMonth() &&
-          slot.start.getFullYear() === selectedDate.getFullYear()
-      )
+    ? slots
+        .filter(
+          (slot) =>
+            slot.status === "available" &&
+            slot.start.getDate() === selectedDate.getDate() &&
+            slot.start.getMonth() === selectedDate.getMonth() &&
+            slot.start.getFullYear() === selectedDate.getFullYear()
+        )
+        .sort((a, b) => a.start.getTime() - b.start.getTime()) // 시간순 정렬
     : [];
 
   return (
