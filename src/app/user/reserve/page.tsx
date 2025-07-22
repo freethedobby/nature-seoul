@@ -151,8 +151,23 @@ export default function UserReservePage() {
           return;
         }
 
-        const reservationData = snap.docs[0].data() as ReservationData;
-        reservationData.id = snap.docs[0].id;
+        const data = snap.docs[0].data();
+        const reservationData: ReservationData = {
+          id: snap.docs[0].id,
+          slotId: data.slotId,
+          userId: data.userId,
+          userEmail: data.userEmail,
+          userName: data.userName,
+          date: data.date,
+          time: data.time,
+          status: data.status,
+          paymentConfirmed: data.paymentConfirmed,
+          paymentConfirmedAt:
+            data.paymentConfirmedAt?.toDate?.() || data.paymentConfirmedAt,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          paymentDeadline:
+            data.paymentDeadline?.toDate?.() || data.paymentDeadline,
+        };
 
         // 취소된 예약인 경우 reservation을 null로 설정하여 예약하기 버튼 표시
         if (reservationData.status === "cancelled") {
