@@ -508,7 +508,7 @@ export default function DashboardPage() {
           <div className="mb-8 text-center">
             <h2 className="text-gray-900 mb-2 text-2xl font-light">내 정보</h2>
             <p className="text-gray-600">
-              예약 현황과 상담 신청 상태를 확인하세요.
+              예약 현황과 고객 등록 상태를 확인하세요.
             </p>
           </div>
 
@@ -562,8 +562,8 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-gray-600 mb-4 text-sm">
                   {isLocked
-                    ? "상담 신청을 완료하면 예약이 가능합니다."
-                    : "상담 신청이 완료되었습니다."}
+                    ? "고객등록 신청을 완료하면 예약이 가능합니다."
+                    : "고객등록 신청이 완료되었습니다."}
                 </p>
                 {isLocked ? (
                   <Link href="/kyc">
@@ -599,7 +599,7 @@ export default function DashboardPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setShowKycData(true)}
-                            className="text-blue-700 border-blue-300 hover:bg-blue-50 w-full"
+                            className="text-gray-700 border-gray-300 hover:bg-gray-50 w-full"
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             신청 내용 보기
@@ -614,14 +614,14 @@ export default function DashboardPage() {
               {/* Reservation Card */}
               <div className="border-gray-100 shadow-sm hover:shadow-md rounded-2xl border bg-white p-6 transition-all duration-300">
                 <div className="mb-4 flex items-center">
-                  <div className="bg-green-100 mr-3 rounded-lg p-2">
-                    <Clock className="text-green-600 h-5 w-5" />
+                  <div className="bg-black mr-3 rounded-lg p-2">
+                    <Clock className="h-5 w-5 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold">예약</h3>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm">
                   {isLocked
-                    ? "상담 신청 후 예약이 가능합니다."
+                    ? "고객등록 후 예약이 가능합니다."
                     : user.kycStatus === "approved" && !user.noticeConfirmed
                     ? "공지사항 확인 후 예약이 가능합니다."
                     : reservation
@@ -701,10 +701,10 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     <button
                       onClick={() => router.push("/user/reserve")}
-                      className="bg-blue-50 hover:bg-blue-100 border-blue-200 group w-full rounded-lg border p-3 text-left transition-colors duration-200"
+                      className="bg-gray-50 hover:bg-gray-100 border-gray-200 group w-full rounded-lg border p-3 text-left transition-colors duration-200"
                     >
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-blue-800 group-hover:text-blue-900 text-sm font-medium transition-colors">
+                        <span className="text-gray-800 group-hover:text-gray-900 text-sm font-medium transition-colors">
                           예약 정보
                         </span>
                         <div className="flex items-center space-x-2">
@@ -727,7 +727,7 @@ export default function DashboardPage() {
                               ? "거절"
                               : "대기"}
                           </Badge>
-                          <div className="text-blue-400 group-hover:text-blue-600 transition-colors">
+                          <div className="text-gray-400 group-hover:text-gray-600 transition-colors">
                             <svg
                               className="h-4 w-4"
                               fill="none"
@@ -744,12 +744,12 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-blue-700 text-sm">
+                      <div className="text-gray-700 text-sm">
                         <div>
                           {reservation.date} {reservation.time}
                         </div>
                         {reservation.status === "payment_required" && (
-                          <div className="text-orange-600 mt-1 text-xs">
+                          <div className="text-gray-600 mt-1 text-xs">
                             💰 예약금 20만원 입금 필요
                           </div>
                         )}
@@ -767,12 +767,12 @@ export default function DashboardPage() {
                             </div>
                           )}
                         {reservation.status === "payment_confirmed" && (
-                          <div className="text-blue-600 mt-1 text-xs">
+                          <div className="text-gray-600 mt-1 text-xs">
                             ⏳ 관리자 확인 대기 중
                           </div>
                         )}
                         {reservation.status === "rejected" && (
-                          <div className="text-red-600 mt-1 text-xs">
+                          <div className="text-gray-600 mt-1 text-xs">
                             ❌ 예약이 거절되었습니다
                           </div>
                         )}
