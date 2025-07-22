@@ -556,21 +556,21 @@ export default function UserReservePage() {
                 )}
 
               {reservation.status === "payment_confirmed" && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 rounded-xl border p-5">
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 rounded-xl border p-5">
                   <div className="mb-3 flex items-center space-x-3">
-                    <div className="bg-blue-100 rounded-full p-2">
-                      <Clock className="text-blue-600 h-5 w-5" />
+                    <div className="bg-black rounded-full p-2">
+                      <Clock className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-blue-800 text-lg font-semibold">
+                      <h3 className="text-gray-800 text-lg font-semibold">
                         관리자 확인 대기
                       </h3>
-                      <p className="text-blue-600 text-sm">
+                      <p className="text-gray-600 text-sm">
                         입금 확인 요청이 완료되었습니다
                       </p>
                     </div>
                   </div>
-                  <p className="text-blue-600 text-sm">
+                  <p className="text-gray-600 text-sm">
                     관리자 확인 후 예약이 확정됩니다
                   </p>
                 </div>
