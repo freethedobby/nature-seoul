@@ -66,6 +66,7 @@ export default function UserReservePage() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [reservation, setReservation] = useState<ReservationData | null>(null);
+  const [allReservations, setAllReservations] = useState<ReservationData[]>([]); // 모든 예약 데이터
   const [showReserveBtn, setShowReserveBtn] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmPosition, setConfirmPosition] = useState({ x: 0, y: 0 });
@@ -180,6 +181,51 @@ export default function UserReservePage() {
 
     return () => unsub();
   }, [user]);
+
+  // 모든 예약 데이터 가져오기 (선택된 날짜의 슬롯 예약 상태 확인용)
+  useEffect(() => {
+    if (!selectedDate) {
+      setAllReservations([]);
+      return;
+    }
+
+    const unsub = onSnapshot(
+      query(
+        collection(db, "reservations"),
+        where("status", "in", [
+          "pending",
+          "payment_required",
+          "payment_confirmed",
+          "approved",
+        ]) // 활성 예약만 가져오기 (cancelled 제외)
+      ),
+      (snap) => {
+        const reservationList: ReservationData[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data();
+          reservationList.push({
+            id: doc.id,
+            slotId: data.slotId,
+            userId: data.userId,
+            userEmail: data.userEmail,
+            userName: data.userName,
+            date: data.date,
+            time: data.time,
+            status: data.status,
+            paymentConfirmed: data.paymentConfirmed,
+            paymentConfirmedAt:
+              data.paymentConfirmedAt?.toDate?.() || data.paymentConfirmedAt,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            paymentDeadline:
+              data.paymentDeadline?.toDate?.() || data.paymentDeadline,
+          });
+        });
+        setAllReservations(reservationList);
+      }
+    );
+
+    return () => unsub();
+  }, [selectedDate]);
 
   // Click away handler for popup
   useEffect(() => {
@@ -699,9 +745,13 @@ export default function UserReservePage() {
                   reservation &&
                   reservation.slotId === slot.id &&
                   reservation.status !== "cancelled";
+
+                // 이 슬롯에 대한 활성 예약이 있는지 확인 (다른 사용자 포함)
+                const slotReservation = allReservations.find(
+                  (r) => r.slotId === slot.id
+                );
                 const isBookedByOthers =
-                  slot.status === "booked" &&
-                  (!reservation || reservation.slotId !== slot.id);
+                  slotReservation && slotReservation.userId !== user?.uid;
 
                 return (
                   <div key={slot.id} className="relative">
