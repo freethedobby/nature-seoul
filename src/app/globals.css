@@ -381,3 +381,22 @@ body .rdp-day_button[aria-selected="true"] {
   pointer-events: none;
   z-index: 2;
 }
+
+/* Past dates styling - gray shading */
+.rdp-day.past-dates .rdp-day_button {
+  color: #9ca3af !important;
+  background: #f3f4f6 !important;
+  opacity: 0.6;
+  cursor: pointer !important;
+}
+
+.rdp-day.past-dates .rdp-day_button:hover {
+  background: #e5e7eb !important;
+  opacity: 0.8;
+}
+
+/* Past dates with slots - keep the green dot but with gray styling */
+.rdp-day.past-dates.has-slots > .rdp-day_button::after {
+  background: #9ca3af;
+  opacity: 0.6;
+}

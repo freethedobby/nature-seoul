@@ -557,6 +557,25 @@ export default function SlotManagement() {
     slotCountByDate[key] = (slotCountByDate[key] || 0) + 1;
   });
 
+  // 과거 날짜 식별 (오늘 이전 날짜들)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // 오늘의 시작
+  const pastDates: Date[] = [];
+
+  // 현재 월의 과거 날짜들 생성
+  if (selectedDate) {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      if (date < today) {
+        pastDates.push(date);
+      }
+    }
+  }
+
   if (loading || !isAuthorized) {
     return (
       <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
@@ -678,6 +697,7 @@ export default function SlotManagement() {
                       hasSlots: Object.keys(slotCountByDate).map(
                         (d) => new Date(d)
                       ),
+                      pastDates: pastDates,
                     }}
                     modifiersClassNames={{
                       selected: "bg-black text-white",
@@ -686,6 +706,7 @@ export default function SlotManagement() {
                       range_end: "bg-black text-white",
                       range_middle: "bg-black text-white opacity-80",
                       hasSlots: "has-slots",
+                      pastDates: "past-dates",
                     }}
                     className="mx-auto w-full max-w-xs sm:max-w-md"
                     styles={{
@@ -715,11 +736,13 @@ export default function SlotManagement() {
                       hasSlots: Object.keys(slotCountByDate).map(
                         (d) => new Date(d)
                       ),
+                      pastDates: pastDates,
                     }}
                     modifiersClassNames={{
                       selected: "bg-green-500 text-white rounded-lg",
                       today: "text-green-600 font-bold",
                       hasSlots: "has-slots",
+                      pastDates: "past-dates",
                     }}
                     className="mx-auto w-full max-w-xs sm:max-w-md"
                     styles={{
