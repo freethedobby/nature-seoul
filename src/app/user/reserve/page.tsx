@@ -750,8 +750,19 @@ export default function UserReservePage() {
                 const slotReservation = allReservations.find(
                   (r) => r.slotId === slot.id
                 );
+
+                // 확정된 예약이 있는지 확인
+                const hasApprovedReservation =
+                  slotReservation && slotReservation.status === "approved";
+
+                // 시간이 지났는지 확인 (확정된 예약의 경우 시간이 지나면 재예약 가능)
+                const isTimePassed = slot.start < new Date();
+
+                // 다른 사용자가 예약했는지 확인 (확정된 예약이 아니거나 시간이 지난 경우)
                 const isBookedByOthers =
-                  slotReservation && slotReservation.userId !== user?.uid;
+                  slotReservation &&
+                  slotReservation.userId !== user?.uid &&
+                  (!hasApprovedReservation || !isTimePassed);
 
                 return (
                   <div key={slot.id} className="relative">
@@ -773,7 +784,9 @@ export default function UserReservePage() {
                         isReserved
                           ? "이미 예약이 있습니다."
                           : isBookedByOthers
-                          ? "다른 사용자가 예약했습니다."
+                          ? hasApprovedReservation && !isTimePassed
+                            ? "확정된 예약이 있습니다."
+                            : "다른 사용자가 예약했습니다."
                           : "예약하기"
                       }
                     >
