@@ -246,7 +246,7 @@ export default function NotificationCenter({
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 -mt-2 rounded-lg border bg-white sm:right-0 sm:mt-2">
+        <div className="w-72 sm:w-80 shadow-lg border-gray-200 absolute right-0 z-50 mt-2 rounded-lg border bg-white sm:right-0 sm:mt-2">
           {/* Mobile overlay to prevent screen cutoff */}
           <div
             className="fixed inset-0 z-40 sm:hidden"

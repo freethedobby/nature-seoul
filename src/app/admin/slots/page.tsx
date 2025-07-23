@@ -1650,6 +1650,7 @@ export default function SlotManagement() {
                         currentDate.getDay() !== 0
                       ) {
                         const dateStr = currentDate.toISOString().slice(0, 10);
+                        const currentDateCopy = new Date(currentDate);
                         const dayReservations = reservations.filter(
                           (reservation) => {
                             const slot = slots.find(
@@ -1659,19 +1660,20 @@ export default function SlotManagement() {
                             const slotDate = new Date(slot.start);
                             return (
                               slotDate.toDateString() ===
-                              currentDate.toDateString()
+                              currentDateCopy.toDateString()
                             );
                           }
                         );
 
-                        const isCurrentMonth = currentDate.getMonth() === month;
+                        const isCurrentMonth =
+                          currentDateCopy.getMonth() === month;
                         const isToday =
-                          currentDate.toDateString() ===
+                          currentDateCopy.toDateString() ===
                           new Date().toDateString();
                         const isSelected =
                           selectedMonthDay &&
                           selectedMonthDay.toDateString() ===
-                            currentDate.toDateString();
+                            currentDateCopy.toDateString();
 
                         days.push(
                           <div
@@ -1686,7 +1688,7 @@ export default function SlotManagement() {
                                 : "hover:bg-gray-50"
                             }`}
                             onClick={() => {
-                              setSelectedMonthDay(new Date(currentDate));
+                              setSelectedMonthDay(currentDateCopy);
                             }}
                           >
                             <div
@@ -1696,7 +1698,7 @@ export default function SlotManagement() {
                                 isSelected ? "text-blue-700 font-semibold" : ""
                               }`}
                             >
-                              {currentDate.getDate()}
+                              {currentDateCopy.getDate()}
                             </div>
                             {isCurrentMonth && dayReservations.length > 0 && (
                               <div className="mt-1 text-center">
