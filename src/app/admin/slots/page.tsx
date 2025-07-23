@@ -200,8 +200,12 @@ export default function SlotManagement() {
   );
 
   // Add selected day for week view and month view
-  const [selectedWeekDay, setSelectedWeekDay] = useState<Date | null>(null);
-  const [selectedMonthDay, setSelectedMonthDay] = useState<Date | null>(null);
+  const [selectedWeekDay, setSelectedWeekDay] = useState<Date | null>(
+    new Date()
+  );
+  const [selectedMonthDay, setSelectedMonthDay] = useState<Date | null>(
+    new Date()
+  );
 
   // Click-away handler for popover
   useEffect(() => {
@@ -1499,7 +1503,7 @@ export default function SlotManagement() {
                                 : "hover:bg-gray-50"
                             }`}
                             onClick={() => {
-                              setSelectedWeekDay(currentDate);
+                              setSelectedWeekDay(new Date(currentDate));
                             }}
                           >
                             <div
@@ -1682,7 +1686,7 @@ export default function SlotManagement() {
                                 : "hover:bg-gray-50"
                             }`}
                             onClick={() => {
-                              setSelectedMonthDay(currentDate);
+                              setSelectedMonthDay(new Date(currentDate));
                             }}
                           >
                             <div
