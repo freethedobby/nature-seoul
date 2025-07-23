@@ -629,7 +629,9 @@ export default function DashboardPage() {
                     ? "고객등록 신청 후 예약이 가능합니다."
                     : user.kycStatus === "approved" && !user.noticeConfirmed
                     ? "공지사항 확인 후 예약이 가능합니다."
-                    : reservation
+                    : reservation &&
+                      reservation.status !== "cancelled" &&
+                      reservation.status !== "rejected"
                     ? "예약이 진행 중입니다."
                     : "상담 승인 후 예약이 가능합니다."}
                 </p>
@@ -702,7 +704,9 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {reservation ? (
+                {reservation &&
+                reservation.status !== "cancelled" &&
+                reservation.status !== "rejected" ? (
                   <div className="space-y-3">
                     <button
                       onClick={() => router.push("/user/reserve")}
