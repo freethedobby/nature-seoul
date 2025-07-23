@@ -204,6 +204,9 @@ export default function SlotManagement() {
     reservations: ReservationData[];
   } | null>(null);
 
+  // Add selected day for week view
+  const [selectedWeekDay, setSelectedWeekDay] = useState<Date | null>(null);
+
   // Click-away handler for popover
   useEffect(() => {
     if (!popoverOpenSlotId) return;
@@ -1556,27 +1559,94 @@ export default function SlotManagement() {
               )}
 
               {calendarViewMode === "week" && (
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Day headers */}
-                  {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
-                    <div
-                      key={day}
-                      className="text-gray-700 bg-gray-50 rounded p-1 text-center text-xs font-semibold sm:p-2 sm:text-sm"
-                    >
-                      {day}
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {/* Week Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Day headers */}
+                    {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+                      <div
+                        key={day}
+                        className="text-gray-700 bg-gray-50 rounded p-1 text-center text-xs font-semibold sm:p-2 sm:text-sm"
+                      >
+                        {day}
+                      </div>
+                    ))}
 
-                  {/* Week days */}
-                  {(() => {
-                    const weekStart = new Date(selectedCalendarDate);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    {/* Week days */}
+                    {(() => {
+                      const weekStart = new Date(selectedCalendarDate);
+                      weekStart.setDate(
+                        weekStart.getDate() - weekStart.getDay()
+                      );
 
-                    const days = [];
-                    for (let i = 0; i < 7; i++) {
-                      const currentDate = new Date(weekStart);
-                      currentDate.setDate(weekStart.getDate() + i);
+                      const days = [];
+                      for (let i = 0; i < 7; i++) {
+                        const currentDate = new Date(weekStart);
+                        currentDate.setDate(weekStart.getDate() + i);
 
+                        const dayReservations = reservations.filter(
+                          (reservation) => {
+                            const slot = slots.find(
+                              (s) => s.id === reservation.slotId
+                            );
+                            if (!slot) return false;
+                            const slotDate = new Date(slot.start);
+                            return (
+                              slotDate.toDateString() ===
+                              currentDate.toDateString()
+                            );
+                          }
+                        );
+
+                        const isToday =
+                          currentDate.toDateString() ===
+                          new Date().toDateString();
+                        const isSelected =
+                          selectedWeekDay &&
+                          selectedWeekDay.toDateString() ===
+                            currentDate.toDateString();
+
+                        days.push(
+                          <div
+                            key={i}
+                            className={`min-h-[60px] cursor-pointer rounded-lg border p-2 transition-colors sm:min-h-[80px] ${
+                              isToday ? "ring-blue-500 ring-2" : ""
+                            } ${
+                              isSelected
+                                ? "bg-blue-50 border-blue-300"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setSelectedWeekDay(currentDate);
+                            }}
+                          >
+                            <div
+                              className={`text-center text-xs font-medium sm:text-sm ${
+                                isToday ? "text-blue-600" : ""
+                              } ${
+                                isSelected ? "text-blue-700 font-semibold" : ""
+                              }`}
+                            >
+                              {format(currentDate, "M/d", { locale: ko })}
+                            </div>
+                            {dayReservations.length > 0 && (
+                              <div className="mt-1 text-center">
+                                <div className="bg-blue-500 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs text-white">
+                                  {dayReservations.length}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return days;
+                    })()}
+                  </div>
+
+                  {/* Selected Day Schedule */}
+                  {selectedWeekDay &&
+                    (() => {
                       const dayReservations = reservations.filter(
                         (reservation) => {
                           const slot = slots.find(
@@ -1586,68 +1656,75 @@ export default function SlotManagement() {
                           const slotDate = new Date(slot.start);
                           return (
                             slotDate.toDateString() ===
-                            currentDate.toDateString()
+                            selectedWeekDay.toDateString()
                           );
                         }
                       );
 
-                      const isToday =
-                        currentDate.toDateString() ===
-                        new Date().toDateString();
-
-                      days.push(
-                        <div
-                          key={i}
-                          className={`hover:bg-gray-50 min-h-[120px] cursor-pointer rounded-lg border p-2 transition-colors sm:min-h-[150px] ${
-                            isToday ? "ring-blue-500 ring-2" : ""
-                          }`}
-                          onClick={() => {
-                            if (dayReservations.length > 0) {
-                              setSelectedReservationDetail({
-                                date: new Date(currentDate),
-                                reservations: dayReservations,
-                              });
-                              setShowReservationDetail(true);
-                            }
-                          }}
-                        >
-                          <div
-                            className={`mb-2 text-xs font-medium sm:text-sm ${
-                              isToday ? "text-blue-600" : ""
-                            }`}
-                          >
-                            {format(currentDate, "M/d", { locale: ko })}
+                      if (dayReservations.length === 0) {
+                        return (
+                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                            <div className="text-gray-700 mb-2 text-lg font-semibold">
+                              {format(selectedWeekDay, "M월 d일", {
+                                locale: ko,
+                              })}
+                            </div>
+                            <div className="text-gray-500 text-sm">
+                              이 날에는 예약이 없습니다.
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            {dayReservations.map((reservation) => (
-                              <div
-                                key={reservation.id}
-                                className="bg-blue-100 text-blue-800 rounded py-1 px-2 text-xs"
-                                title={`${
-                                  kycNames[reservation.userId] || "Unknown"
-                                } - ${format(
-                                  new Date(reservation.createdAt),
-                                  "HH:mm"
-                                )}`}
-                              >
-                                <div className="font-medium">
-                                  {kycNames[reservation.userId] || "Unknown"}
+                        );
+                      }
+
+                      return (
+                        <div className="rounded-lg border bg-white p-4">
+                          <div className="text-gray-900 mb-4 text-lg font-semibold">
+                            {format(selectedWeekDay, "M월 d일", { locale: ko })}{" "}
+                            예약
+                          </div>
+                          <div className="space-y-3">
+                            {dayReservations.map((reservation) => {
+                              const slot = slots.find(
+                                (s) => s.id === reservation.slotId
+                              );
+                              return (
+                                <div
+                                  key={reservation.id}
+                                  className="bg-blue-50 border-blue-200 flex items-center justify-between rounded-lg border p-3"
+                                >
+                                  <div className="flex-1">
+                                    <div className="text-blue-900 font-semibold">
+                                      {kycNames[reservation.userId] ||
+                                        "Unknown"}
+                                    </div>
+                                    <div className="text-blue-700 text-sm">
+                                      {reservation.userEmail}
+                                    </div>
+                                    <div className="text-blue-600 text-xs">
+                                      연락처:{" "}
+                                      {kycContacts[reservation.userId] || "-"}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-blue-600 text-lg font-bold">
+                                      {slot
+                                        ? format(new Date(slot.start), "HH:mm")
+                                        : "시간 미정"}
+                                    </div>
+                                    <div className="text-blue-500 text-sm">
+                                      {format(
+                                        new Date(reservation.createdAt),
+                                        "MM/dd"
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-blue-600">
-                                  {format(
-                                    new Date(reservation.createdAt),
-                                    "HH:mm"
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       );
-                    }
-
-                    return days;
-                  })()}
+                    })()}
                 </div>
               )}
 
