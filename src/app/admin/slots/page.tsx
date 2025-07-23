@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, List } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -59,15 +59,51 @@ interface ReservationData {
 
 // Custom Day component for DayPicker
 function CustomDay(
-  props: React.HTMLAttributes<HTMLTableCellElement> & { date?: Date }
+  props: React.HTMLAttributes<HTMLTableCellElement> & {
+    date?: Date;
+    reservations?: ReservationData[];
+    kycNames?: Record<string, string>;
+  }
 ) {
-  const { date, ...rest } = props;
+  const { date, reservations = [], kycNames = {}, ...rest } = props;
   if (!date) {
     return <td {...rest}></td>;
   }
+
+  // Get reservations for this date
+  const dateReservations = reservations.filter(() => {
+    // This will be populated by the parent component
+    return true; // Placeholder - will be filtered by parent
+  });
+
   return (
-    <td data-day={date.toISOString().slice(0, 10)} {...rest}>
-      {date.getDate()}
+    <td
+      data-day={date.toISOString().slice(0, 10)}
+      className="relative min-h-[80px] p-1 align-top"
+      {...rest}
+    >
+      <div className="mb-1 text-sm font-medium">{date.getDate()}</div>
+      {dateReservations.length > 0 && (
+        <div className="space-y-1">
+          {dateReservations.slice(0, 3).map((reservation) => (
+            <div
+              key={reservation.id}
+              className="bg-blue-100 text-blue-800 py-0.5 truncate rounded px-1 text-xs"
+              title={`${kycNames[reservation.userId] || "Unknown"} - ${format(
+                new Date(reservation.createdAt),
+                "HH:mm"
+              )}`}
+            >
+              {kycNames[reservation.userId] || "Unknown"}
+            </div>
+          ))}
+          {dateReservations.length > 3 && (
+            <div className="text-gray-500 text-xs">
+              +{dateReservations.length - 3} more
+            </div>
+          )}
+        </div>
+      )}
     </td>
   );
 }
@@ -141,6 +177,12 @@ export default function SlotManagement() {
     null
   );
   const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  // Add view mode state
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [reservations, setReservations] = useState<ReservationData[]>([]);
+  const [kycNames, setKycNames] = useState<Record<string, string>>({});
+  const [kycContacts, setKycContacts] = useState<Record<string, string>>({});
 
   // Click-away handler for popover
   useEffect(() => {
@@ -258,10 +300,6 @@ export default function SlotManagement() {
     (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
   );
 
-  const [reservations, setReservations] = useState<ReservationData[]>([]);
-  const [kycNames, setKycNames] = useState<Record<string, string>>({});
-  const [kycContacts, setKycContacts] = useState<Record<string, string>>({});
-
   // Fetch reservations for slots of the selected day
   useEffect(() => {
     // Calculate slots for the selected day inside the effect
@@ -333,6 +371,53 @@ export default function SlotManagement() {
       setKycContacts(kycContactMap);
     });
   }, [selectedDate, slots]);
+
+  // Fetch all reservations for calendar view
+  useEffect(() => {
+    if (!user || !isAuthorized || viewMode !== "calendar") return;
+
+    const q = query(collection(db, "reservations"));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const resList: ReservationData[] = [];
+      const userIds = new Set<string>();
+
+      snapshot.forEach((docData) => {
+        const data = docData.data();
+        resList.push({
+          id: docData.id,
+          slotId: data.slotId,
+          userId: data.userId,
+          userEmail: data.userEmail,
+          userName: data.userName,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        });
+        if (data.userId) userIds.add(data.userId);
+      });
+
+      // Fetch KYC names for all userIds
+      const kycNameMap: Record<string, string> = {};
+      await Promise.all(
+        Array.from(userIds).map(async (uid) => {
+          try {
+            const userDoc = await getDoc(doc(db, "users", uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData && userData.name) {
+                kycNameMap[uid] = userData.name;
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+
+      setReservations(resList);
+      setKycNames((prev) => ({ ...prev, ...kycNameMap }));
+    });
+
+    return () => unsubscribe();
+  }, [user, isAuthorized, viewMode]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -608,201 +693,215 @@ export default function SlotManagement() {
               </h1>
             </div>
           </div>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "list" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="flex items-center gap-2"
+            >
+              <List className="h-4 w-4" />
+              리스트 뷰
+            </Button>
+            <Button
+              variant={viewMode === "calendar" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("calendar")}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              캘린더 뷰
+            </Button>
+          </div>
         </div>
-        {/* Center calendar on desktop */}
-        <div className="flex w-full flex-col items-center sm:flex-row sm:justify-center">
-          {/* Sleek Mobile Calendar UI */}
-          <div className="shadow flex flex-col items-center rounded-xl bg-white p-4">
-            <div className="mb-2 flex w-full justify-end gap-2">
-              <button
-                className={`rounded-full border px-4 py-1 text-sm font-semibold transition ${
-                  isRangeMode
-                    ? "bg-black border-black text-white"
-                    : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-                }`}
-                onClick={() => {
-                  setIsRangeMode((prev) => {
-                    if (prev) setSelectedRange(undefined); // Clear range when turning off
-                    return !prev;
-                  });
-                }}
-                type="button"
-              >
-                범위 선택
-              </button>
-              <button
-                className="bg-green-100 text-green-700 hover:bg-green-200 rounded-full px-4 py-1 text-sm font-semibold transition"
-                onClick={() => setSelectedDate(new Date())}
-                type="button"
-              >
-                오늘
-              </button>
-            </div>
-            {/* Main calendar (DayPicker): */}
-            <div
-              onDoubleClick={(event) => {
-                const target = event.target as HTMLElement;
-                const dateElement = target.closest("[data-day]");
-                if (dateElement) {
-                  const dateAttr = dateElement.getAttribute("data-day");
-                  if (dateAttr) {
-                    const date = new Date(dateAttr);
-                    setSlotType("custom");
-                    setCustomSlotDate(date);
-                    setCustomSlot({
-                      start: date.toISOString().slice(0, 16),
-                      duration: 120,
-                      numberOfSlots: 1,
+        {/* View Mode Content */}
+        {viewMode === "list" ? (
+          /* List View */
+          <div className="flex w-full flex-col items-center sm:flex-row sm:justify-center">
+            {/* Sleek Mobile Calendar UI */}
+            <div className="shadow flex flex-col items-center rounded-xl bg-white p-4">
+              <div className="mb-2 flex w-full justify-end gap-2">
+                <button
+                  className={`rounded-full border px-4 py-1 text-sm font-semibold transition ${
+                    isRangeMode
+                      ? "bg-black border-black text-white"
+                      : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                  }`}
+                  onClick={() => {
+                    setIsRangeMode((prev) => {
+                      if (prev) setSelectedRange(undefined); // Clear range when turning off
+                      return !prev;
                     });
-                    setShowSlotDialog(true);
-                  }
-                }
-              }}
-              onTouchStart={(event) => {
-                // Handle touch events for mobile calendar
-                const target = event.target as HTMLElement;
-                const dateElement = target.closest("[data-day]");
-                if (dateElement) {
-                  const dateAttr = dateElement.getAttribute("data-day");
-                  if (dateAttr) {
-                    const now = Date.now();
-                    const lastTouch = calendarTouchRef.current[dateAttr];
-
-                    if (lastTouch && now - lastTouch < 300) {
-                      // Double tap detected
-                      event.preventDefault();
-                      event.stopPropagation();
-                      console.log(
-                        "Calendar double tap detected for date:",
-                        dateAttr
-                      );
-                      handleCalendarDoubleTap(dateAttr);
-                      calendarTouchRef.current[dateAttr] = 0; // Reset
-                    } else {
-                      calendarTouchRef.current[dateAttr] = now;
+                  }}
+                  type="button"
+                >
+                  범위 선택
+                </button>
+                <button
+                  className="bg-green-100 text-green-700 hover:bg-green-200 rounded-full px-4 py-1 text-sm font-semibold transition"
+                  onClick={() => setSelectedDate(new Date())}
+                  type="button"
+                >
+                  오늘
+                </button>
+              </div>
+              {/* Main calendar (DayPicker): */}
+              <div
+                onDoubleClick={(event) => {
+                  const target = event.target as HTMLElement;
+                  const dateElement = target.closest("[data-day]");
+                  if (dateElement) {
+                    const dateAttr = dateElement.getAttribute("data-day");
+                    if (dateAttr) {
+                      const date = new Date(dateAttr);
+                      setSlotType("custom");
+                      setCustomSlotDate(date);
+                      setCustomSlot({
+                        start: date.toISOString().slice(0, 16),
+                        duration: 120,
+                        numberOfSlots: 1,
+                      });
+                      setShowSlotDialog(true);
                     }
                   }
-                }
-              }}
-            >
-              <div>
-                {isRangeMode ? (
-                  <DayPicker
-                    mode="range"
-                    selected={selectedRange}
-                    onSelect={setSelectedRange}
-                    locale={ko}
-                    weekStartsOn={0}
-                    modifiers={{
-                      hasSlots: Object.keys(slotCountByDate).map(
-                        (d) => new Date(d)
-                      ),
-                      pastDates: pastDates,
-                    }}
-                    modifiersClassNames={{
-                      selected: "bg-black text-white",
-                      today: "text-green-600 font-bold",
-                      range_start: "bg-black text-white",
-                      range_end: "bg-black text-white",
-                      range_middle: "bg-black text-white opacity-80",
-                      hasSlots: "has-slots",
-                      pastDates: "past-dates",
-                    }}
-                    className="mx-auto w-full max-w-xs sm:max-w-md"
-                    styles={{
-                      caption: {
-                        textAlign: "center",
-                        fontSize: "1.5rem",
-                        fontWeight: 700,
-                        marginBottom: "1rem",
-                      },
-                      head_row: { fontWeight: 500, color: "#888" },
-                      cell: { padding: "0.5rem" },
-                    }}
-                    showOutsideDays={false}
-                    required={false}
-                    components={{
-                      Day: CustomDay,
-                    }}
-                  />
-                ) : (
-                  <DayPicker
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date: Date | undefined) => setSelectedDate(date)}
-                    locale={ko}
-                    weekStartsOn={0}
-                    modifiers={{
-                      hasSlots: Object.keys(slotCountByDate).map(
-                        (d) => new Date(d)
-                      ),
-                      pastDates: pastDates,
-                    }}
-                    modifiersClassNames={{
-                      selected: "bg-green-500 text-white rounded-lg",
-                      today: "text-green-600 font-bold",
-                      hasSlots: "has-slots",
-                      pastDates: "past-dates",
-                    }}
-                    className="mx-auto w-full max-w-xs sm:max-w-md"
-                    styles={{
-                      caption: {
-                        textAlign: "center",
-                        fontSize: "1.5rem",
-                        fontWeight: 700,
-                        marginBottom: "1rem",
-                      },
-                      head_row: { fontWeight: 500, color: "#888" },
-                      cell: { padding: "0.5rem" },
-                    }}
-                    showOutsideDays={false}
-                    required={false}
-                    components={{
-                      Day: CustomDay,
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-            {/* Time slots for selected day */}
-            <div className="mt-6 w-full">
-              <div className="text-gray-700 mb-2 text-sm font-semibold">
-                예약 슬롯
-              </div>
-              <div className="text-gray-500 mb-3 text-xs">
-                슬롯을 더블클릭하면 삭제할 수 있습니다.
-              </div>
-              {slotsForSelectedDay.length === 0 ? (
-                <div className="text-gray-400 py-4 text-center">
-                  이 날에는 예약 슬롯이 없습니다.
+                }}
+                onTouchStart={(event) => {
+                  // Handle touch events for mobile calendar
+                  const target = event.target as HTMLElement;
+                  const dateElement = target.closest("[data-day]");
+                  if (dateElement) {
+                    const dateAttr = dateElement.getAttribute("data-day");
+                    if (dateAttr) {
+                      const now = Date.now();
+                      const lastTouch = calendarTouchRef.current[dateAttr];
+
+                      if (lastTouch && now - lastTouch < 300) {
+                        // Double tap detected
+                        event.preventDefault();
+                        event.stopPropagation();
+                        console.log(
+                          "Calendar double tap detected for date:",
+                          dateAttr
+                        );
+                        handleCalendarDoubleTap(dateAttr);
+                        calendarTouchRef.current[dateAttr] = 0; // Reset
+                      } else {
+                        calendarTouchRef.current[dateAttr] = now;
+                      }
+                    }
+                  }
+                }}
+              >
+                <div>
+                  {isRangeMode ? (
+                    <DayPicker
+                      mode="range"
+                      selected={selectedRange}
+                      onSelect={setSelectedRange}
+                      locale={ko}
+                      weekStartsOn={0}
+                      modifiers={{
+                        hasSlots: Object.keys(slotCountByDate).map(
+                          (d) => new Date(d)
+                        ),
+                        pastDates: pastDates,
+                      }}
+                      modifiersClassNames={{
+                        selected: "bg-black text-white",
+                        today: "text-green-600 font-bold",
+                        range_start: "bg-black text-white",
+                        range_end: "bg-black text-white",
+                        range_middle: "bg-black text-white opacity-80",
+                        hasSlots: "has-slots",
+                        pastDates: "past-dates",
+                      }}
+                      className="mx-auto w-full max-w-xs sm:max-w-md"
+                      styles={{
+                        caption: {
+                          textAlign: "center",
+                          fontSize: "1.5rem",
+                          fontWeight: 700,
+                          marginBottom: "1rem",
+                        },
+                        head_row: { fontWeight: 500, color: "#888" },
+                        cell: { padding: "0.5rem" },
+                      }}
+                      showOutsideDays={false}
+                      required={false}
+                      components={{
+                        Day: CustomDay,
+                      }}
+                    />
+                  ) : (
+                    <DayPicker
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date: Date | undefined) =>
+                        setSelectedDate(date)
+                      }
+                      locale={ko}
+                      weekStartsOn={0}
+                      modifiers={{
+                        hasSlots: Object.keys(slotCountByDate).map(
+                          (d) => new Date(d)
+                        ),
+                        pastDates: pastDates,
+                      }}
+                      modifiersClassNames={{
+                        selected: "bg-green-500 text-white rounded-lg",
+                        today: "text-green-600 font-bold",
+                        hasSlots: "has-slots",
+                        pastDates: "past-dates",
+                      }}
+                      className="mx-auto w-full max-w-xs sm:max-w-md"
+                      styles={{
+                        caption: {
+                          textAlign: "center",
+                          fontSize: "1.5rem",
+                          fontWeight: 700,
+                          marginBottom: "1rem",
+                        },
+                        head_row: { fontWeight: 500, color: "#888" },
+                        cell: { padding: "0.5rem" },
+                      }}
+                      showOutsideDays={false}
+                      required={false}
+                      components={{
+                        Day: CustomDay,
+                      }}
+                    />
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-wrap justify-center gap-2">
-                  {slotsForSelectedDay.map((slot) => {
-                    const reservation = reservations.find(
-                      (r) => r.slotId === slot.id
-                    );
-                    return (
-                      <div
-                        key={slot.id}
-                        className="relative flex min-w-[110px] flex-col items-center"
-                      >
-                        <button
-                          className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
-                          onClick={(event) => {
-                            handleSingleClickSlot(slot, event);
-                          }}
-                          onDoubleClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            if (window.confirm("이 슬롯을 삭제하시겠습니까?")) {
-                              handleDeleteSlot(slot.id);
-                            }
-                          }}
-                          onTouchStart={(event) => {
-                            const now = Date.now();
-                            const lastTouch = slotTouchRef.current[slot.id];
-                            if (lastTouch && now - lastTouch < 300) {
+              </div>
+              {/* Time slots for selected day */}
+              <div className="mt-6 w-full">
+                <div className="text-gray-700 mb-2 text-sm font-semibold">
+                  예약 슬롯
+                </div>
+                <div className="text-gray-500 mb-3 text-xs">
+                  슬롯을 더블클릭하면 삭제할 수 있습니다.
+                </div>
+                {slotsForSelectedDay.length === 0 ? (
+                  <div className="text-gray-400 py-4 text-center">
+                    이 날에는 예약 슬롯이 없습니다.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {slotsForSelectedDay.map((slot) => {
+                      const reservation = reservations.find(
+                        (r) => r.slotId === slot.id
+                      );
+                      return (
+                        <div
+                          key={slot.id}
+                          className="relative flex min-w-[110px] flex-col items-center"
+                        >
+                          <button
+                            className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
+                            onClick={(event) => {
+                              handleSingleClickSlot(slot, event);
+                            }}
+                            onDoubleClick={(event) => {
                               event.preventDefault();
                               event.stopPropagation();
                               if (
@@ -810,397 +909,550 @@ export default function SlotManagement() {
                               ) {
                                 handleDeleteSlot(slot.id);
                               }
-                              slotTouchRef.current[slot.id] = 0;
-                            } else {
-                              slotTouchRef.current[slot.id] = now;
-                            }
-                          }}
-                          title="더블클릭/더블탭하여 삭제"
-                        >
-                          {new Date(slot.start).toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </button>
-                        {/* 예약자 이름 badge below the button */}
-                        {slot.status === "booked" && reservation && (
-                          <>
-                            <span
-                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
-                              onClick={() => setPopoverOpenSlotId(slot.id)}
-                              tabIndex={0}
-                              role="button"
-                              onKeyDown={(event) => {
+                            }}
+                            onTouchStart={(event) => {
+                              const now = Date.now();
+                              const lastTouch = slotTouchRef.current[slot.id];
+                              if (lastTouch && now - lastTouch < 300) {
+                                event.preventDefault();
+                                event.stopPropagation();
                                 if (
-                                  event.key === "Enter" ||
-                                  event.key === " "
+                                  window.confirm("이 슬롯을 삭제하시겠습니까?")
                                 ) {
-                                  setPopoverOpenSlotId(slot.id);
+                                  handleDeleteSlot(slot.id);
                                 }
-                              }}
-                            >
-                              {kycNames[reservation.userId] ||
-                                reservation.userName ||
-                                "-"}
-                            </span>
-                            {popoverOpenSlotId === slot.id && (
-                              <div
-                                ref={popoverRef}
-                                className="w-72 border-green-200 shadow-xl fixed left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-xl border bg-white p-4"
-                                style={{ minWidth: 260 }}
+                                slotTouchRef.current[slot.id] = 0;
+                              } else {
+                                slotTouchRef.current[slot.id] = now;
+                              }
+                            }}
+                            title="더블클릭/더블탭하여 삭제"
+                          >
+                            {new Date(slot.start).toLocaleTimeString("ko-KR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </button>
+                          {/* 예약자 이름 badge below the button */}
+                          {slot.status === "booked" && reservation && (
+                            <>
+                              <span
+                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                                onClick={() => setPopoverOpenSlotId(slot.id)}
+                                tabIndex={0}
+                                role="button"
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                  ) {
+                                    setPopoverOpenSlotId(slot.id);
+                                  }
+                                }}
                               >
-                                <div className="text-green-700 mb-1 text-lg font-bold">
-                                  {kycNames[reservation.userId] ||
-                                    reservation.userName ||
-                                    "-"}
+                                {kycNames[reservation.userId] ||
+                                  reservation.userName ||
+                                  "-"}
+                              </span>
+                              {popoverOpenSlotId === slot.id && (
+                                <div
+                                  ref={popoverRef}
+                                  className="w-72 border-green-200 shadow-xl fixed left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-xl border bg-white p-4"
+                                  style={{ minWidth: 260 }}
+                                >
+                                  <div className="text-green-700 mb-1 text-lg font-bold">
+                                    {kycNames[reservation.userId] ||
+                                      reservation.userName ||
+                                      "-"}
+                                  </div>
+                                  <div className="text-green-600 mb-1 break-all text-sm">
+                                    {reservation.userEmail}
+                                  </div>
+                                  <div className="text-green-600 mb-1 break-all text-sm">
+                                    연락처:{" "}
+                                    {kycContacts[reservation.userId] || "-"}
+                                  </div>
+                                  <div className="text-gray-500 mb-1 text-xs">
+                                    예약 생성:{" "}
+                                    {reservation.createdAt
+                                      ? new Date(
+                                          reservation.createdAt
+                                        ).toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "2-digit",
+                                          day: "2-digit",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </div>
+                                  {/* Eyebrow photo */}
+                                  {reservation.userId && (
+                                    <KycPhoto userId={reservation.userId} />
+                                  )}
                                 </div>
-                                <div className="text-green-600 mb-1 break-all text-sm">
-                                  {reservation.userEmail}
-                                </div>
-                                <div className="text-green-600 mb-1 break-all text-sm">
-                                  연락처:{" "}
-                                  {kycContacts[reservation.userId] || "-"}
-                                </div>
-                                <div className="text-gray-500 mb-1 text-xs">
-                                  예약 생성:{" "}
-                                  {reservation.createdAt
-                                    ? new Date(
-                                        reservation.createdAt
-                                      ).toLocaleString("ko-KR", {
-                                        year: "numeric",
-                                        month: "2-digit",
-                                        day: "2-digit",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })
-                                    : "-"}
-                                </div>
-                                {/* Eyebrow photo */}
-                                {reservation.userId && (
-                                  <KycPhoto userId={reservation.userId} />
-                                )}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Slot Dialog (existing code) */}
-          <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>새 슬롯 추가</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={handleCreateSlot}
-                className="w-full max-w-full space-y-4 pb-4"
-              >
-                <div className="flex gap-4">
-                  {/* Custom Toggle Switch for Slot Type */}
-                  <div className="bg-gray-100 flex items-center rounded-full p-1">
-                    <button
-                      type="button"
-                      className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
-                        slotType === "custom"
-                          ? "bg-green-500 shadow text-white"
-                          : "text-gray-700 hover:bg-gray-200"
-                      }`}
-                      onClick={() => setSlotType("custom")}
-                      aria-pressed={slotType === "custom"}
-                    >
-                      맞춤 슬롯
-                    </button>
-                    <button
-                      type="button"
-                      className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
-                        slotType === "recurring"
-                          ? "bg-green-500 shadow text-white"
-                          : "text-gray-700 hover:bg-gray-200"
-                      }`}
-                      onClick={() => setSlotType("recurring")}
-                      aria-pressed={slotType === "recurring"}
-                    >
-                      반복 슬롯
-                    </button>
-                  </div>
-                </div>
-                {slotType === "custom" ? (
-                  <div className="flex flex-col gap-4">
-                    <label className="mb-1 font-medium">시작 시간</label>
-                    <div className="flex flex-col gap-2">
-                      <div className="mb-2 flex items-center justify-center gap-2">
-                        <input
-                          type="date"
-                          value={
-                            customSlotDate
-                              ? format(customSlotDate, "yyyy-MM-dd")
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const d = new Date(e.target.value);
-                            setCustomSlotDate(d);
-                          }}
-                          className="text-base rounded border px-2 py-1"
-                        />
-                        <select
-                          value={customSlotHour}
-                          onChange={(e) =>
-                            setCustomSlotHour(Number(e.target.value))
-                          }
-                          className="text-base rounded border px-2 py-1"
-                        >
-                          {[...Array(24).keys()].map((h) => (
-                            <option key={h} value={h}>
-                              {h.toString().padStart(2, "0")}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="text-lg font-bold">:</span>
-                        <select
-                          value={customSlotMinute}
-                          onChange={(e) =>
-                            setCustomSlotMinute(Number(e.target.value))
-                          }
-                          className="text-base rounded border px-2 py-1"
-                        >
-                          {[0, 30].map((m) => (
-                            <option key={m} value={m}>
-                              {m.toString().padStart(2, "0")}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <label className="font-medium">간격</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
-                      {[
-                        { label: "30분", value: 30 },
-                        { label: "1시간", value: 60 },
-                        { label: "1.5시간", value: 90 },
-                        { label: "2시간", value: 120 },
-                        { label: "2.5시간", value: 150 },
-                        { label: "3시간", value: 180 },
-                        { label: "3.5시간", value: 210 },
-                        { label: "4시간", value: 240 },
-                      ].map((option) => (
-                        <Button
-                          key={option.value}
-                          type="button"
-                          variant={
-                            customSlot.duration === option.value
-                              ? "default"
-                              : "outline"
-                          }
-                          className={`text-xs sm:text-sm ${
-                            customSlot.duration === option.value
-                              ? "bg-green-500 text-white"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            setCustomSlot({
-                              ...customSlot,
-                              duration: option.value,
-                            })
-                          }
-                        >
-                          {option.label}
-                        </Button>
-                      ))}
-                    </div>
-                    <label className="font-medium">슬롯 개수</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <Button
-                          key={num}
-                          type="button"
-                          variant={
-                            customSlot.numberOfSlots === num
-                              ? "default"
-                              : "outline"
-                          }
-                          className={`text-xs sm:text-sm ${
-                            customSlot.numberOfSlots === num
-                              ? "bg-green-500 text-white"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            setCustomSlot({
-                              ...customSlot,
-                              numberOfSlots: num,
-                            })
-                          }
-                        >
-                          {num}개
-                        </Button>
-                      ))}
+            {/* Slot Dialog (existing code) */}
+            <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>새 슬롯 추가</DialogTitle>
+                </DialogHeader>
+                <form
+                  onSubmit={handleCreateSlot}
+                  className="w-full max-w-full space-y-4 pb-4"
+                >
+                  <div className="flex gap-4">
+                    {/* Custom Toggle Switch for Slot Type */}
+                    <div className="bg-gray-100 flex items-center rounded-full p-1">
+                      <button
+                        type="button"
+                        className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
+                          slotType === "custom"
+                            ? "bg-green-500 shadow text-white"
+                            : "text-gray-700 hover:bg-gray-200"
+                        }`}
+                        onClick={() => setSlotType("custom")}
+                        aria-pressed={slotType === "custom"}
+                      >
+                        맞춤 슬롯
+                      </button>
+                      <button
+                        type="button"
+                        className={`focus:ring-green-400 text-base rounded-full px-5 py-2 font-semibold transition focus:outline-none focus:ring-2 ${
+                          slotType === "recurring"
+                            ? "bg-green-500 shadow text-white"
+                            : "text-gray-700 hover:bg-gray-200"
+                        }`}
+                        onClick={() => setSlotType("recurring")}
+                        aria-pressed={slotType === "recurring"}
+                      >
+                        반복 슬롯
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {/* 날짜 범위 표시 (읽기 전용) */}
-                    {recurringSlot.startDate && recurringSlot.endDate && (
-                      <div className="mb-2 flex items-end gap-2">
-                        <div className="flex flex-col text-xs font-medium">
-                          <span>시작일</span>
-                          <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
-                            {recurringSlot.startDate
-                              ? recurringSlot.startDate
-                              : ""}
-                          </div>
-                        </div>
-                        <div className="flex flex-col text-xs font-medium">
-                          <span>종료일</span>
-                          <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
-                            {recurringSlot.endDate ? recurringSlot.endDate : ""}
-                          </div>
+                  {slotType === "custom" ? (
+                    <div className="flex flex-col gap-4">
+                      <label className="mb-1 font-medium">시작 시간</label>
+                      <div className="flex flex-col gap-2">
+                        <div className="mb-2 flex items-center justify-center gap-2">
+                          <input
+                            type="date"
+                            value={
+                              customSlotDate
+                                ? format(customSlotDate, "yyyy-MM-dd")
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const d = new Date(e.target.value);
+                              setCustomSlotDate(d);
+                            }}
+                            className="text-base rounded border px-2 py-1"
+                          />
+                          <select
+                            value={customSlotHour}
+                            onChange={(e) =>
+                              setCustomSlotHour(Number(e.target.value))
+                            }
+                            className="text-base rounded border px-2 py-1"
+                          >
+                            {[...Array(24).keys()].map((h) => (
+                              <option key={h} value={h}>
+                                {h.toString().padStart(2, "0")}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-lg font-bold">:</span>
+                          <select
+                            value={customSlotMinute}
+                            onChange={(e) =>
+                              setCustomSlotMinute(Number(e.target.value))
+                            }
+                            className="text-base rounded border px-2 py-1"
+                          >
+                            {[0, 30].map((m) => (
+                              <option key={m} value={m}>
+                                {m.toString().padStart(2, "0")}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
-                    )}
-                    {/* 요일 선택 */}
-                    <label className="font-medium">요일 선택</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
-                      {["일", "월", "화", "수", "목", "금", "토"].map(
-                        (day, idx) => (
+                      <label className="font-medium">간격</label>
+                      <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
+                        {[
+                          { label: "30분", value: 30 },
+                          { label: "1시간", value: 60 },
+                          { label: "1.5시간", value: 90 },
+                          { label: "2시간", value: 120 },
+                          { label: "2.5시간", value: 150 },
+                          { label: "3시간", value: 180 },
+                          { label: "3.5시간", value: 210 },
+                          { label: "4시간", value: 240 },
+                        ].map((option) => (
                           <Button
-                            key={day}
+                            key={option.value}
                             type="button"
                             variant={
-                              recurringSlot.daysOfWeek.includes(idx)
+                              customSlot.duration === option.value
                                 ? "default"
                                 : "outline"
                             }
                             className={`text-xs sm:text-sm ${
-                              recurringSlot.daysOfWeek.includes(idx)
+                              customSlot.duration === option.value
                                 ? "bg-green-500 text-white"
                                 : ""
                             }`}
-                            onClick={() => {
-                              setRecurringSlot((prev) => ({
-                                ...prev,
-                                daysOfWeek: prev.daysOfWeek.includes(idx)
-                                  ? prev.daysOfWeek.filter((d) => d !== idx)
-                                  : [...prev.daysOfWeek, idx],
-                              }));
-                            }}
+                            onClick={() =>
+                              setCustomSlot({
+                                ...customSlot,
+                                duration: option.value,
+                              })
+                            }
                           >
-                            {day}
+                            {option.label}
                           </Button>
-                        )
+                        ))}
+                      </div>
+                      <label className="font-medium">슬롯 개수</label>
+                      <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-2">
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <Button
+                            key={num}
+                            type="button"
+                            variant={
+                              customSlot.numberOfSlots === num
+                                ? "default"
+                                : "outline"
+                            }
+                            className={`text-xs sm:text-sm ${
+                              customSlot.numberOfSlots === num
+                                ? "bg-green-500 text-white"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              setCustomSlot({
+                                ...customSlot,
+                                numberOfSlots: num,
+                              })
+                            }
+                          >
+                            {num}개
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {/* 날짜 범위 표시 (읽기 전용) */}
+                      {recurringSlot.startDate && recurringSlot.endDate && (
+                        <div className="mb-2 flex items-end gap-2">
+                          <div className="flex flex-col text-xs font-medium">
+                            <span>시작일</span>
+                            <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
+                              {recurringSlot.startDate
+                                ? recurringSlot.startDate
+                                : ""}
+                            </div>
+                          </div>
+                          <div className="flex flex-col text-xs font-medium">
+                            <span>종료일</span>
+                            <div className="bg-gray-100 rounded border px-2 py-1 text-sm">
+                              {recurringSlot.endDate
+                                ? recurringSlot.endDate
+                                : ""}
+                            </div>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                    {/* 시작/종료 시간 */}
-                    <label>
-                      시작 시간 (HH:MM)
-                      <Input
-                        type="time"
-                        value={recurringSlot.startTime}
-                        onChange={(e) =>
-                          setRecurringSlot({
-                            ...recurringSlot,
-                            startTime: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full max-w-full"
-                      />
-                    </label>
-                    <label>
-                      종료 시간 (HH:MM)
-                      <Input
-                        type="time"
-                        value={recurringSlot.endTime}
-                        onChange={(e) =>
-                          setRecurringSlot({
-                            ...recurringSlot,
-                            endTime: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full max-w-full"
-                      />
-                    </label>
-                    {/* 간격 선택 */}
-                    <label className="font-medium">간격</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
-                      {[
-                        { label: "30분", value: 30 },
-                        { label: "1시간", value: 60 },
-                        { label: "1.5시간", value: 90 },
-                        { label: "2시간", value: 120 },
-                        { label: "2.5시간", value: 150 },
-                        { label: "3시간", value: 180 },
-                        { label: "3.5시간", value: 210 },
-                        { label: "4시간", value: 240 },
-                      ].map((option) => (
-                        <Button
-                          key={option.value}
-                          type="button"
-                          variant={
-                            recurringSlot.intervalMinutes === option.value
-                              ? "default"
-                              : "outline"
-                          }
-                          className={`text-xs sm:text-sm ${
-                            recurringSlot.intervalMinutes === option.value
-                              ? "bg-green-500 text-white"
-                              : ""
-                          }`}
-                          onClick={() =>
+                      {/* 요일 선택 */}
+                      <label className="font-medium">요일 선택</label>
+                      <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
+                        {["일", "월", "화", "수", "목", "금", "토"].map(
+                          (day, idx) => (
+                            <Button
+                              key={day}
+                              type="button"
+                              variant={
+                                recurringSlot.daysOfWeek.includes(idx)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className={`text-xs sm:text-sm ${
+                                recurringSlot.daysOfWeek.includes(idx)
+                                  ? "bg-green-500 text-white"
+                                  : ""
+                              }`}
+                              onClick={() => {
+                                setRecurringSlot((prev) => ({
+                                  ...prev,
+                                  daysOfWeek: prev.daysOfWeek.includes(idx)
+                                    ? prev.daysOfWeek.filter((d) => d !== idx)
+                                    : [...prev.daysOfWeek, idx],
+                                }));
+                              }}
+                            >
+                              {day}
+                            </Button>
+                          )
+                        )}
+                      </div>
+                      {/* 시작/종료 시간 */}
+                      <label>
+                        시작 시간 (HH:MM)
+                        <Input
+                          type="time"
+                          value={recurringSlot.startTime}
+                          onChange={(e) =>
                             setRecurringSlot({
                               ...recurringSlot,
-                              intervalMinutes: option.value,
+                              startTime: e.target.value,
                             })
                           }
-                        >
-                          {option.label}
-                        </Button>
-                      ))}
-                    </div>
-                    {/* 슬롯 개수 section ... */}
-                    <label className="font-medium">슬롯 개수</label>
-                    <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <Button
-                          key={num}
-                          type="button"
-                          variant={
-                            recurringSlot.numberOfSlots === num
-                              ? "default"
-                              : "outline"
-                          }
-                          className={`text-xs sm:text-sm ${
-                            recurringSlot.numberOfSlots === num
-                              ? "bg-green-500 text-white"
-                              : ""
-                          }`}
-                          onClick={() =>
+                          required
+                          className="w-full max-w-full"
+                        />
+                      </label>
+                      <label>
+                        종료 시간 (HH:MM)
+                        <Input
+                          type="time"
+                          value={recurringSlot.endTime}
+                          onChange={(e) =>
                             setRecurringSlot({
                               ...recurringSlot,
-                              numberOfSlots: num,
+                              endTime: e.target.value,
                             })
                           }
-                        >
-                          {num}개
-                        </Button>
-                      ))}
+                          required
+                          className="w-full max-w-full"
+                        />
+                      </label>
+                      {/* 간격 선택 */}
+                      <label className="font-medium">간격</label>
+                      <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
+                        {[
+                          { label: "30분", value: 30 },
+                          { label: "1시간", value: 60 },
+                          { label: "1.5시간", value: 90 },
+                          { label: "2시간", value: 120 },
+                          { label: "2.5시간", value: 150 },
+                          { label: "3시간", value: 180 },
+                          { label: "3.5시간", value: 210 },
+                          { label: "4시간", value: 240 },
+                        ].map((option) => (
+                          <Button
+                            key={option.value}
+                            type="button"
+                            variant={
+                              recurringSlot.intervalMinutes === option.value
+                                ? "default"
+                                : "outline"
+                            }
+                            className={`text-xs sm:text-sm ${
+                              recurringSlot.intervalMinutes === option.value
+                                ? "bg-green-500 text-white"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              setRecurringSlot({
+                                ...recurringSlot,
+                                intervalMinutes: option.value,
+                              })
+                            }
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                      {/* 슬롯 개수 section ... */}
+                      <label className="font-medium">슬롯 개수</label>
+                      <div className="mb-2 flex w-full max-w-full flex-wrap justify-center gap-1 sm:gap-2">
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <Button
+                            key={num}
+                            type="button"
+                            variant={
+                              recurringSlot.numberOfSlots === num
+                                ? "default"
+                                : "outline"
+                            }
+                            className={`text-xs sm:text-sm ${
+                              recurringSlot.numberOfSlots === num
+                                ? "bg-green-500 text-white"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              setRecurringSlot({
+                                ...recurringSlot,
+                                numberOfSlots: num,
+                              })
+                            }
+                          >
+                            {num}개
+                          </Button>
+                        ))}
+                      </div>
                     </div>
+                  )}
+                  <DialogFooter>
+                    <Button type="submit" disabled={isSlotSubmitting}>
+                      추가
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        ) : (
+          /* Calendar View */
+          <div className="mx-auto w-full max-w-6xl">
+            <div className="shadow-lg rounded-xl bg-white p-6">
+              <div className="mb-6">
+                <h2 className="text-gray-900 mb-2 text-xl font-semibold">
+                  전체 월 캘린더
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  각 날짜에 예약자 정보가 표시됩니다.
+                </p>
+              </div>
+
+              {/* Calendar Navigation */}
+              <div className="mb-4 flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newDate = new Date(selectedDate || new Date());
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    setSelectedDate(newDate);
+                  }}
+                >
+                  이전 달
+                </Button>
+                <div className="text-lg font-semibold">
+                  {selectedDate
+                    ? format(selectedDate, "yyyy년 M월", { locale: ko })
+                    : "현재 월"}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newDate = new Date(selectedDate || new Date());
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    setSelectedDate(newDate);
+                  }}
+                >
+                  다음 달
+                </Button>
+              </div>
+
+              {/* Full Month Calendar */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Day headers */}
+                {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+                  <div
+                    key={day}
+                    className="text-gray-700 bg-gray-50 rounded p-2 text-center font-semibold"
+                  >
+                    {day}
                   </div>
-                )}
-                <DialogFooter>
-                  <Button type="submit" disabled={isSlotSubmitting}>
-                    추가
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                ))}
+
+                {/* Calendar days */}
+                {(() => {
+                  const year =
+                    selectedDate?.getFullYear() || new Date().getFullYear();
+                  const month =
+                    selectedDate?.getMonth() || new Date().getMonth();
+                  const firstDay = new Date(year, month, 1);
+                  const lastDay = new Date(year, month + 1, 0);
+                  const startDate = new Date(firstDay);
+                  startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+                  const days = [];
+                  const currentDate = new Date(startDate);
+
+                  while (currentDate <= lastDay || currentDate.getDay() !== 0) {
+                    const dateStr = currentDate.toISOString().slice(0, 10);
+                    const dayReservations = reservations.filter(
+                      (reservation) => {
+                        // Find slot for this reservation
+                        const slot = slots.find(
+                          (s) => s.id === reservation.slotId
+                        );
+                        if (!slot) return false;
+                        const slotDate = new Date(slot.start);
+                        return (
+                          slotDate.toDateString() === currentDate.toDateString()
+                        );
+                      }
+                    );
+
+                    const isCurrentMonth = currentDate.getMonth() === month;
+                    const isToday =
+                      currentDate.toDateString() === new Date().toDateString();
+
+                    days.push(
+                      <div
+                        key={dateStr}
+                        className={`min-h-[100px] rounded-lg border p-2 ${
+                          isCurrentMonth
+                            ? "bg-white"
+                            : "bg-gray-50 text-gray-400"
+                        } ${isToday ? "ring-blue-500 ring-2" : ""}`}
+                      >
+                        <div
+                          className={`mb-1 text-sm font-medium ${
+                            isToday ? "text-blue-600" : ""
+                          }`}
+                        >
+                          {currentDate.getDate()}
+                        </div>
+                        {isCurrentMonth && dayReservations.length > 0 && (
+                          <div className="space-y-1">
+                            {dayReservations.slice(0, 3).map((reservation) => (
+                              <div
+                                key={reservation.id}
+                                className="bg-blue-100 text-blue-800 py-0.5 truncate rounded px-1 text-xs"
+                                title={`${
+                                  kycNames[reservation.userId] || "Unknown"
+                                } - ${format(
+                                  new Date(reservation.createdAt),
+                                  "HH:mm"
+                                )}`}
+                              >
+                                {kycNames[reservation.userId] || "Unknown"}
+                              </div>
+                            ))}
+                            {dayReservations.length > 3 && (
+                              <div className="text-gray-500 text-xs">
+                                +{dayReservations.length - 3} more
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+
+                    currentDate.setDate(currentDate.getDate() + 1);
+                  }
+
+                  return days;
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
         {isRangeMode && selectedRange?.from && selectedRange?.to && (
           <>
             {/* Slot count selection UI */}
