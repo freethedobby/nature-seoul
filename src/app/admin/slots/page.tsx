@@ -54,6 +54,13 @@ interface ReservationData {
   userId: string;
   userEmail: string;
   userName?: string;
+  status:
+    | "pending"
+    | "payment_required"
+    | "payment_confirmed"
+    | "approved"
+    | "rejected"
+    | "cancelled";
   createdAt: Date;
 }
 
@@ -348,15 +355,19 @@ export default function SlotManagement() {
       const userIds = new Set<string>();
       snap.forEach((docData) => {
         const data = docData.data();
-        resList.push({
-          id: docData.id,
-          slotId: data.slotId,
-          userId: data.userId,
-          userEmail: data.userEmail,
-          userName: data.userName,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-        });
-        if (data.userId) userIds.add(data.userId);
+        // Only include approved reservations
+        if (data.status === "approved") {
+          resList.push({
+            id: docData.id,
+            slotId: data.slotId,
+            userId: data.userId,
+            userEmail: data.userEmail,
+            userName: data.userName,
+            status: data.status,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
+          if (data.userId) userIds.add(data.userId);
+        }
       });
       setReservations(resList);
       // Fetch KYC names and contacts for all userIds
@@ -396,15 +407,19 @@ export default function SlotManagement() {
 
       snapshot.forEach((docData) => {
         const data = docData.data();
-        resList.push({
-          id: docData.id,
-          slotId: data.slotId,
-          userId: data.userId,
-          userEmail: data.userEmail,
-          userName: data.userName,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-        });
-        if (data.userId) userIds.add(data.userId);
+        // Only include approved reservations
+        if (data.status === "approved") {
+          resList.push({
+            id: docData.id,
+            slotId: data.slotId,
+            userId: data.userId,
+            userEmail: data.userEmail,
+            userName: data.userName,
+            status: data.status,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
+          if (data.userId) userIds.add(data.userId);
+        }
       });
 
       // Fetch KYC names for all userIds
