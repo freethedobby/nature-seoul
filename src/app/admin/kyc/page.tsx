@@ -638,6 +638,16 @@ export default function KYCDashboard() {
         } 예약이 삭제되었습니다. 사유: ${reservationDeleteReason.trim()}`,
       });
 
+      // Create user notification
+      await createNotification({
+        userId: reservation.userId,
+        type: "reservation_cancelled",
+        title: "예약 삭제 안내",
+        message: `${reservation.date} ${
+          reservation.time
+        } 예약이 관리자에 의해 삭제되었습니다. 사유: ${reservationDeleteReason.trim()}`,
+      });
+
       // Send email notification to user
       try {
         await fetch("/api/email/send", {

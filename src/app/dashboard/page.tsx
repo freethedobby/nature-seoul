@@ -262,7 +262,8 @@ export default function DashboardPage() {
 
     const q = query(
       collection(db, "reservations"),
-      where("userId", "==", user.uid)
+      where("userId", "==", user.uid),
+      where("status", "!=", "cancelled") // 취소된 예약 제외
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
