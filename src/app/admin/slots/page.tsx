@@ -184,6 +184,19 @@ export default function SlotManagement() {
   const [kycNames, setKycNames] = useState<Record<string, string>>({});
   const [kycContacts, setKycContacts] = useState<Record<string, string>>({});
 
+  // Add calendar view mode state
+  const [calendarViewMode, setCalendarViewMode] = useState<
+    "day" | "week" | "month"
+  >("month");
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(
+    new Date()
+  );
+  const [showReservationDetail, setShowReservationDetail] = useState(false);
+  const [selectedReservationDetail, setSelectedReservationDetail] = useState<{
+    date: Date;
+    reservations: ReservationData[];
+  } | null>(null);
+
   // Click-away handler for popover
   useEffect(() => {
     if (!popoverOpenSlotId) return;
@@ -1316,114 +1329,285 @@ export default function SlotManagement() {
           </div>
         ) : (
           /* Calendar View */
-          <div className="mx-auto w-full max-w-6xl">
-            <div className="shadow-lg rounded-xl bg-white p-6">
-              <div className="mb-6">
-                <h2 className="text-gray-900 mb-2 text-xl font-semibold">
-                  전체 월 캘린더
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+            <div className="shadow-lg rounded-xl bg-white p-4 sm:p-6">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-gray-900 mb-2 text-lg font-semibold sm:text-xl">
+                  예약 캘린더
                 </h2>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 text-xs sm:text-sm">
                   각 날짜에 예약자 정보가 표시됩니다.
                 </p>
               </div>
 
-              {/* Calendar Navigation */}
-              <div className="mb-4 flex items-center justify-between">
+              {/* Calendar View Mode Toggle */}
+              <div className="mb-4 flex flex-wrap gap-2">
                 <Button
-                  variant="outline"
-                  onClick={() => {
-                    const newDate = new Date(selectedDate || new Date());
-                    newDate.setMonth(newDate.getMonth() - 1);
-                    setSelectedDate(newDate);
-                  }}
+                  variant={calendarViewMode === "day" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCalendarViewMode("day")}
+                  className="text-xs sm:text-sm"
                 >
-                  이전 달
+                  일간
                 </Button>
-                <div className="text-lg font-semibold">
-                  {selectedDate
-                    ? format(selectedDate, "yyyy년 M월", { locale: ko })
-                    : "현재 월"}
-                </div>
                 <Button
-                  variant="outline"
-                  onClick={() => {
-                    const newDate = new Date(selectedDate || new Date());
-                    newDate.setMonth(newDate.getMonth() + 1);
-                    setSelectedDate(newDate);
-                  }}
+                  variant={calendarViewMode === "week" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCalendarViewMode("week")}
+                  className="text-xs sm:text-sm"
                 >
-                  다음 달
+                  주간
+                </Button>
+                <Button
+                  variant={calendarViewMode === "month" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCalendarViewMode("month")}
+                  className="text-xs sm:text-sm"
+                >
+                  월간
                 </Button>
               </div>
 
-              {/* Full Month Calendar */}
-              <div className="grid grid-cols-7 gap-1">
-                {/* Day headers */}
-                {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
-                  <div
-                    key={day}
-                    className="text-gray-700 bg-gray-50 rounded p-2 text-center font-semibold"
-                  >
-                    {day}
-                  </div>
-                ))}
-
-                {/* Calendar days */}
-                {(() => {
-                  const year =
-                    selectedDate?.getFullYear() || new Date().getFullYear();
-                  const month =
-                    selectedDate?.getMonth() || new Date().getMonth();
-                  const firstDay = new Date(year, month, 1);
-                  const lastDay = new Date(year, month + 1, 0);
-                  const startDate = new Date(firstDay);
-                  startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-                  const days = [];
-                  const currentDate = new Date(startDate);
-
-                  while (currentDate <= lastDay || currentDate.getDay() !== 0) {
-                    const dateStr = currentDate.toISOString().slice(0, 10);
-                    const dayReservations = reservations.filter(
-                      (reservation) => {
-                        // Find slot for this reservation
-                        const slot = slots.find(
-                          (s) => s.id === reservation.slotId
-                        );
-                        if (!slot) return false;
-                        const slotDate = new Date(slot.start);
-                        return (
-                          slotDate.toDateString() === currentDate.toDateString()
-                        );
+              {/* Calendar Navigation */}
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(selectedCalendarDate);
+                      if (calendarViewMode === "day") {
+                        newDate.setDate(newDate.getDate() - 1);
+                      } else if (calendarViewMode === "week") {
+                        newDate.setDate(newDate.getDate() - 7);
+                      } else {
+                        newDate.setMonth(newDate.getMonth() - 1);
                       }
-                    );
+                      setSelectedCalendarDate(newDate);
+                    }}
+                    className="text-xs sm:text-sm"
+                  >
+                    이전
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedCalendarDate(new Date())}
+                    className="bg-green-50 text-green-700 hover:bg-green-100 text-xs sm:text-sm"
+                  >
+                    오늘
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(selectedCalendarDate);
+                      if (calendarViewMode === "day") {
+                        newDate.setDate(newDate.getDate() + 1);
+                      } else if (calendarViewMode === "week") {
+                        newDate.setDate(newDate.getDate() + 7);
+                      } else {
+                        newDate.setMonth(newDate.getMonth() + 1);
+                      }
+                      setSelectedCalendarDate(newDate);
+                    }}
+                    className="text-xs sm:text-sm"
+                  >
+                    다음
+                  </Button>
+                </div>
+                <div className="text-center text-sm font-semibold sm:text-left sm:text-lg">
+                  {calendarViewMode === "day" &&
+                    format(selectedCalendarDate, "yyyy년 M월 d일", {
+                      locale: ko,
+                    })}
+                  {calendarViewMode === "week" &&
+                    `${format(selectedCalendarDate, "yyyy년 M월", {
+                      locale: ko,
+                    })} ${Math.ceil(selectedCalendarDate.getDate() / 7)}주차`}
+                  {calendarViewMode === "month" &&
+                    format(selectedCalendarDate, "yyyy년 M월", { locale: ko })}
+                </div>
+              </div>
 
-                    const isCurrentMonth = currentDate.getMonth() === month;
-                    const isToday =
-                      currentDate.toDateString() === new Date().toDateString();
+              {/* Calendar Content */}
+              {calendarViewMode === "month" && (
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Day headers */}
+                  {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+                    <div
+                      key={day}
+                      className="text-gray-700 bg-gray-50 rounded p-1 text-center text-xs font-semibold sm:p-2 sm:text-sm"
+                    >
+                      {day}
+                    </div>
+                  ))}
 
-                    days.push(
-                      <div
-                        key={dateStr}
-                        className={`min-h-[100px] rounded-lg border p-2 ${
-                          isCurrentMonth
-                            ? "bg-white"
-                            : "bg-gray-50 text-gray-400"
-                        } ${isToday ? "ring-blue-500 ring-2" : ""}`}
-                      >
+                  {/* Calendar days */}
+                  {(() => {
+                    const year = selectedCalendarDate.getFullYear();
+                    const month = selectedCalendarDate.getMonth();
+                    const firstDay = new Date(year, month, 1);
+                    const lastDay = new Date(year, month + 1, 0);
+                    const startDate = new Date(firstDay);
+                    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+                    const days = [];
+                    const currentDate = new Date(startDate);
+
+                    while (
+                      currentDate <= lastDay ||
+                      currentDate.getDay() !== 0
+                    ) {
+                      const dateStr = currentDate.toISOString().slice(0, 10);
+                      const dayReservations = reservations.filter(
+                        (reservation) => {
+                          const slot = slots.find(
+                            (s) => s.id === reservation.slotId
+                          );
+                          if (!slot) return false;
+                          const slotDate = new Date(slot.start);
+                          return (
+                            slotDate.toDateString() ===
+                            currentDate.toDateString()
+                          );
+                        }
+                      );
+
+                      const isCurrentMonth = currentDate.getMonth() === month;
+                      const isToday =
+                        currentDate.toDateString() ===
+                        new Date().toDateString();
+
+                      days.push(
                         <div
-                          className={`mb-1 text-sm font-medium ${
-                            isToday ? "text-blue-600" : ""
-                          }`}
+                          key={dateStr}
+                          className={`hover:bg-gray-50 min-h-[60px] cursor-pointer rounded-lg border p-1 transition-colors sm:min-h-[80px] sm:p-2 ${
+                            isCurrentMonth
+                              ? "bg-white"
+                              : "bg-gray-50 text-gray-400"
+                          } ${isToday ? "ring-blue-500 ring-2" : ""}`}
+                          onClick={() => {
+                            if (dayReservations.length > 0) {
+                              setSelectedReservationDetail({
+                                date: new Date(currentDate),
+                                reservations: dayReservations,
+                              });
+                              setShowReservationDetail(true);
+                            }
+                          }}
                         >
-                          {currentDate.getDate()}
+                          <div
+                            className={`mb-1 text-xs font-medium sm:text-sm ${
+                              isToday ? "text-blue-600" : ""
+                            }`}
+                          >
+                            {currentDate.getDate()}
+                          </div>
+                          {isCurrentMonth && dayReservations.length > 0 && (
+                            <div className="space-y-0.5 sm:space-y-1">
+                              {dayReservations
+                                .slice(0, 2)
+                                .map((reservation) => (
+                                  <div
+                                    key={reservation.id}
+                                    className="bg-blue-100 text-blue-800 py-0.5 truncate rounded px-1 text-xs"
+                                    title={`${
+                                      kycNames[reservation.userId] || "Unknown"
+                                    } - ${format(
+                                      new Date(reservation.createdAt),
+                                      "HH:mm"
+                                    )}`}
+                                  >
+                                    {kycNames[reservation.userId] || "Unknown"}
+                                  </div>
+                                ))}
+                              {dayReservations.length > 2 && (
+                                <div className="text-gray-500 text-xs">
+                                  +{dayReservations.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        {isCurrentMonth && dayReservations.length > 0 && (
+                      );
+
+                      currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    return days;
+                  })()}
+                </div>
+              )}
+
+              {calendarViewMode === "week" && (
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Day headers */}
+                  {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+                    <div
+                      key={day}
+                      className="text-gray-700 bg-gray-50 rounded p-1 text-center text-xs font-semibold sm:p-2 sm:text-sm"
+                    >
+                      {day}
+                    </div>
+                  ))}
+
+                  {/* Week days */}
+                  {(() => {
+                    const weekStart = new Date(selectedCalendarDate);
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+                    const days = [];
+                    for (let i = 0; i < 7; i++) {
+                      const currentDate = new Date(weekStart);
+                      currentDate.setDate(weekStart.getDate() + i);
+
+                      const dayReservations = reservations.filter(
+                        (reservation) => {
+                          const slot = slots.find(
+                            (s) => s.id === reservation.slotId
+                          );
+                          if (!slot) return false;
+                          const slotDate = new Date(slot.start);
+                          return (
+                            slotDate.toDateString() ===
+                            currentDate.toDateString()
+                          );
+                        }
+                      );
+
+                      const isToday =
+                        currentDate.toDateString() ===
+                        new Date().toDateString();
+
+                      days.push(
+                        <div
+                          key={i}
+                          className={`hover:bg-gray-50 min-h-[120px] cursor-pointer rounded-lg border p-2 transition-colors sm:min-h-[150px] ${
+                            isToday ? "ring-blue-500 ring-2" : ""
+                          }`}
+                          onClick={() => {
+                            if (dayReservations.length > 0) {
+                              setSelectedReservationDetail({
+                                date: new Date(currentDate),
+                                reservations: dayReservations,
+                              });
+                              setShowReservationDetail(true);
+                            }
+                          }}
+                        >
+                          <div
+                            className={`mb-2 text-xs font-medium sm:text-sm ${
+                              isToday ? "text-blue-600" : ""
+                            }`}
+                          >
+                            {format(currentDate, "M/d", { locale: ko })}
+                          </div>
                           <div className="space-y-1">
-                            {dayReservations.slice(0, 3).map((reservation) => (
+                            {dayReservations.map((reservation) => (
                               <div
                                 key={reservation.id}
-                                className="bg-blue-100 text-blue-800 py-0.5 truncate rounded px-1 text-xs"
+                                className="bg-blue-100 text-blue-800 rounded py-1 px-2 text-xs"
                                 title={`${
                                   kycNames[reservation.userId] || "Unknown"
                                 } - ${format(
@@ -1431,28 +1615,168 @@ export default function SlotManagement() {
                                   "HH:mm"
                                 )}`}
                               >
-                                {kycNames[reservation.userId] || "Unknown"}
+                                <div className="font-medium">
+                                  {kycNames[reservation.userId] || "Unknown"}
+                                </div>
+                                <div className="text-blue-600">
+                                  {format(
+                                    new Date(reservation.createdAt),
+                                    "HH:mm"
+                                  )}
+                                </div>
                               </div>
                             ))}
-                            {dayReservations.length > 3 && (
-                              <div className="text-gray-500 text-xs">
-                                +{dayReservations.length - 3} more
-                              </div>
-                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      );
+                    }
+
+                    return days;
+                  })()}
+                </div>
+              )}
+
+              {calendarViewMode === "day" && (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold">
+                      {format(selectedCalendarDate, "yyyy년 M월 d일", {
+                        locale: ko,
+                      })}
+                    </h3>
+                  </div>
+
+                  {(() => {
+                    const dayReservations = reservations.filter(
+                      (reservation) => {
+                        const slot = slots.find(
+                          (s) => s.id === reservation.slotId
+                        );
+                        if (!slot) return false;
+                        const slotDate = new Date(slot.start);
+                        return (
+                          slotDate.toDateString() ===
+                          selectedCalendarDate.toDateString()
+                        );
+                      }
                     );
 
-                    currentDate.setDate(currentDate.getDate() + 1);
-                  }
+                    if (dayReservations.length === 0) {
+                      return (
+                        <div className="text-gray-500 py-8 text-center">
+                          이 날에는 예약이 없습니다.
+                        </div>
+                      );
+                    }
 
-                  return days;
-                })()}
-              </div>
+                    return (
+                      <div className="space-y-3">
+                        {dayReservations.map((reservation) => (
+                          <div
+                            key={reservation.id}
+                            className="bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer rounded-lg border p-4 transition-colors"
+                            onClick={() => {
+                              setSelectedReservationDetail({
+                                date: selectedCalendarDate,
+                                reservations: [reservation],
+                              });
+                              setShowReservationDetail(true);
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-blue-800 font-semibold">
+                                  {kycNames[reservation.userId] || "Unknown"}
+                                </div>
+                                <div className="text-blue-600 text-sm">
+                                  {reservation.userEmail}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-blue-800 font-medium">
+                                  {format(
+                                    new Date(reservation.createdAt),
+                                    "HH:mm"
+                                  )}
+                                </div>
+                                <div className="text-blue-600 text-sm">
+                                  {format(
+                                    new Date(reservation.createdAt),
+                                    "MM/dd"
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
+
+        {/* Reservation Detail Modal */}
+        <Dialog
+          open={showReservationDetail}
+          onOpenChange={setShowReservationDetail}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedReservationDetail &&
+                  format(selectedReservationDetail.date, "yyyy년 M월 d일", {
+                    locale: ko,
+                  })}{" "}
+                예약 정보
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedReservationDetail?.reservations.map((reservation) => {
+                const slot = slots.find((s) => s.id === reservation.slotId);
+                return (
+                  <div
+                    key={reservation.id}
+                    className="bg-gray-50 rounded-lg border p-4"
+                  >
+                    <div className="mb-2 flex items-start justify-between">
+                      <div>
+                        <h4 className="text-gray-900 font-semibold">
+                          {kycNames[reservation.userId] || "Unknown"}
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          {reservation.userEmail}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          연락처: {kycContacts[reservation.userId] || "-"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-blue-600 text-lg font-bold">
+                          {slot
+                            ? format(new Date(slot.start), "HH:mm")
+                            : "시간 미정"}
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          {format(
+                            new Date(reservation.createdAt),
+                            "MM/dd HH:mm"
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-gray-500 text-xs">
+                      예약 ID: {reservation.id}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {isRangeMode && selectedRange?.from && selectedRange?.to && (
           <>
             {/* Slot count selection UI */}
