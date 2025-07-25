@@ -167,13 +167,27 @@ export default function UserReservePage() {
             data.paymentConfirmedAt?.toDate?.() || data.paymentConfirmedAt,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           paymentDeadline:
-            data.paymentDeadline?.toDate?.() || data.paymentDeadline,
+            data.paymentDeadline?.toDate?.() ||
+            (data.paymentDeadline instanceof Date
+              ? data.paymentDeadline
+              : data.createdAt
+              ? new Date(
+                  data.createdAt.toDate?.() || data.createdAt
+                ).getTime() +
+                30 * 60 * 1000
+              : null),
         };
 
         // 취소된 예약인 경우 reservation을 null로 설정하여 예약하기 버튼 표시
         if (reservationData.status === "cancelled") {
           setReservation(null);
         } else {
+          console.log("예약 데이터 설정:", {
+            id: reservationData.id,
+            status: reservationData.status,
+            paymentDeadline: reservationData.paymentDeadline,
+            createdAt: reservationData.createdAt,
+          });
           setReservation(reservationData);
         }
       }
@@ -534,73 +548,84 @@ export default function UserReservePage() {
               </div>
 
               {/* 예약 상태에 따른 컨텐츠 */}
-              {reservation.status === "payment_required" &&
-                reservation.paymentDeadline && (
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
-                      <div className="mb-4 flex items-center space-x-3">
-                        <div className="bg-black rounded-full p-2">
-                          <CreditCard className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-gray-900 text-lg font-semibold">
-                            예약금 입금 안내
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            입금 후 확인 요청을 해주세요
-                          </p>
-                        </div>
+              {(() => {
+                console.log("타이머 표시 조건 확인:", {
+                  status: reservation.status,
+                  paymentDeadline: reservation.paymentDeadline,
+                  shouldShow:
+                    reservation.status === "payment_required" &&
+                    reservation.paymentDeadline,
+                });
+                return (
+                  reservation.status === "payment_required" &&
+                  reservation.paymentDeadline
+                );
+              })() && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
+                    <div className="mb-4 flex items-center space-x-3">
+                      <div className="bg-black rounded-full p-2">
+                        <CreditCard className="h-5 w-5 text-white" />
                       </div>
-
-                      {/* 카운트다운 타이머 통합 */}
-                      <div className="mb-5">
-                        <CountdownTimer
-                          deadline={reservation.paymentDeadline}
-                          onExpired={handleCountdownExpired}
-                          compact={true}
-                          testMode={process.env.NODE_ENV === "development"}
-                        />
+                      <div>
+                        <h3 className="text-gray-900 text-lg font-semibold">
+                          예약금 입금 안내
+                        </h3>
+                        <p className="text-gray-600 text-sm">
+                          입금 후 확인 요청을 해주세요
+                        </p>
                       </div>
-
-                      <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
-                        <div className="mb-3 flex items-center justify-between">
-                          <span className="text-gray-700 text-sm font-medium">
-                            예약금
-                          </span>
-                          <span className="text-gray-900 text-xl font-bold">
-                            200,000원
-                          </span>
-                        </div>
-                        <div className="bg-gray-50 rounded-md p-3">
-                          <div className="text-gray-600 mb-1 text-xs font-medium">
-                            입금 계좌 정보
-                          </div>
-                          <div className="text-gray-800 font-mono text-sm">
-                            123-456-789012
-                          </div>
-                          <div className="text-gray-500 text-xs">
-                            예금주: 네이처서울
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        className="bg-black hover:bg-gray-800 shadow-lg hover:shadow-xl w-full transform rounded-lg px-6 py-4 font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
-                        onClick={handleConfirmPayment}
-                        disabled={confirmingPayment}
-                      >
-                        {confirmingPayment ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <div className="animate-spin h-4 w-4 rounded-full border-b-2 border-white"></div>
-                            <span>처리중...</span>
-                          </div>
-                        ) : (
-                          "입금확인요청"
-                        )}
-                      </button>
                     </div>
+
+                    {/* 카운트다운 타이머 통합 */}
+                    <div className="mb-5">
+                      <CountdownTimer
+                        deadline={reservation.paymentDeadline!}
+                        onExpired={handleCountdownExpired}
+                        compact={true}
+                        testMode={process.env.NODE_ENV === "development"}
+                      />
+                    </div>
+
+                    <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-gray-700 text-sm font-medium">
+                          예약금
+                        </span>
+                        <span className="text-gray-900 text-xl font-bold">
+                          200,000원
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 rounded-md p-3">
+                        <div className="text-gray-600 mb-1 text-xs font-medium">
+                          입금 계좌 정보
+                        </div>
+                        <div className="text-gray-800 font-mono text-sm">
+                          123-456-789012
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          예금주: 네이처서울
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      className="bg-black hover:bg-gray-800 shadow-lg hover:shadow-xl w-full transform rounded-lg px-6 py-4 font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={handleConfirmPayment}
+                      disabled={confirmingPayment}
+                    >
+                      {confirmingPayment ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin h-4 w-4 rounded-full border-b-2 border-white"></div>
+                          <span>처리중...</span>
+                        </div>
+                      ) : (
+                        "입금확인요청"
+                      )}
+                    </button>
                   </div>
-                )}
+                </div>
+              )}
 
               {reservation.status === "payment_confirmed" && (
                 <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 rounded-xl border p-5">
