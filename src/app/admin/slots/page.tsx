@@ -2054,6 +2054,8 @@ function KycPhoto({ userId }: { userId: string }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("🎯 KycPhoto component rendered with userId:", userId);
+
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -2109,23 +2111,34 @@ function KycPhoto({ userId }: { userId: string }) {
     };
   }, [userId]);
 
+  console.log(
+    "🔄 KycPhoto render state - loading:",
+    loading,
+    "userData:",
+    userData
+  );
+
   if (loading) {
+    console.log("⏳ KycPhoto: Showing loading state");
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-gray-500 text-sm">사진 로딩 중...</div>
+      <div className="border-blue-300 bg-blue-50 flex items-center justify-center rounded-lg border-2 p-4">
+        <div className="text-blue-600 text-sm font-medium">사진 로딩 중...</div>
       </div>
     );
   }
 
   if (!userData) {
+    console.log("❌ KycPhoto: Showing no data state");
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-gray-500 text-sm">
-          사용자 정보를 찾을 수 없습니다.
+      <div className="border-red-300 bg-red-50 flex items-center justify-center rounded-lg border-2 p-4">
+        <div className="text-red-600 text-sm font-medium">
+          사용자 정보를 찾을 수 없습니다. (userId: {userId})
         </div>
       </div>
     );
   }
+
+  console.log("✅ KycPhoto: Rendering user data");
 
   // KYC 정보 표시
   const hasPhotos =
@@ -2135,7 +2148,9 @@ function KycPhoto({ userId }: { userId: string }) {
     userData.photoURL;
 
   return (
-    <div className="space-y-4">
+    <div className="border-green-300 bg-green-50 space-y-4 rounded-lg border-2 p-4">
+      <div className="text-green-800 font-medium">🎯 KYC 정보 로드 완료!</div>
+
       {/* KYC 기본 정보 */}
       <div className="space-y-2">
         <h4 className="text-gray-900 sm:text-base text-sm font-semibold">
