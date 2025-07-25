@@ -1793,9 +1793,28 @@ export default function KYCDashboard() {
                               {(() => {
                                 const now = new Date();
                                 // paymentConfirmedAt이 있으면 그것을 기준으로, 없으면 createdAt 기준으로
-                                const baseTime =
-                                  reservation.paymentConfirmedAt ||
-                                  reservation.createdAt;
+                                const baseTime = (() => {
+                                  const paymentConfirmedAt =
+                                    reservation.paymentConfirmedAt;
+                                  const createdAt = reservation.createdAt;
+
+                                  // paymentConfirmedAt이 Date 객체인지 확인
+                                  if (
+                                    paymentConfirmedAt &&
+                                    paymentConfirmedAt instanceof Date
+                                  ) {
+                                    return paymentConfirmedAt;
+                                  }
+
+                                  // createdAt이 Date 객체인지 확인
+                                  if (createdAt && createdAt instanceof Date) {
+                                    return createdAt;
+                                  }
+
+                                  // 둘 다 Date 객체가 아니면 현재 시간 사용
+                                  return new Date();
+                                })();
+
                                 const timeLimit = new Date(
                                   baseTime.getTime() + 24 * 60 * 60 * 1000
                                 ); // 24시간
@@ -2335,17 +2354,24 @@ export default function KYCDashboard() {
                     <div>
                       <span className="font-medium">입금 확인일:</span>
                       <div className="text-gray-600 break-words">
-                        {selectedReservationDetail.paymentConfirmedAt.toLocaleString(
-                          "ko-KR",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
+                        {(() => {
+                          const paymentConfirmedAt =
+                            selectedReservationDetail.paymentConfirmedAt;
+                          if (
+                            paymentConfirmedAt &&
+                            paymentConfirmedAt instanceof Date
+                          ) {
+                            return paymentConfirmedAt.toLocaleString("ko-KR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            });
                           }
-                        )}
+                          return "날짜 정보 없음";
+                        })()}
                       </div>
                     </div>
                   )}
@@ -2432,17 +2458,27 @@ export default function KYCDashboard() {
                       <div className="mt-2">
                         <span className="font-medium">입금 확인일:</span>
                         <div className="text-gray-600">
-                          {selectedReservationDetail.paymentConfirmedAt.toLocaleString(
-                            "ko-KR",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
+                          {(() => {
+                            const paymentConfirmedAt =
+                              selectedReservationDetail.paymentConfirmedAt;
+                            if (
+                              paymentConfirmedAt &&
+                              paymentConfirmedAt instanceof Date
+                            ) {
+                              return paymentConfirmedAt.toLocaleString(
+                                "ko-KR",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                }
+                              );
                             }
-                          )}
+                            return "날짜 정보 없음";
+                          })()}
                         </div>
                       </div>
                     )}
@@ -2452,9 +2488,29 @@ export default function KYCDashboard() {
                       </span>
                       <div className="text-gray-600">
                         {(() => {
-                          const baseTime =
-                            selectedReservationDetail.paymentConfirmedAt ||
-                            selectedReservationDetail.createdAt;
+                          const baseTime = (() => {
+                            const paymentConfirmedAt =
+                              selectedReservationDetail.paymentConfirmedAt;
+                            const createdAt =
+                              selectedReservationDetail.createdAt;
+
+                            // paymentConfirmedAt이 Date 객체인지 확인
+                            if (
+                              paymentConfirmedAt &&
+                              paymentConfirmedAt instanceof Date
+                            ) {
+                              return paymentConfirmedAt;
+                            }
+
+                            // createdAt이 Date 객체인지 확인
+                            if (createdAt && createdAt instanceof Date) {
+                              return createdAt;
+                            }
+
+                            // 둘 다 Date 객체가 아니면 현재 시간 사용
+                            return new Date();
+                          })();
+
                           const timeLimit = new Date(
                             baseTime.getTime() + 24 * 60 * 60 * 1000
                           ); // 24시간
@@ -2472,9 +2528,29 @@ export default function KYCDashboard() {
                       <span className="font-medium">남은 시간:</span>
                       <div className="text-gray-600">
                         {(() => {
-                          const baseTime =
-                            selectedReservationDetail.paymentConfirmedAt ||
-                            selectedReservationDetail.createdAt;
+                          const baseTime = (() => {
+                            const paymentConfirmedAt =
+                              selectedReservationDetail.paymentConfirmedAt;
+                            const createdAt =
+                              selectedReservationDetail.createdAt;
+
+                            // paymentConfirmedAt이 Date 객체인지 확인
+                            if (
+                              paymentConfirmedAt &&
+                              paymentConfirmedAt instanceof Date
+                            ) {
+                              return paymentConfirmedAt;
+                            }
+
+                            // createdAt이 Date 객체인지 확인
+                            if (createdAt && createdAt instanceof Date) {
+                              return createdAt;
+                            }
+
+                            // 둘 다 Date 객체가 아니면 현재 시간 사용
+                            return new Date();
+                          })();
+
                           const timeLimit = new Date(
                             baseTime.getTime() + 24 * 60 * 60 * 1000
                           ); // 24시간
