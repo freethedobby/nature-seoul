@@ -65,6 +65,32 @@ interface ReservationData {
   createdAt: Date;
 }
 
+interface UserData {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  gender?: string;
+  birthYear?: string;
+  contact: string;
+  district?: string;
+  detailedAddress?: string;
+  skinType?: string;
+  photoURLs?: {
+    left: string;
+    front: string;
+    right: string;
+  };
+  photoURL?: string;
+  photoType?: "base64" | "firebase-storage";
+  kycStatus: string;
+  hasPreviousTreatment?: boolean;
+  rejectReason?: string;
+  createdAt: Date;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+}
+
 // Custom Day component for DayPicker
 function CustomDay(
   props: React.HTMLAttributes<HTMLTableCellElement> & {
@@ -388,12 +414,12 @@ export default function SlotManagement() {
           try {
             const userDoc = await getDoc(doc(db, "users", uid));
             if (userDoc.exists()) {
-              const userData = userDoc.data();
-              if (userData && userData.name) {
-                kycNameMap[uid] = userData.name;
+              const data = userDoc.data();
+              if (data && data.name) {
+                kycNameMap[uid] = data.name;
               }
-              if (userData && userData.contact) {
-                kycContactMap[uid] = userData.contact;
+              if (data && data.contact) {
+                kycContactMap[uid] = data.contact;
               }
             }
           } catch {
@@ -439,9 +465,9 @@ export default function SlotManagement() {
           try {
             const userDoc = await getDoc(doc(db, "users", uid));
             if (userDoc.exists()) {
-              const userData = userDoc.data();
-              if (userData && userData.name) {
-                kycNameMap[uid] = userData.name;
+              const data = userDoc.data();
+              if (data && data.name) {
+                kycNameMap[uid] = data.name;
               }
             }
           } catch {
@@ -2042,33 +2068,258 @@ export default function SlotManagement() {
 }
 
 function KycPhoto({ userId }: { userId: string }) {
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     let ignore = false;
     (async () => {
       try {
+        setLoading(true);
         const userDoc = await getDoc(doc(db, "users", userId));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData && userData.photoURL) {
-            if (!ignore) setPhotoUrl(userData.photoURL);
+          const data = userDoc.data();
+          if (!ignore) {
+            // Firestore 데이터를 UserData 타입으로 변환
+            const userData: UserData = {
+              id: userDoc.id,
+              userId: data.userId || userId,
+              email: data.email || "",
+              name: data.name || "",
+              gender: data.gender,
+              birthYear: data.birthYear,
+              contact: data.contact || "",
+              district: data.district,
+              detailedAddress: data.detailedAddress,
+              skinType: data.skinType,
+              photoURLs: data.photoURLs,
+              photoURL: data.photoURL,
+              photoType: data.photoType,
+              kycStatus: data.kycStatus || "pending",
+              hasPreviousTreatment: data.hasPreviousTreatment,
+              rejectReason: data.rejectReason,
+              createdAt: data.createdAt?.toDate?.() || new Date(),
+              approvedAt: data.approvedAt?.toDate?.() || undefined,
+              rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+            };
+            setUserData(userData);
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     })();
     return () => {
       ignore = true;
     };
   }, [userId]);
-  if (!photoUrl) return null;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-gray-500 text-sm">사진 로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-gray-500 text-sm">
+          사용자 정보를 찾을 수 없습니다.
+        </div>
+      </div>
+    );
+  }
+
+  // KYC 정보 표시
+  const hasPhotos =
+    userData.photoURLs?.left ||
+    userData.photoURLs?.front ||
+    userData.photoURLs?.right ||
+    userData.photoURL;
+
   return (
-    <Image
-      src={photoUrl}
-      alt="KYC Eyebrow"
-      width={200}
-      height={128}
-      className="max-h-32 bg-gray-50 mt-2 w-full rounded-lg border object-contain"
-      style={{ maxWidth: 200 }}
-    />
+    <div className="space-y-4">
+      {/* KYC 기본 정보 */}
+      <div className="space-y-2">
+        <h4 className="text-gray-900 sm:text-base text-sm font-semibold">
+          KYC 정보
+        </h4>
+        <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-4 sm:text-sm">
+          <div>
+            <span className="font-medium">이름:</span>{" "}
+            <span className="break-words">{userData.name || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">이메일:</span>{" "}
+            <span className="break-all">{userData.email || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">연락처:</span>{" "}
+            <span className="break-all">{userData.contact || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">성별:</span>{" "}
+            <span className="break-words">{userData.gender || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">출생년도:</span>{" "}
+            <span className="break-words">{userData.birthYear || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">지역:</span>{" "}
+            <span className="break-words">{userData.district || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">상세주소:</span>{" "}
+            <span className="break-words">
+              {userData.detailedAddress || "-"}
+            </span>
+          </div>
+          <div>
+            <span className="font-medium">피부타입:</span>{" "}
+            <span className="break-words">{userData.skinType || "-"}</span>
+          </div>
+          <div>
+            <span className="font-medium">이전 시술 경험:</span>{" "}
+            <span className="break-words">
+              {userData.hasPreviousTreatment ? "있음" : "없음"}
+            </span>
+          </div>
+          <div>
+            <span className="font-medium">KYC 상태:</span>{" "}
+            <Badge
+              variant={
+                userData.kycStatus === "approved"
+                  ? "default"
+                  : userData.kycStatus === "rejected"
+                  ? "destructive"
+                  : "outline"
+              }
+            >
+              {userData.kycStatus === "approved"
+                ? "승인"
+                : userData.kycStatus === "rejected"
+                ? "거절"
+                : "대기중"}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* 눈썹 사진 */}
+      {hasPhotos && (
+        <div className="space-y-2">
+          <h4 className="text-gray-900 sm:text-base text-sm font-semibold">
+            눈썹 사진
+          </h4>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* Left Photo */}
+            <div className="space-y-2">
+              <h5 className="text-gray-700 text-sm font-medium">좌측</h5>
+              {(userData.photoURLs?.left || userData.photoURL) && (
+                <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                  <Image
+                    src={userData.photoURLs?.left || userData.photoURL || ""}
+                    alt="좌측 눈썹"
+                    fill
+                    className="object-contain"
+                    unoptimized={(
+                      userData.photoURLs?.left ||
+                      userData.photoURL ||
+                      ""
+                    ).startsWith("data:")}
+                    onError={(e) => {
+                      console.error("Failed to load left image");
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  {userData.photoType === "base64" && (
+                    <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                      Base64
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Front Photo */}
+            <div className="space-y-2">
+              <h5 className="text-gray-700 text-sm font-medium">정면</h5>
+              {(userData.photoURLs?.front || userData.photoURL) && (
+                <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                  <Image
+                    src={userData.photoURLs?.front || userData.photoURL || ""}
+                    alt="정면 눈썹"
+                    fill
+                    className="object-contain"
+                    unoptimized={(
+                      userData.photoURLs?.front ||
+                      userData.photoURL ||
+                      ""
+                    ).startsWith("data:")}
+                    onError={(e) => {
+                      console.error("Failed to load front image");
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  {userData.photoType === "base64" && (
+                    <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                      Base64
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Photo */}
+            <div className="space-y-2">
+              <h5 className="text-gray-700 text-sm font-medium">우측</h5>
+              {(userData.photoURLs?.right || userData.photoURL) && (
+                <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                  <Image
+                    src={userData.photoURLs?.right || userData.photoURL || ""}
+                    alt="우측 눈썹"
+                    fill
+                    className="object-contain"
+                    unoptimized={(
+                      userData.photoURLs?.right ||
+                      userData.photoURL ||
+                      ""
+                    ).startsWith("data:")}
+                    onError={(e) => {
+                      console.error("Failed to load right image");
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  {userData.photoType === "base64" && (
+                    <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                      Base64
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 거절 사유 (있는 경우) */}
+      {userData.rejectReason && (
+        <div className="space-y-2">
+          <h4 className="text-gray-900 sm:text-base text-sm font-semibold">
+            거절 사유
+          </h4>
+          <div className="text-red-600 bg-red-50 border-red-200 rounded-lg border p-3 text-xs sm:text-sm">
+            {userData.rejectReason}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

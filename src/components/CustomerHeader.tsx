@@ -116,7 +116,7 @@ export default function CustomerHeader() {
                         onClick={() => router.push("/dashboard")}
                       >
                         <User className="mr-2 h-4 w-4" />
-                        대시보드
+                        내정보
                       </DropdownMenuItem>
                       {user.kycStatus === "approved" && (
                         <DropdownMenuItem
