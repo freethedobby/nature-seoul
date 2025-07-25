@@ -1675,40 +1675,61 @@ export default function SlotManagement() {
                           selectedMonthDay.toDateString() ===
                             currentDateCopy.toDateString();
 
-                        days.push(
-                          <div
-                            key={dateStr}
-                            className={`min-h-[60px] cursor-pointer rounded-lg border p-1 transition-colors sm:min-h-[80px] sm:p-2 ${
-                              isCurrentMonth
-                                ? "bg-white"
-                                : "bg-gray-50 text-gray-400"
-                            } ${isToday ? "ring-blue-500 ring-2" : ""} ${
-                              isSelected
-                                ? "bg-blue-50 border-blue-300"
-                                : "hover:bg-gray-50"
-                            }`}
-                            onClick={() => {
-                              setSelectedMonthDay(currentDateCopy);
-                            }}
-                          >
+                        // 현재 월부터 +6개월까지만 표시
+                        const currentDateForCheck = new Date();
+                        const maxDate = new Date();
+                        maxDate.setMonth(maxDate.getMonth() + 6);
+
+                        const isWithinAllowedRange =
+                          currentDateCopy >= currentDateForCheck &&
+                          currentDateCopy <= maxDate;
+
+                        // 이전 달이거나 허용 범위를 벗어난 경우 숨김
+                        if (!isCurrentMonth && !isWithinAllowedRange) {
+                          days.push(
                             <div
-                              className={`text-center text-xs font-medium sm:text-sm ${
-                                isToday ? "text-blue-600" : ""
-                              } ${
-                                isSelected ? "text-blue-700 font-semibold" : ""
+                              key={dateStr}
+                              className="min-h-[60px] p-1 sm:min-h-[80px] sm:p-2"
+                            ></div>
+                          );
+                        } else {
+                          days.push(
+                            <div
+                              key={dateStr}
+                              className={`min-h-[60px] cursor-pointer rounded-lg border p-1 transition-colors sm:min-h-[80px] sm:p-2 ${
+                                isCurrentMonth
+                                  ? "bg-white"
+                                  : "bg-gray-50 text-gray-400"
+                              } ${isToday ? "ring-blue-500 ring-2" : ""} ${
+                                isSelected
+                                  ? "bg-blue-50 border-blue-300"
+                                  : "hover:bg-gray-50"
                               }`}
+                              onClick={() => {
+                                setSelectedMonthDay(currentDateCopy);
+                              }}
                             >
-                              {currentDateCopy.getDate()}
-                            </div>
-                            {isCurrentMonth && dayReservations.length > 0 && (
-                              <div className="mt-1 text-center">
-                                <div className="bg-blue-500 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs text-white">
-                                  {dayReservations.length}
-                                </div>
+                              <div
+                                className={`text-center text-xs font-medium sm:text-sm ${
+                                  isToday ? "text-blue-600" : ""
+                                } ${
+                                  isSelected
+                                    ? "text-blue-700 font-semibold"
+                                    : ""
+                                }`}
+                              >
+                                {currentDateCopy.getDate()}
                               </div>
-                            )}
-                          </div>
-                        );
+                              {isCurrentMonth && dayReservations.length > 0 && (
+                                <div className="mt-1 text-center">
+                                  <div className="bg-blue-500 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs text-white">
+                                    {dayReservations.length}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
 
                         currentDate.setDate(currentDate.getDate() + 1);
                       }
