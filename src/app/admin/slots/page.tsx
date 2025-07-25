@@ -1912,7 +1912,17 @@ export default function SlotManagement() {
           </DialogHeader>
           {selectedReservationDetail && (
             <div className="space-y-6">
-              {/* 예약 정보 */}
+              {/* KYC 정보 섹션 */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    KYC 정보
+                  </h3>
+                  <KycPhoto userId={selectedReservationDetail.userId} />
+                </div>
+              </div>
+
+              {/* 예약 정보 섹션 */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
@@ -2039,14 +2049,6 @@ export default function SlotManagement() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* KYC 사진 */}
-              <div className="space-y-2">
-                <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
-                  KYC 사진
-                </h3>
-                <KycPhoto userId={selectedReservationDetail.userId} />
               </div>
             </div>
           )}
