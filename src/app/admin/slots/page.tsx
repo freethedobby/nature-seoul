@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, List } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -206,6 +207,12 @@ export default function SlotManagement() {
   const [selectedMonthDay, setSelectedMonthDay] = useState<Date | null>(
     new Date()
   );
+
+  // Add state for reservation detail dialog
+  const [selectedReservationDetail, setSelectedReservationDetail] =
+    useState<ReservationData | null>(null);
+  const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
+    useState(false);
 
   // Click-away handler for popover
   useEffect(() => {
@@ -1578,7 +1585,11 @@ export default function SlotManagement() {
                               return (
                                 <div
                                   key={reservation.id}
-                                  className="bg-blue-50 border-blue-200 flex items-center justify-between rounded-lg border p-3"
+                                  className="bg-blue-50 border-blue-200 hover:bg-blue-100 flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors"
+                                  onClick={() => {
+                                    setSelectedReservationDetail(reservation);
+                                    setIsReservationDetailDialogOpen(true);
+                                  }}
                                 >
                                   <div className="flex-1">
                                     <div className="text-blue-900 font-semibold">
@@ -1786,7 +1797,11 @@ export default function SlotManagement() {
                               return (
                                 <div
                                   key={reservation.id}
-                                  className="bg-blue-50 border-blue-200 flex items-center justify-between rounded-lg border p-3"
+                                  className="bg-blue-50 border-blue-200 hover:bg-blue-100 flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors"
+                                  onClick={() => {
+                                    setSelectedReservationDetail(reservation);
+                                    setIsReservationDetailDialogOpen(true);
+                                  }}
                                 >
                                   <div className="flex-1">
                                     <div className="text-blue-900 font-semibold">
@@ -1857,6 +1872,171 @@ export default function SlotManagement() {
           </>
         )}
       </div>
+
+      {/* Reservation Detail Dialog */}
+      <Dialog
+        open={isReservationDetailDialogOpen}
+        onOpenChange={setIsReservationDetailDialogOpen}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              예약 상세 정보
+            </DialogTitle>
+          </DialogHeader>
+          {selectedReservationDetail && (
+            <div className="space-y-6">
+              {/* 예약 정보 */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 정보
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-4 sm:text-sm">
+                    <div>
+                      <span className="font-medium">이름:</span>{" "}
+                      <span className="break-words">
+                        {kycNames[selectedReservationDetail.userId] ||
+                          "Unknown"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">이메일:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userEmail}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">연락처:</span>{" "}
+                      <span className="break-all">
+                        {kycContacts[selectedReservationDetail.userId] || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">예약 시간:</span>{" "}
+                      {(() => {
+                        const slot = slots.find(
+                          (s) => s.id === selectedReservationDetail.slotId
+                        );
+                        return slot
+                          ? format(new Date(slot.start), "yyyy년 M월 d일 HH:mm")
+                          : "시간 미정";
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 상태
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm">
+                    <div>
+                      <span className="font-medium">상태:</span>{" "}
+                      <Badge
+                        variant={
+                          selectedReservationDetail.status === "approved"
+                            ? "default"
+                            : selectedReservationDetail.status ===
+                              "payment_confirmed"
+                            ? "secondary"
+                            : selectedReservationDetail.status ===
+                              "payment_required"
+                            ? "outline"
+                            : selectedReservationDetail.status === "cancelled"
+                            ? "destructive"
+                            : selectedReservationDetail.status === "rejected"
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
+                        {selectedReservationDetail.status === "approved"
+                          ? "확정"
+                          : selectedReservationDetail.status ===
+                            "payment_confirmed"
+                          ? "입금확인중"
+                          : selectedReservationDetail.status ===
+                            "payment_required"
+                          ? "입금대기"
+                          : selectedReservationDetail.status === "cancelled"
+                          ? "취소됨"
+                          : selectedReservationDetail.status === "rejected"
+                          ? "거절"
+                          : "대기"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">예약 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.id}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">사용자 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userId}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">슬롯 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.slotId}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 시간 정보 */}
+              <div className="space-y-2">
+                <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                  시간 정보
+                </h3>
+                <div className="grid grid-cols-1 gap-4 text-xs sm:text-sm">
+                  <div>
+                    <span className="font-medium">예약 생성일:</span>
+                    <div className="text-gray-600 break-words">
+                      {selectedReservationDetail.createdAt &&
+                      !isNaN(selectedReservationDetail.createdAt.getTime())
+                        ? selectedReservationDetail.createdAt.toLocaleString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            }
+                          )
+                        : "날짜 정보 없음"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* KYC 사진 */}
+              <div className="space-y-2">
+                <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                  KYC 사진
+                </h3>
+                <KycPhoto userId={selectedReservationDetail.userId} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsReservationDetailDialogOpen(false);
+                setSelectedReservationDetail(null);
+              }}
+            >
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
