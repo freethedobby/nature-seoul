@@ -192,24 +192,28 @@ export default function KYCDashboard() {
       console.log("🔄 Pending users snapshot received, count:", snapshot.size);
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log("📄 User document:", doc.id, data);
-        users.push({
-          id: doc.id,
-          ...data,
-          createdAt:
-            data.createdAt && data.createdAt.toDate
-              ? data.createdAt.toDate()
-              : null,
-          approvedAt:
-            data.approvedAt && data.approvedAt.toDate
-              ? data.approvedAt.toDate()
-              : null,
-          rejectedAt:
-            data.rejectedAt && data.rejectedAt.toDate
-              ? data.rejectedAt.toDate()
-              : null,
-        } as UserData);
+        try {
+          const data = doc.data();
+          console.log("📄 User document:", doc.id, data);
+          users.push({
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt && data.createdAt.toDate
+                ? data.createdAt.toDate()
+                : new Date(),
+            approvedAt:
+              data.approvedAt && data.approvedAt.toDate
+                ? data.approvedAt.toDate()
+                : null,
+            rejectedAt:
+              data.rejectedAt && data.rejectedAt.toDate
+                ? data.rejectedAt.toDate()
+                : null,
+          } as UserData);
+        } catch (error) {
+          console.error("Error processing user document:", doc.id, error);
+        }
       });
       users.sort(
         (a, b) =>
@@ -228,23 +232,31 @@ export default function KYCDashboard() {
     const unsubApproved = onSnapshot(approvedQuery, (snapshot) => {
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        const data = doc.data();
-        users.push({
-          id: doc.id,
-          ...data,
-          createdAt:
-            data.createdAt && data.createdAt.toDate
-              ? data.createdAt.toDate()
-              : null,
-          approvedAt:
-            data.approvedAt && data.approvedAt.toDate
-              ? data.approvedAt.toDate()
-              : null,
-          rejectedAt:
-            data.rejectedAt && data.rejectedAt.toDate
-              ? data.rejectedAt.toDate()
-              : null,
-        } as UserData);
+        try {
+          const data = doc.data();
+          users.push({
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt && data.createdAt.toDate
+                ? data.createdAt.toDate()
+                : new Date(),
+            approvedAt:
+              data.approvedAt && data.approvedAt.toDate
+                ? data.approvedAt.toDate()
+                : null,
+            rejectedAt:
+              data.rejectedAt && data.rejectedAt.toDate
+                ? data.rejectedAt.toDate()
+                : null,
+          } as UserData);
+        } catch (error) {
+          console.error(
+            "Error processing approved user document:",
+            doc.id,
+            error
+          );
+        }
       });
       users.sort(
         (a, b) =>
@@ -262,23 +274,31 @@ export default function KYCDashboard() {
     const unsubRejected = onSnapshot(rejectedQuery, (snapshot) => {
       const users: UserData[] = [];
       snapshot.forEach((doc) => {
-        const data = doc.data();
-        users.push({
-          id: doc.id,
-          ...data,
-          createdAt:
-            data.createdAt && data.createdAt.toDate
-              ? data.createdAt.toDate()
-              : null,
-          approvedAt:
-            data.approvedAt && data.approvedAt.toDate
-              ? data.approvedAt.toDate()
-              : null,
-          rejectedAt:
-            data.rejectedAt && data.rejectedAt.toDate
-              ? data.rejectedAt.toDate()
-              : null,
-        } as UserData);
+        try {
+          const data = doc.data();
+          users.push({
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt && data.createdAt.toDate
+                ? data.createdAt.toDate()
+                : new Date(),
+            approvedAt:
+              data.approvedAt && data.approvedAt.toDate
+                ? data.approvedAt.toDate()
+                : null,
+            rejectedAt:
+              data.rejectedAt && data.rejectedAt.toDate
+                ? data.rejectedAt.toDate()
+                : null,
+          } as UserData);
+        } catch (error) {
+          console.error(
+            "Error processing rejected user document:",
+            doc.id,
+            error
+          );
+        }
       });
       users.sort(
         (a, b) =>
@@ -296,15 +316,23 @@ export default function KYCDashboard() {
     const unsubReservations = onSnapshot(reservationsQuery, (snapshot) => {
       const reservs: ReservationData[] = [];
       snapshot.forEach((doc) => {
-        const data = doc.data();
-        reservs.push({
-          id: doc.id,
-          ...data,
-          createdAt:
-            data.createdAt && data.createdAt.toDate
-              ? data.createdAt.toDate()
-              : new Date(data.createdAt || Date.now()),
-        } as ReservationData);
+        try {
+          const data = doc.data();
+          reservs.push({
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt && data.createdAt.toDate
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt || Date.now()),
+          } as ReservationData);
+        } catch (error) {
+          console.error(
+            "Error processing reservation document:",
+            doc.id,
+            error
+          );
+        }
       });
 
       // admin 페이지에서는 모든 예약 표시 (cancelled 포함하여 관리자가 모든 상태 확인 가능)
