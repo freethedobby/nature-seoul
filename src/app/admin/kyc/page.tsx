@@ -306,27 +306,10 @@ export default function KYCDashboard() {
         } as ReservationData);
       });
 
-      // 필터링: 입금시간이 지난 cancel된 건과 입금대기 중인 건 중 시간이 지난 것 제외
-      const now = new Date();
+      // admin 페이지에서는 cancelled 상태만 제외하고 모든 예약 표시
       const filteredReservs = reservs.filter((reservation) => {
-        // cancelled 상태는 제외
-        if (reservation.status === "cancelled") {
-          return false;
-        }
-
-        // payment_required 상태에서 입금시간이 지난 경우 제외
-        if (reservation.status === "payment_required") {
-          // 예약 생성 후 30분이 지났는지 확인
-          const reservationTime = new Date(reservation.createdAt);
-          const timeLimit = new Date(
-            reservationTime.getTime() + 30 * 60 * 1000
-          ); // 30분
-          if (now > timeLimit) {
-            return false;
-          }
-        }
-
-        return true;
+        // cancelled 상태만 제외 (admin은 모든 활성 예약을 볼 수 있어야 함)
+        return reservation.status !== "cancelled";
       });
 
       filteredReservs.sort(
@@ -1732,6 +1715,43 @@ export default function KYCDashboard() {
                                 })
                               : "날짜 정보 없음"}
                           </div>
+                          {/* 입금 대기 상태에서 시간 정보 표시 */}
+                          {reservation.status === "payment_required" && (
+                            <div className="mt-1 text-sm">
+                              {(() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  reservation.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                const remaining =
+                                  timeLimit.getTime() - now.getTime();
+
+                                if (remaining <= 0) {
+                                  return (
+                                    <span className="text-red-600 font-medium">
+                                      ⏰ 입금 시간 만료됨
+                                    </span>
+                                  );
+                                } else {
+                                  const minutes = Math.floor(
+                                    remaining / (1000 * 60)
+                                  );
+                                  const seconds = Math.floor(
+                                    (remaining % (1000 * 60)) / 1000
+                                  );
+                                  return (
+                                    <span className="text-orange-600 font-medium">
+                                      ⏰ 입금 마감까지 {minutes}분 {seconds}초
+                                      남음
+                                    </span>
+                                  );
+                                }
+                              })()}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1741,6 +1761,19 @@ export default function KYCDashboard() {
                               ? "default"
                               : reservation.status === "payment_confirmed"
                               ? "secondary"
+                              : reservation.status === "payment_required"
+                              ? (() => {
+                                  const now = new Date();
+                                  const reservationTime = new Date(
+                                    reservation.createdAt
+                                  );
+                                  const timeLimit = new Date(
+                                    reservationTime.getTime() + 30 * 60 * 1000
+                                  );
+                                  return now > timeLimit
+                                    ? "destructive"
+                                    : "outline";
+                                })()
                               : "outline"
                           }
                         >
@@ -1749,7 +1782,18 @@ export default function KYCDashboard() {
                             : reservation.status === "payment_confirmed"
                             ? "입금확인중"
                             : reservation.status === "payment_required"
-                            ? "입금대기"
+                            ? (() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  reservation.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                return now > timeLimit
+                                  ? "입금시간만료"
+                                  : "입금대기";
+                              })()
                             : reservation.status === "rejected"
                             ? "거절"
                             : "대기"}
