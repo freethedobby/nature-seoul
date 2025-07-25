@@ -695,8 +695,13 @@ export default function UserReservePage() {
               onMonthChange={(newMonth) => {
                 if (newMonth) {
                   const today = new Date();
+                  today.setDate(1); // 월의 첫날로 설정
+                  today.setHours(0, 0, 0, 0);
+
                   const maxMonth = new Date();
                   maxMonth.setMonth(maxMonth.getMonth() + 6);
+                  maxMonth.setDate(1); // 월의 첫날로 설정
+                  maxMonth.setHours(0, 0, 0, 0);
 
                   // 현재 월부터 +6개월까지만 이동 가능
                   if (newMonth >= today && newMonth <= maxMonth) {
@@ -725,6 +730,34 @@ export default function UserReservePage() {
                 },
                 head_row: { fontWeight: 500, color: "#888" },
                 cell: { padding: "0.5rem" },
+                nav_button: {
+                  color: "#666",
+                },
+                nav_button_previous: {
+                  color: (() => {
+                    const today = new Date();
+                    today.setDate(1);
+                    today.setHours(0, 0, 0, 0);
+                    const prevMonth = new Date(currentMonth);
+                    prevMonth.setMonth(prevMonth.getMonth() - 1);
+                    prevMonth.setDate(1);
+                    prevMonth.setHours(0, 0, 0, 0);
+                    return prevMonth < today ? "#ccc" : "#666";
+                  })(),
+                },
+                nav_button_next: {
+                  color: (() => {
+                    const maxMonth = new Date();
+                    maxMonth.setMonth(maxMonth.getMonth() + 6);
+                    maxMonth.setDate(1);
+                    maxMonth.setHours(0, 0, 0, 0);
+                    const nextMonth = new Date(currentMonth);
+                    nextMonth.setMonth(nextMonth.getMonth() + 1);
+                    nextMonth.setDate(1);
+                    nextMonth.setHours(0, 0, 0, 0);
+                    return nextMonth > maxMonth ? "#ccc" : "#666";
+                  })(),
+                },
               }}
               showOutsideDays={false}
               required={false}
