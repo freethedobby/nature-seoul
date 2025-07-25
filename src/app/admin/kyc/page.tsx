@@ -1686,21 +1686,23 @@ export default function KYCDashboard() {
                   }}
                 >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{reservation.userName}</CardTitle>
-                        <CardDescription>
-                          <span className="flex items-center gap-4">
-                            <span className="flex items-center">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="break-words text-lg sm:text-xl">
+                          {reservation.userName}
+                        </CardTitle>
+                        <CardDescription className="mt-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                            <span className="flex items-center text-sm">
                               예약일: {reservation.date || "미정"}
                             </span>
-                            <span className="flex items-center">
+                            <span className="flex items-center text-sm">
                               시간: {reservation.time || "미정"}
                             </span>
-                          </span>
+                          </div>
                         </CardDescription>
                         <div className="mt-2">
-                          <div className="text-gray-500 text-sm">
+                          <div className="text-gray-500 text-xs sm:text-sm">
                             예약 생성일:{" "}
                             {reservation.createdAt &&
                             !isNaN(reservation.createdAt.getTime())
@@ -1729,14 +1731,14 @@ export default function KYCDashboard() {
 
                                 if (remaining <= 0) {
                                   return (
-                                    <div className="text-red-600 text-sm font-medium">
+                                    <div className="text-red-600 text-xs font-medium sm:text-sm">
                                       ⏰ 입금 시간 만료됨
                                     </div>
                                   );
                                 } else {
                                   return (
                                     <div className="space-y-1">
-                                      <div className="text-orange-600 text-sm font-medium">
+                                      <div className="text-orange-600 text-xs font-medium sm:text-sm">
                                         ⏰ 입금 마감까지
                                       </div>
                                       <CountdownTimer
@@ -1760,14 +1762,50 @@ export default function KYCDashboard() {
                           {/* 입금 확인중 상태에서 타이머 표시 */}
                           {reservation.status === "payment_confirmed" && (
                             <div className="mt-2">
-                              <div className="text-blue-600 text-sm font-medium">
-                                ✅ 입금 확인 완료 - 관리자 승인 대기중
-                              </div>
+                              {(() => {
+                                const now = new Date();
+                                // paymentConfirmedAt이 있으면 그것을 기준으로, 없으면 createdAt 기준으로
+                                const baseTime =
+                                  reservation.paymentConfirmedAt ||
+                                  reservation.createdAt;
+                                const timeLimit = new Date(
+                                  baseTime.getTime() + 24 * 60 * 60 * 1000
+                                ); // 24시간
+                                const remaining =
+                                  timeLimit.getTime() - now.getTime();
+
+                                if (remaining <= 0) {
+                                  return (
+                                    <div className="text-red-600 text-xs font-medium sm:text-sm">
+                                      ⏰ 관리자 승인 시간 만료됨
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <div className="space-y-1">
+                                      <div className="text-blue-600 text-xs font-medium sm:text-sm">
+                                        ⏰ 관리자 승인 마감까지
+                                      </div>
+                                      <CountdownTimer
+                                        deadline={timeLimit}
+                                        onExpired={() => {
+                                          // 타이머 만료 시 페이지 새로고침
+                                          window.location.reload();
+                                        }}
+                                        compact={true}
+                                        testMode={
+                                          process.env.NODE_ENV === "development"
+                                        }
+                                      />
+                                    </div>
+                                  );
+                                }
+                              })()}
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
                         <Badge
                           variant={
                             reservation.status === "approved"
@@ -1820,13 +1858,13 @@ export default function KYCDashboard() {
 
                         {/* 승인/거절 버튼 - 입금확인 상태일 때만 표시 */}
                         {reservation.status === "payment_confirmed" && (
-                          <div className="flex gap-1">
+                          <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row">
                             <Button
                               size="sm"
                               onClick={() =>
                                 handleReservationApprove(reservation.id)
                               }
-                              className="bg-green-500 hover:bg-green-600 text-white"
+                              className="bg-green-500 hover:bg-green-600 text-xs text-white sm:text-sm"
                             >
                               승인
                             </Button>
@@ -1837,6 +1875,7 @@ export default function KYCDashboard() {
                                 setSelectedReservationId(reservation.id);
                                 setIsReservationRejectDialogOpen(true);
                               }}
+                              className="text-xs sm:text-sm"
                             >
                               거절
                             </Button>
@@ -1859,7 +1898,7 @@ export default function KYCDashboard() {
                                 onClick={() =>
                                   handleReservationApprove(reservation.id)
                                 }
-                                className="bg-green-500 hover:bg-green-600 text-white"
+                                className="bg-green-500 hover:bg-green-600 w-full text-xs text-white sm:w-auto sm:text-sm"
                               >
                                 확정
                               </Button>
@@ -1889,7 +1928,7 @@ export default function KYCDashboard() {
                                 setSelectedReservationId(reservation.id);
                                 setIsReservationDeleteDialogOpen(true);
                               }}
-                              className="ml-1"
+                              className="w-full text-xs sm:w-auto sm:text-sm"
                             >
                               삭제
                             </Button>
@@ -2131,13 +2170,122 @@ export default function KYCDashboard() {
                 </div>
               </div>
 
+              {/* 예약 정보 */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 정보
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-4 sm:text-sm">
+                    <div>
+                      <span className="font-medium">이름:</span>{" "}
+                      <span className="break-words">
+                        {selectedReservationDetail.userName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">이메일:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userEmail}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">예약일:</span>{" "}
+                      {selectedReservationDetail.date || "미정"}
+                    </div>
+                    <div>
+                      <span className="font-medium">시간:</span>{" "}
+                      {selectedReservationDetail.time || "미정"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 상태
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm">
+                    <div>
+                      <span className="font-medium">상태:</span>{" "}
+                      <Badge
+                        variant={
+                          selectedReservationDetail.status === "approved"
+                            ? "default"
+                            : selectedReservationDetail.status ===
+                              "payment_confirmed"
+                            ? "secondary"
+                            : selectedReservationDetail.status ===
+                              "payment_required"
+                            ? (() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  selectedReservationDetail.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                return now > timeLimit
+                                  ? "destructive"
+                                  : "outline";
+                              })()
+                            : selectedReservationDetail.status === "cancelled"
+                            ? "destructive"
+                            : selectedReservationDetail.status === "rejected"
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
+                        {selectedReservationDetail.status === "approved"
+                          ? "확정"
+                          : selectedReservationDetail.status ===
+                            "payment_confirmed"
+                          ? "입금확인중"
+                          : selectedReservationDetail.status ===
+                            "payment_required"
+                          ? (() => {
+                              const now = new Date();
+                              const reservationTime = new Date(
+                                selectedReservationDetail.createdAt
+                              );
+                              const timeLimit = new Date(
+                                reservationTime.getTime() + 30 * 60 * 1000
+                              );
+                              return now > timeLimit
+                                ? "입금시간만료"
+                                : "입금대기";
+                            })()
+                          : selectedReservationDetail.status === "cancelled"
+                          ? "취소됨"
+                          : selectedReservationDetail.status === "rejected"
+                          ? "거절"
+                          : "대기"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">예약 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.id}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">사용자 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userId}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* 시간 정보 */}
               <div className="space-y-2">
-                <h3 className="text-gray-900 font-semibold">시간 정보</h3>
-                <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                  시간 정보
+                </h3>
+                <div className="grid grid-cols-1 gap-4 text-xs sm:text-sm">
                   <div>
                     <span className="font-medium">예약 생성일:</span>
-                    <div className="text-gray-600">
+                    <div className="text-gray-600 break-words">
                       {selectedReservationDetail.createdAt &&
                       !isNaN(selectedReservationDetail.createdAt.getTime())
                         ? selectedReservationDetail.createdAt.toLocaleString(
@@ -2158,7 +2306,7 @@ export default function KYCDashboard() {
                   {selectedReservationDetail.paymentConfirmedAt && (
                     <div>
                       <span className="font-medium">입금 확인일:</span>
-                      <div className="text-gray-600">
+                      <div className="text-gray-600 break-words">
                         {selectedReservationDetail.paymentConfirmedAt.toLocaleString(
                           "ko-KR",
                           {
@@ -2270,6 +2418,60 @@ export default function KYCDashboard() {
                         </div>
                       </div>
                     )}
+                    <div className="mt-2">
+                      <span className="font-medium">
+                        관리자 승인 마감 시간:
+                      </span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const baseTime =
+                            selectedReservationDetail.paymentConfirmedAt ||
+                            selectedReservationDetail.createdAt;
+                          const timeLimit = new Date(
+                            baseTime.getTime() + 24 * 60 * 60 * 1000
+                          ); // 24시간
+                          return timeLimit.toLocaleString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        })()}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="font-medium">남은 시간:</span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const baseTime =
+                            selectedReservationDetail.paymentConfirmedAt ||
+                            selectedReservationDetail.createdAt;
+                          const timeLimit = new Date(
+                            baseTime.getTime() + 24 * 60 * 60 * 1000
+                          ); // 24시간
+                          const now = new Date();
+                          const remaining = timeLimit.getTime() - now.getTime();
+
+                          if (remaining <= 0) {
+                            return "관리자 승인 시간이 만료되었습니다.";
+                          }
+
+                          return (
+                            <CountdownTimer
+                              deadline={timeLimit}
+                              onExpired={() => {
+                                // 타이머 만료 시 다이얼로그 닫기
+                                setIsReservationDetailDialogOpen(false);
+                                setSelectedReservationDetail(null);
+                              }}
+                              compact={true}
+                              testMode={process.env.NODE_ENV === "development"}
+                            />
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
