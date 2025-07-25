@@ -2076,9 +2076,11 @@ function KycPhoto({ userId }: { userId: string }) {
     (async () => {
       try {
         setLoading(true);
+        console.log("🔍 KycPhoto: Fetching user data for userId:", userId);
         const userDoc = await getDoc(doc(db, "users", userId));
         if (userDoc.exists()) {
           const data = userDoc.data();
+          console.log("📄 KycPhoto: User data found:", data);
           if (!ignore) {
             // Firestore 데이터를 UserData 타입으로 변환
             const userData: UserData = {
@@ -2102,11 +2104,17 @@ function KycPhoto({ userId }: { userId: string }) {
               approvedAt: data.approvedAt?.toDate?.() || undefined,
               rejectedAt: data.rejectedAt?.toDate?.() || undefined,
             };
+            console.log("✅ KycPhoto: Processed user data:", userData);
             setUserData(userData);
           }
+        } else {
+          console.log(
+            "❌ KycPhoto: User document not found for userId:",
+            userId
+          );
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("🚨 KycPhoto: Error fetching user data:", error);
       } finally {
         if (!ignore) {
           setLoading(false);
