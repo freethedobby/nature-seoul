@@ -138,6 +138,10 @@ export default function KYCDashboard() {
   const [reservationDeleteReason, setReservationDeleteReason] = useState("");
   const [isReservationDeleteDialogOpen, setIsReservationDeleteDialogOpen] =
     useState(false);
+  const [selectedReservationDetail, setSelectedReservationDetail] =
+    useState<ReservationData | null>(null);
+  const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
+    useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -301,11 +305,35 @@ export default function KYCDashboard() {
               : new Date(data.createdAt || Date.now()),
         } as ReservationData);
       });
-      reservs.sort(
+
+      // 필터링: 입금시간이 지난 cancel된 건과 입금대기 중인 건 중 시간이 지난 것 제외
+      const now = new Date();
+      const filteredReservs = reservs.filter((reservation) => {
+        // cancelled 상태는 제외
+        if (reservation.status === "cancelled") {
+          return false;
+        }
+
+        // payment_required 상태에서 입금시간이 지난 경우 제외
+        if (reservation.status === "payment_required") {
+          // 예약 생성 후 30분이 지났는지 확인
+          const reservationTime = new Date(reservation.createdAt);
+          const timeLimit = new Date(
+            reservationTime.getTime() + 30 * 60 * 1000
+          ); // 30분
+          if (now > timeLimit) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      filteredReservs.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      setReservations(reservs);
+      setReservations(filteredReservs);
     });
 
     return () => {
@@ -1668,7 +1696,14 @@ export default function KYCDashboard() {
               </Card>
             ) : (
               reservations.map((reservation) => (
-                <Card key={reservation.id}>
+                <Card
+                  key={reservation.id}
+                  className="hover:shadow-md cursor-pointer transition-shadow"
+                  onClick={() => {
+                    setSelectedReservationDetail(reservation);
+                    setIsReservationDetailDialogOpen(true);
+                  }}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -1879,6 +1914,200 @@ export default function KYCDashboard() {
               disabled={!reservationDeleteReason.trim()}
             >
               삭제하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 예약 상세 정보 다이얼로그 */}
+      <Dialog
+        open={isReservationDetailDialogOpen}
+        onOpenChange={setIsReservationDetailDialogOpen}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>예약 상세 정보</DialogTitle>
+            <DialogDescription>
+              예약자의 상세 정보를 확인할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReservationDetail && (
+            <div className="space-y-6">
+              {/* 기본 정보 */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 font-semibold">기본 정보</h3>
+                  <div className="space-y-1 text-sm">
+                    <div>
+                      <span className="font-medium">이름:</span>{" "}
+                      {selectedReservationDetail.userName}
+                    </div>
+                    <div>
+                      <span className="font-medium">이메일:</span>{" "}
+                      {selectedReservationDetail.userEmail}
+                    </div>
+                    <div>
+                      <span className="font-medium">예약일:</span>{" "}
+                      {selectedReservationDetail.date || "미정"}
+                    </div>
+                    <div>
+                      <span className="font-medium">시간:</span>{" "}
+                      {selectedReservationDetail.time || "미정"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 font-semibold">예약 상태</h3>
+                  <div className="space-y-1 text-sm">
+                    <div>
+                      <span className="font-medium">상태:</span>{" "}
+                      <Badge
+                        variant={
+                          selectedReservationDetail.status === "approved"
+                            ? "default"
+                            : selectedReservationDetail.status ===
+                              "payment_confirmed"
+                            ? "secondary"
+                            : "outline"
+                        }
+                      >
+                        {selectedReservationDetail.status === "approved"
+                          ? "확정"
+                          : selectedReservationDetail.status ===
+                            "payment_confirmed"
+                          ? "입금확인중"
+                          : selectedReservationDetail.status ===
+                            "payment_required"
+                          ? "입금대기"
+                          : selectedReservationDetail.status === "rejected"
+                          ? "거절"
+                          : "대기"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">예약 ID:</span>{" "}
+                      {selectedReservationDetail.id}
+                    </div>
+                    <div>
+                      <span className="font-medium">사용자 ID:</span>{" "}
+                      {selectedReservationDetail.userId}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 시간 정보 */}
+              <div className="space-y-2">
+                <h3 className="text-gray-900 font-semibold">시간 정보</h3>
+                <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                  <div>
+                    <span className="font-medium">예약 생성일:</span>
+                    <div className="text-gray-600">
+                      {selectedReservationDetail.createdAt &&
+                      !isNaN(selectedReservationDetail.createdAt.getTime())
+                        ? selectedReservationDetail.createdAt.toLocaleString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            }
+                          )
+                        : "날짜 정보 없음"}
+                    </div>
+                  </div>
+
+                  {selectedReservationDetail.paymentConfirmedAt && (
+                    <div>
+                      <span className="font-medium">입금 확인일:</span>
+                      <div className="text-gray-600">
+                        {selectedReservationDetail.paymentConfirmedAt.toLocaleString(
+                          "ko-KR",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          }
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 입금 대기 시간 정보 */}
+              {selectedReservationDetail.status === "payment_required" && (
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 font-semibold">
+                    입금 대기 정보
+                  </h3>
+                  <div className="text-sm">
+                    <div>
+                      <span className="font-medium">입금 마감 시간:</span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const reservationTime = new Date(
+                            selectedReservationDetail.createdAt
+                          );
+                          const timeLimit = new Date(
+                            reservationTime.getTime() + 30 * 60 * 1000
+                          );
+                          return timeLimit.toLocaleString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        })()}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="font-medium">남은 시간:</span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const reservationTime = new Date(
+                            selectedReservationDetail.createdAt
+                          );
+                          const timeLimit = new Date(
+                            reservationTime.getTime() + 30 * 60 * 1000
+                          );
+                          const now = new Date();
+                          const remaining = timeLimit.getTime() - now.getTime();
+
+                          if (remaining <= 0) {
+                            return "입금 시간이 만료되었습니다.";
+                          }
+
+                          const minutes = Math.floor(remaining / (1000 * 60));
+                          const seconds = Math.floor(
+                            (remaining % (1000 * 60)) / 1000
+                          );
+                          return `${minutes}분 ${seconds}초 남음`;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsReservationDetailDialogOpen(false);
+                setSelectedReservationDetail(null);
+              }}
+            >
+              닫기
             </Button>
           </DialogFooter>
         </DialogContent>
