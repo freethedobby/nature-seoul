@@ -42,6 +42,7 @@ import {
 } from "firebase/firestore";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
+import CountdownTimer from "@/components/CountdownTimer";
 
 // 서울시 시군구 데이터
 const districts = [
@@ -306,11 +307,8 @@ export default function KYCDashboard() {
         } as ReservationData);
       });
 
-      // admin 페이지에서는 cancelled 상태만 제외하고 모든 예약 표시
-      const filteredReservs = reservs.filter((reservation) => {
-        // cancelled 상태만 제외 (admin은 모든 활성 예약을 볼 수 있어야 함)
-        return reservation.status !== "cancelled";
-      });
+      // admin 페이지에서는 모든 예약 표시 (cancelled 포함하여 관리자가 모든 상태 확인 가능)
+      const filteredReservs = reservs;
 
       filteredReservs.sort(
         (a, b) =>
@@ -1715,9 +1713,9 @@ export default function KYCDashboard() {
                                 })
                               : "날짜 정보 없음"}
                           </div>
-                          {/* 입금 대기 상태에서 시간 정보 표시 */}
+                          {/* 입금 대기 상태에서 타이머 표시 */}
                           {reservation.status === "payment_required" && (
-                            <div className="mt-1 text-sm">
+                            <div className="mt-2">
                               {(() => {
                                 const now = new Date();
                                 const reservationTime = new Date(
@@ -1731,22 +1729,28 @@ export default function KYCDashboard() {
 
                                 if (remaining <= 0) {
                                   return (
-                                    <span className="text-red-600 font-medium">
+                                    <div className="text-red-600 text-sm font-medium">
                                       ⏰ 입금 시간 만료됨
-                                    </span>
+                                    </div>
                                   );
                                 } else {
-                                  const minutes = Math.floor(
-                                    remaining / (1000 * 60)
-                                  );
-                                  const seconds = Math.floor(
-                                    (remaining % (1000 * 60)) / 1000
-                                  );
                                   return (
-                                    <span className="text-orange-600 font-medium">
-                                      ⏰ 입금 마감까지 {minutes}분 {seconds}초
-                                      남음
-                                    </span>
+                                    <div className="space-y-1">
+                                      <div className="text-orange-600 text-sm font-medium">
+                                        ⏰ 입금 마감까지
+                                      </div>
+                                      <CountdownTimer
+                                        deadline={timeLimit}
+                                        onExpired={() => {
+                                          // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
+                                          window.location.reload();
+                                        }}
+                                        compact={true}
+                                        testMode={
+                                          process.env.NODE_ENV === "development"
+                                        }
+                                      />
+                                    </div>
                                   );
                                 }
                               })()}
@@ -1774,6 +1778,10 @@ export default function KYCDashboard() {
                                     ? "destructive"
                                     : "outline";
                                 })()
+                              : reservation.status === "cancelled"
+                              ? "destructive"
+                              : reservation.status === "rejected"
+                              ? "destructive"
                               : "outline"
                           }
                         >
@@ -1794,6 +1802,8 @@ export default function KYCDashboard() {
                                   ? "입금시간만료"
                                   : "입금대기";
                               })()
+                            : reservation.status === "cancelled"
+                            ? "취소됨"
                             : reservation.status === "rejected"
                             ? "거절"
                             : "대기"}
@@ -2013,6 +2023,24 @@ export default function KYCDashboard() {
                             : selectedReservationDetail.status ===
                               "payment_confirmed"
                             ? "secondary"
+                            : selectedReservationDetail.status ===
+                              "payment_required"
+                            ? (() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  selectedReservationDetail.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                return now > timeLimit
+                                  ? "destructive"
+                                  : "outline";
+                              })()
+                            : selectedReservationDetail.status === "cancelled"
+                            ? "destructive"
+                            : selectedReservationDetail.status === "rejected"
+                            ? "destructive"
                             : "outline"
                         }
                       >
@@ -2023,7 +2051,20 @@ export default function KYCDashboard() {
                           ? "입금확인중"
                           : selectedReservationDetail.status ===
                             "payment_required"
-                          ? "입금대기"
+                          ? (() => {
+                              const now = new Date();
+                              const reservationTime = new Date(
+                                selectedReservationDetail.createdAt
+                              );
+                              const timeLimit = new Date(
+                                reservationTime.getTime() + 30 * 60 * 1000
+                              );
+                              return now > timeLimit
+                                ? "입금시간만료"
+                                : "입금대기";
+                            })()
+                          : selectedReservationDetail.status === "cancelled"
+                          ? "취소됨"
                           : selectedReservationDetail.status === "rejected"
                           ? "거절"
                           : "대기"}
@@ -2130,11 +2171,18 @@ export default function KYCDashboard() {
                             return "입금 시간이 만료되었습니다.";
                           }
 
-                          const minutes = Math.floor(remaining / (1000 * 60));
-                          const seconds = Math.floor(
-                            (remaining % (1000 * 60)) / 1000
+                          return (
+                            <CountdownTimer
+                              deadline={timeLimit}
+                              onExpired={() => {
+                                // 타이머 만료 시 다이얼로그 닫기
+                                setIsReservationDetailDialogOpen(false);
+                                setSelectedReservationDetail(null);
+                              }}
+                              compact={true}
+                              testMode={process.env.NODE_ENV === "development"}
+                            />
                           );
-                          return `${minutes}분 ${seconds}초 남음`;
                         })()}
                       </div>
                     </div>
