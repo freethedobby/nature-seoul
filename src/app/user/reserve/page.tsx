@@ -21,14 +21,7 @@ import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "@/components/CountdownTimer";
-import {
-  Calendar,
-  Clock,
-  CreditCard,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { Calendar, Clock, CreditCard, AlertCircle, Check } from "lucide-react";
 
 interface SlotData {
   id: string;
@@ -153,6 +146,30 @@ export default function UserReservePage() {
         }
 
         const data = snap.docs[0].data();
+        console.log("Firestore에서 가져온 원본 데이터:", data);
+
+        // paymentDeadline 처리 로직 개선
+        let paymentDeadline: Date | null = null;
+
+        if (data.paymentDeadline) {
+          if (data.paymentDeadline.toDate) {
+            paymentDeadline = data.paymentDeadline.toDate();
+          } else if (data.paymentDeadline instanceof Date) {
+            paymentDeadline = data.paymentDeadline;
+          } else if (typeof data.paymentDeadline === "number") {
+            paymentDeadline = new Date(data.paymentDeadline);
+          }
+        }
+
+        // paymentDeadline이 없으면 createdAt + 30분으로 생성
+        if (!paymentDeadline && data.createdAt) {
+          const createdAt = data.createdAt.toDate
+            ? data.createdAt.toDate()
+            : new Date(data.createdAt);
+          paymentDeadline = new Date(createdAt.getTime() + 30 * 60 * 1000);
+          console.log("paymentDeadline이 없어서 생성:", paymentDeadline);
+        }
+
         const reservationData: ReservationData = {
           id: snap.docs[0].id,
           slotId: data.slotId,
@@ -166,16 +183,7 @@ export default function UserReservePage() {
           paymentConfirmedAt:
             data.paymentConfirmedAt?.toDate?.() || data.paymentConfirmedAt,
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          paymentDeadline:
-            data.paymentDeadline?.toDate?.() ||
-            (data.paymentDeadline instanceof Date
-              ? data.paymentDeadline
-              : data.createdAt
-              ? new Date(
-                  data.createdAt.toDate?.() || data.createdAt
-                ).getTime() +
-                30 * 60 * 1000
-              : null),
+          paymentDeadline: paymentDeadline || undefined,
         };
 
         // 취소된 예약인 경우 reservation을 null로 설정하여 예약하기 버튼 표시
@@ -524,181 +532,178 @@ export default function UserReservePage() {
         </div>
 
         {/* Show user's reservation if exists */}
-        {reservation && reservedSlot && (
-          <div className="mb-8">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-sm rounded-2xl border p-6">
-              <div className="mb-4 flex items-center space-x-3">
-                <div className="bg-green-100 rounded-full p-2">
-                  <Calendar className="text-green-600 h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-green-800 text-lg font-bold">내 예약</h2>
-                  <p className="text-green-600 text-sm">
-                    {reservedSlot.start.toLocaleDateString("ko-KR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}{" "}
-                    {reservedSlot.start.toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </div>
+        {reservation &&
+          (() => {
+            console.log("예약 정보 표시 조건 확인:", {
+              reservation: reservation,
+              reservedSlot: reservedSlot,
+              slots: slots,
+            });
+            return reservedSlot ? (
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-sm rounded-2xl border p-6">
+                  <div className="mb-4 flex items-center space-x-3">
+                    <div className="bg-green-100 rounded-full p-2">
+                      <Calendar className="text-green-600 h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-green-800 text-lg font-bold">
+                        내 예약
+                      </h2>
+                      <p className="text-green-600 text-sm">
+                        {reservedSlot.start.toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        {reservedSlot.start.toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* 예약 상태에 따른 컨텐츠 */}
-              {(() => {
-                console.log("타이머 표시 조건 확인:", {
-                  status: reservation.status,
-                  paymentDeadline: reservation.paymentDeadline,
-                  shouldShow:
-                    reservation.status === "payment_required" &&
-                    reservation.paymentDeadline,
-                });
-                return (
-                  reservation.status === "payment_required" &&
-                  reservation.paymentDeadline
-                );
-              })() && (
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
-                    <div className="mb-4 flex items-center space-x-3">
-                      <div className="bg-black rounded-full p-2">
-                        <CreditCard className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-gray-900 text-lg font-semibold">
-                          예약금 입금 안내
-                        </h3>
-                        <p className="text-gray-600 text-sm">
-                          입금 후 확인 요청을 해주세요
-                        </p>
+                  {/* 예약 상태에 따른 컨텐츠 */}
+                  {(() => {
+                    const shouldShow =
+                      reservation.status === "payment_required" &&
+                      reservation.paymentDeadline;
+                    console.log("타이머 표시 조건 확인:", {
+                      status: reservation.status,
+                      paymentDeadline: reservation.paymentDeadline,
+                      shouldShow: shouldShow,
+                      reservation: reservation,
+                    });
+                    return shouldShow;
+                  })() && (
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 shadow-sm rounded-xl border p-6">
+                        <div className="mb-4 flex items-center space-x-3">
+                          <div className="bg-black rounded-full p-2">
+                            <CreditCard className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-gray-900 text-lg font-semibold">
+                              예약금 입금 안내
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                              입금 후 확인 요청을 해주세요
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* 카운트다운 타이머 통합 */}
+                        <div className="mb-5">
+                          <CountdownTimer
+                            deadline={reservation.paymentDeadline!}
+                            onExpired={handleCountdownExpired}
+                            compact={true}
+                            testMode={process.env.NODE_ENV === "development"}
+                          />
+                        </div>
+
+                        <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="text-gray-700 text-sm font-medium">
+                              예약금
+                            </span>
+                            <span className="text-gray-900 text-xl font-bold">
+                              200,000원
+                            </span>
+                          </div>
+                          <div className="bg-gray-50 rounded-md p-3">
+                            <div className="text-gray-600 mb-1 text-xs font-medium">
+                              입금 계좌 정보
+                            </div>
+                            <div className="text-gray-800 font-mono text-sm">
+                              123-456-789012
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              예금주: 네이처서울
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          className="bg-black hover:bg-gray-800 shadow-lg hover:shadow-xl w-full transform rounded-lg px-6 py-4 font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={handleConfirmPayment}
+                          disabled={confirmingPayment}
+                        >
+                          {confirmingPayment ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin h-4 w-4 rounded-full border-b-2 border-white"></div>
+                              <span>처리중...</span>
+                            </div>
+                          ) : (
+                            "입금확인요청"
+                          )}
+                        </button>
                       </div>
                     </div>
+                  )}
 
-                    {/* 카운트다운 타이머 통합 */}
-                    <div className="mb-5">
-                      <CountdownTimer
-                        deadline={reservation.paymentDeadline!}
-                        onExpired={handleCountdownExpired}
-                        compact={true}
-                        testMode={process.env.NODE_ENV === "development"}
-                      />
-                    </div>
-
-                    <div className="border-gray-100 shadow-sm mb-5 rounded-lg border bg-white p-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-gray-700 text-sm font-medium">
-                          예약금
-                        </span>
-                        <span className="text-gray-900 text-xl font-bold">
-                          200,000원
-                        </span>
-                      </div>
-                      <div className="bg-gray-50 rounded-md p-3">
-                        <div className="text-gray-600 mb-1 text-xs font-medium">
-                          입금 계좌 정보
+                  {reservation.status === "payment_confirmed" && (
+                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 rounded-xl border p-5">
+                      <div className="mb-3 flex items-center space-x-3">
+                        <div className="bg-black rounded-full p-2">
+                          <Clock className="h-5 w-5 text-white" />
                         </div>
-                        <div className="text-gray-800 font-mono text-sm">
-                          123-456-789012
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          예금주: 네이처서울
+                        <div>
+                          <h3 className="text-gray-800 text-lg font-semibold">
+                            관리자 확인 대기
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                            입금 확인 요청이 완료되었습니다
+                          </p>
                         </div>
                       </div>
+                      <p className="text-gray-600 text-sm">
+                        관리자 확인 후 예약이 확정됩니다
+                      </p>
                     </div>
+                  )}
 
+                  {reservation.status === "approved" && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 rounded-xl border p-5">
+                      <div className="mb-3 flex items-center space-x-3">
+                        <div className="bg-green-100 rounded-full p-2">
+                          <Check className="text-green-600 h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-green-800 text-lg font-semibold">
+                            예약 확정
+                          </h3>
+                          <p className="text-green-600 text-sm">
+                            예약이 확정되었습니다
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 취소 버튼 */}
+                  <div className="mt-4">
                     <button
-                      className="bg-black hover:bg-gray-800 shadow-lg hover:shadow-xl w-full transform rounded-lg px-6 py-4 font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={handleConfirmPayment}
-                      disabled={confirmingPayment}
+                      className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 rounded-lg border px-4 py-2 text-sm font-semibold transition-all duration-200"
+                      onClick={handleCancel}
+                      disabled={canceling}
                     >
-                      {confirmingPayment ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="animate-spin h-4 w-4 rounded-full border-b-2 border-white"></div>
-                          <span>처리중...</span>
-                        </div>
-                      ) : (
-                        "입금확인요청"
-                      )}
+                      {canceling ? "취소 중..." : "예약 취소"}
                     </button>
                   </div>
                 </div>
-              )}
-
-              {reservation.status === "payment_confirmed" && (
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 rounded-xl border p-5">
-                  <div className="mb-3 flex items-center space-x-3">
-                    <div className="bg-black rounded-full p-2">
-                      <Clock className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-gray-800 text-lg font-semibold">
-                        관리자 확인 대기
-                      </h3>
-                      <p className="text-gray-600 text-sm">
-                        입금 확인 요청이 완료되었습니다
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 text-sm">
-                    관리자 확인 후 예약이 확정됩니다
+              </div>
+            ) : (
+              <div className="mb-8">
+                <div className="bg-yellow-50 border-yellow-200 rounded-xl border p-4">
+                  <p className="text-yellow-800 text-sm">
+                    예약된 슬롯을 찾을 수 없습니다. 관리자에게 문의해주세요.
                   </p>
                 </div>
-              )}
-
-              {reservation.status === "approved" && (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 rounded-xl border p-5">
-                  <div className="mb-3 flex items-center space-x-3">
-                    <div className="bg-green-100 rounded-full p-2">
-                      <CheckCircle className="text-green-600 h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-green-800 text-lg font-semibold">
-                        예약 확정
-                      </h3>
-                      <p className="text-green-600 text-sm">
-                        예약이 확정되었습니다
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {reservation.status === "rejected" && (
-                <div className="bg-gradient-to-r from-red-50 to-pink-50 border-red-200 rounded-xl border p-5">
-                  <div className="mb-3 flex items-center space-x-3">
-                    <div className="bg-red-100 rounded-full p-2">
-                      <XCircle className="text-red-600 h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-red-800 text-lg font-semibold">
-                        예약 거절
-                      </h3>
-                      <p className="text-red-600 text-sm">
-                        예약이 거절되었습니다
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4 flex justify-center">
-                {/* 예약이 확정된 경우 취소 버튼 숨김 */}
-                {reservation.status !== "approved" && (
-                  <button
-                    className="hover:bg-gray-50 text-gray-700 border-gray-300 shadow-sm hover:shadow-md rounded-lg border bg-white px-6 py-2 text-sm font-semibold transition-all duration-200"
-                    onClick={handleCancel}
-                    disabled={canceling}
-                  >
-                    {canceling ? "취소중..." : "예약 취소"}
-                  </button>
-                )}
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })()}
 
         {/* Calendar Section */}
         <div className="shadow-lg mb-6 rounded-2xl bg-white p-6">
