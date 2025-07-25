@@ -1756,6 +1756,50 @@ export default function KYCDashboard() {
                               })()}
                             </div>
                           )}
+
+                          {/* 입금 확인중 상태에서 타이머 표시 */}
+                          {reservation.status === "payment_confirmed" && (
+                            <div className="mt-2">
+                              {(() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  reservation.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                const remaining =
+                                  timeLimit.getTime() - now.getTime();
+
+                                if (remaining <= 0) {
+                                  return (
+                                    <div className="text-red-600 text-sm font-medium">
+                                      ⏰ 입금 확인 시간 만료됨
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <div className="space-y-1">
+                                      <div className="text-blue-600 text-sm font-medium">
+                                        ⏰ 입금 확인 마감까지
+                                      </div>
+                                      <CountdownTimer
+                                        deadline={timeLimit}
+                                        onExpired={() => {
+                                          // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
+                                          window.location.reload();
+                                        }}
+                                        compact={true}
+                                        testMode={
+                                          process.env.NODE_ENV === "development"
+                                        }
+                                      />
+                                    </div>
+                                  );
+                                }
+                              })()}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1834,18 +1878,58 @@ export default function KYCDashboard() {
                           </div>
                         )}
 
-                        {/* 삭제 버튼 - 모든 상태에서 표시 */}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => {
-                            setSelectedReservationId(reservation.id);
-                            setIsReservationDeleteDialogOpen(true);
-                          }}
-                          className="ml-1"
-                        >
-                          삭제
-                        </Button>
+                        {/* 확정 버튼 - 입금시간 만료된 예약일 때만 표시 */}
+                        {reservation.status === "payment_required" &&
+                          (() => {
+                            const now = new Date();
+                            const reservationTime = new Date(
+                              reservation.createdAt
+                            );
+                            const timeLimit = new Date(
+                              reservationTime.getTime() + 30 * 60 * 1000
+                            );
+                            return now > timeLimit ? (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handleReservationApprove(reservation.id)
+                                }
+                                className="bg-green-500 hover:bg-green-600 text-white"
+                              >
+                                확정
+                              </Button>
+                            ) : null;
+                          })()}
+
+                        {/* 삭제 버튼 - 입금시간 만료된 예약이 아닐 때만 표시 */}
+                        {(() => {
+                          if (reservation.status === "payment_required") {
+                            const now = new Date();
+                            const reservationTime = new Date(
+                              reservation.createdAt
+                            );
+                            const timeLimit = new Date(
+                              reservationTime.getTime() + 30 * 60 * 1000
+                            );
+                            // 입금시간 만료된 예약은 삭제 버튼 숨김
+                            if (now > timeLimit) {
+                              return null;
+                            }
+                          }
+                          return (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                setSelectedReservationId(reservation.id);
+                                setIsReservationDeleteDialogOpen(true);
+                              }}
+                              className="ml-1"
+                            >
+                              삭제
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </CardHeader>
@@ -2169,6 +2253,69 @@ export default function KYCDashboard() {
 
                           if (remaining <= 0) {
                             return "입금 시간이 만료되었습니다.";
+                          }
+
+                          return (
+                            <CountdownTimer
+                              deadline={timeLimit}
+                              onExpired={() => {
+                                // 타이머 만료 시 다이얼로그 닫기
+                                setIsReservationDetailDialogOpen(false);
+                                setSelectedReservationDetail(null);
+                              }}
+                              compact={true}
+                              testMode={process.env.NODE_ENV === "development"}
+                            />
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 입금 확인중 시간 정보 */}
+              {selectedReservationDetail.status === "payment_confirmed" && (
+                <div className="space-y-2">
+                  <h3 className="text-gray-900 font-semibold">
+                    입금 확인 정보
+                  </h3>
+                  <div className="text-sm">
+                    <div>
+                      <span className="font-medium">입금 확인 마감 시간:</span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const reservationTime = new Date(
+                            selectedReservationDetail.createdAt
+                          );
+                          const timeLimit = new Date(
+                            reservationTime.getTime() + 30 * 60 * 1000
+                          );
+                          return timeLimit.toLocaleString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        })()}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="font-medium">남은 시간:</span>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const reservationTime = new Date(
+                            selectedReservationDetail.createdAt
+                          );
+                          const timeLimit = new Date(
+                            reservationTime.getTime() + 30 * 60 * 1000
+                          );
+                          const now = new Date();
+                          const remaining = timeLimit.getTime() - now.getTime();
+
+                          if (remaining <= 0) {
+                            return "입금 확인 시간이 만료되었습니다.";
                           }
 
                           return (
