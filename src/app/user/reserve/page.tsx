@@ -145,7 +145,27 @@ export default function UserReservePage() {
           return;
         }
 
-        const data = snap.docs[0].data();
+        // 모든 활성 예약을 가져와서 가장 최근 것을 선택
+        const activeReservations = snap.docs
+          .map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              data: data,
+              createdAt:
+                data.createdAt?.toDate?.() ||
+                new Date(data.createdAt || Date.now()),
+            };
+          })
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+        console.log("활성 예약 목록:", activeReservations);
+
+        // 가장 최근 예약 선택
+        const latestReservation = activeReservations[0];
+        const data = latestReservation.data;
+
+        console.log("선택된 최근 예약:", latestReservation);
         console.log("Firestore에서 가져온 원본 데이터:", data);
 
         // paymentDeadline 처리 로직 개선
@@ -276,6 +296,14 @@ export default function UserReservePage() {
 
   const handleReserve = async (slot: SlotData) => {
     if (!user) return;
+
+    // 이미 활성 예약이 있는지 확인
+    if (reservation && reservation.status !== "cancelled") {
+      alert(
+        "이미 활성 예약이 있습니다. 기존 예약을 취소한 후 새로운 예약을 진행해주세요."
+      );
+      return;
+    }
 
     setReserving(true);
     try {
@@ -448,6 +476,14 @@ export default function UserReservePage() {
 
   // 1단계: 예약 확인 다이얼로그
   const handleReserveClick = (slot: SlotData) => {
+    // 이미 활성 예약이 있는지 확인
+    if (reservation && reservation.status !== "cancelled") {
+      alert(
+        "이미 활성 예약이 있습니다. 기존 예약을 취소한 후 새로운 예약을 진행해주세요."
+      );
+      return;
+    }
+
     setPendingSlot(slot);
     setShowReserveBtn(null); // 1단계 다이얼로그 닫기
     setShowConfirmDialog(true);
@@ -814,6 +850,10 @@ export default function UserReservePage() {
           {slotsForSelectedDay.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slotsForSelectedDay.map((slot) => {
+                // 현재 사용자가 어떤 슬롯이든 활성 예약을 가지고 있는지 확인
+                const hasAnyActiveReservation =
+                  reservation && reservation.status !== "cancelled";
+
                 // 현재 사용자가 이 슬롯을 예약했는지 확인
                 const isBookedByCurrentUser =
                   reservation &&
@@ -838,14 +878,16 @@ export default function UserReservePage() {
                   slotReservation.userId !== user?.uid &&
                   (!hasApprovedReservation || !isTimePassed);
 
-                // 예약 불가능한 경우: 현재 사용자가 이 슬롯을 예약했거나, 다른 사용자가 예약했거나
-                const isDisabled = isBookedByCurrentUser || isBookedByOthers;
+                // 예약 불가능한 경우: 현재 사용자가 활성 예약을 가지고 있거나, 다른 사용자가 예약했거나
+                const isDisabled = hasAnyActiveReservation || isBookedByOthers;
 
                 return (
                   <div key={slot.id} className="relative">
                     <button
                       className={`focus:ring-green-400 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                        isBookedByCurrentUser
+                        hasAnyActiveReservation
+                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          : isBookedByCurrentUser
                           ? "border-blue-200 bg-blue-50 text-blue-600 cursor-not-allowed"
                           : isBookedByOthers
                           ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed"
@@ -854,7 +896,9 @@ export default function UserReservePage() {
                       disabled={isDisabled}
                       onClick={() => !isDisabled && setShowReserveBtn(slot.id)}
                       title={
-                        isBookedByCurrentUser
+                        hasAnyActiveReservation
+                          ? "이미 다른 예약이 있습니다."
+                          : isBookedByCurrentUser
                           ? "이미 예약한 시간입니다."
                           : isBookedByOthers
                           ? hasApprovedReservation && !isTimePassed
