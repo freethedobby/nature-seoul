@@ -262,25 +262,41 @@ export default function DashboardPage() {
 
     const q = query(
       collection(db, "reservations"),
-      where("userId", "==", user.uid),
-      where("status", "!=", "cancelled") // 취소된 예약 제외
+      where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
         setReservation(null);
       } else {
-        const docData = snapshot.docs[0];
-        const data = docData.data();
-        setReservation({
-          id: docData.id,
-          date: data.date,
-          time: data.time,
-          status: data.status,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          paymentDeadline:
-            data.paymentDeadline?.toDate?.() || data.paymentDeadline,
-        });
+        // 모든 예약을 가져온 후 클라이언트에서 필터링
+        const activeReservations = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              date: data.date,
+              time: data.time,
+              status: data.status,
+              createdAt: data.createdAt?.toDate?.() || new Date(),
+              paymentDeadline:
+                data.paymentDeadline?.toDate?.() || data.paymentDeadline,
+            };
+          })
+          .filter(
+            (reservation) =>
+              reservation.status !== "cancelled" &&
+              reservation.status !== "rejected"
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+        // 가장 최근의 활성 예약을 설정
+        setReservation(
+          activeReservations.length > 0 ? activeReservations[0] : null
+        );
       }
     });
 

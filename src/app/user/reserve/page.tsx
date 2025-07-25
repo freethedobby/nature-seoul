@@ -128,24 +128,14 @@ export default function UserReservePage() {
     if (!user) return;
 
     const unsub = onSnapshot(
-      query(
-        collection(db, "reservations"),
-        where("userId", "==", user.uid),
-        where("status", "in", [
-          "pending",
-          "payment_required",
-          "payment_confirmed",
-          "approved",
-          "cancelled", // 취소된 예약도 포함하여 UI 업데이트
-        ])
-      ),
+      query(collection(db, "reservations"), where("userId", "==", user.uid)),
       (snap) => {
         if (snap.empty) {
           setReservation(null);
           return;
         }
 
-        // 모든 활성 예약을 가져와서 가장 최근 것을 선택
+        // 모든 예약을 가져온 후 클라이언트에서 필터링
         const activeReservations = snap.docs
           .map((doc) => {
             const data = doc.data();
@@ -157,9 +147,19 @@ export default function UserReservePage() {
                 new Date(data.createdAt || Date.now()),
             };
           })
+          .filter(
+            (reservation) =>
+              reservation.data.status !== "cancelled" &&
+              reservation.data.status !== "rejected"
+          )
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         console.log("활성 예약 목록:", activeReservations);
+
+        if (activeReservations.length === 0) {
+          setReservation(null);
+          return;
+        }
 
         // 가장 최근 예약 선택
         const latestReservation = activeReservations[0];
@@ -191,7 +191,7 @@ export default function UserReservePage() {
         }
 
         const reservationData: ReservationData = {
-          id: snap.docs[0].id,
+          id: latestReservation.id,
           slotId: data.slotId,
           userId: data.userId,
           userEmail: data.userEmail,
