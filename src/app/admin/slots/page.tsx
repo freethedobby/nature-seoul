@@ -1930,25 +1930,6 @@ export default function SlotManagement() {
                   </h3>
                   <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-4 sm:text-sm">
                     <div>
-                      <span className="font-medium">이름:</span>{" "}
-                      <span className="break-words">
-                        {kycNames[selectedReservationDetail.userId] ||
-                          "Unknown"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium">이메일:</span>{" "}
-                      <span className="break-all">
-                        {selectedReservationDetail.userEmail}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium">연락처:</span>{" "}
-                      <span className="break-all">
-                        {kycContacts[selectedReservationDetail.userId] || "-"}
-                      </span>
-                    </div>
-                    <div>
                       <span className="font-medium">예약 시간:</span>{" "}
                       {(() => {
                         const slot = slots.find(
@@ -1958,6 +1939,24 @@ export default function SlotManagement() {
                           ? format(new Date(slot.start), "yyyy년 M월 d일 HH:mm")
                           : "시간 미정";
                       })()}
+                    </div>
+                    <div>
+                      <span className="font-medium">예약 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.id}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">사용자 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userId}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">슬롯 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.slotId}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2000,24 +1999,6 @@ export default function SlotManagement() {
                           ? "거절"
                           : "대기"}
                       </Badge>
-                    </div>
-                    <div>
-                      <span className="font-medium">예약 ID:</span>{" "}
-                      <span className="break-all">
-                        {selectedReservationDetail.id}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium">사용자 ID:</span>{" "}
-                      <span className="break-all">
-                        {selectedReservationDetail.userId}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium">슬롯 ID:</span>{" "}
-                      <span className="break-all">
-                        {selectedReservationDetail.slotId}
-                      </span>
                     </div>
                   </div>
                 </div>
