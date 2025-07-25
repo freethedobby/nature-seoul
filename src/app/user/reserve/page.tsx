@@ -692,7 +692,18 @@ export default function UserReservePage() {
               selected={selectedDate}
               onSelect={setSelectedDate}
               month={currentMonth}
-              onMonthChange={setCurrentMonth}
+              onMonthChange={(newMonth) => {
+                if (newMonth) {
+                  const today = new Date();
+                  const maxMonth = new Date();
+                  maxMonth.setMonth(maxMonth.getMonth() + 6);
+
+                  // 현재 월부터 +6개월까지만 이동 가능
+                  if (newMonth >= today && newMonth <= maxMonth) {
+                    setCurrentMonth(newMonth);
+                  }
+                }
+              }}
               locale={ko}
               weekStartsOn={0}
               disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
