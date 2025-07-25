@@ -1760,44 +1760,9 @@ export default function KYCDashboard() {
                           {/* 입금 확인중 상태에서 타이머 표시 */}
                           {reservation.status === "payment_confirmed" && (
                             <div className="mt-2">
-                              {(() => {
-                                const now = new Date();
-                                const reservationTime = new Date(
-                                  reservation.createdAt
-                                );
-                                const timeLimit = new Date(
-                                  reservationTime.getTime() + 30 * 60 * 1000
-                                );
-                                const remaining =
-                                  timeLimit.getTime() - now.getTime();
-
-                                if (remaining <= 0) {
-                                  return (
-                                    <div className="text-red-600 text-sm font-medium">
-                                      ⏰ 입금 확인 시간 만료됨
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <div className="space-y-1">
-                                      <div className="text-blue-600 text-sm font-medium">
-                                        ⏰ 입금 확인 마감까지
-                                      </div>
-                                      <CountdownTimer
-                                        deadline={timeLimit}
-                                        onExpired={() => {
-                                          // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
-                                          window.location.reload();
-                                        }}
-                                        compact={true}
-                                        testMode={
-                                          process.env.NODE_ENV === "development"
-                                        }
-                                      />
-                                    </div>
-                                  );
-                                }
-                              })()}
+                              <div className="text-blue-600 text-sm font-medium">
+                                ✅ 입금 확인 완료 - 관리자 승인 대기중
+                              </div>
                             </div>
                           )}
                         </div>
@@ -2282,57 +2247,29 @@ export default function KYCDashboard() {
                   </h3>
                   <div className="text-sm">
                     <div>
-                      <span className="font-medium">입금 확인 마감 시간:</span>
-                      <div className="text-gray-600">
-                        {(() => {
-                          const reservationTime = new Date(
-                            selectedReservationDetail.createdAt
-                          );
-                          const timeLimit = new Date(
-                            reservationTime.getTime() + 30 * 60 * 1000
-                          );
-                          return timeLimit.toLocaleString("ko-KR", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          });
-                        })()}
+                      <span className="font-medium">상태:</span>
+                      <div className="text-blue-600 font-medium">
+                        ✅ 입금 확인 완료 - 관리자 승인 대기중
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <span className="font-medium">남은 시간:</span>
-                      <div className="text-gray-600">
-                        {(() => {
-                          const reservationTime = new Date(
-                            selectedReservationDetail.createdAt
-                          );
-                          const timeLimit = new Date(
-                            reservationTime.getTime() + 30 * 60 * 1000
-                          );
-                          const now = new Date();
-                          const remaining = timeLimit.getTime() - now.getTime();
-
-                          if (remaining <= 0) {
-                            return "입금 확인 시간이 만료되었습니다.";
-                          }
-
-                          return (
-                            <CountdownTimer
-                              deadline={timeLimit}
-                              onExpired={() => {
-                                // 타이머 만료 시 다이얼로그 닫기
-                                setIsReservationDetailDialogOpen(false);
-                                setSelectedReservationDetail(null);
-                              }}
-                              compact={true}
-                              testMode={process.env.NODE_ENV === "development"}
-                            />
-                          );
-                        })()}
+                    {selectedReservationDetail.paymentConfirmedAt && (
+                      <div className="mt-2">
+                        <span className="font-medium">입금 확인일:</span>
+                        <div className="text-gray-600">
+                          {selectedReservationDetail.paymentConfirmedAt.toLocaleString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            }
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
