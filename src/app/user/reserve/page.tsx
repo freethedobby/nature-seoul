@@ -257,9 +257,9 @@ export default function UserReservePage() {
 
     setReserving(true);
     try {
-      // Create payment deadline (3 hours from now)
+      // Create payment deadline (30 minutes from now)
       const paymentDeadline = new Date();
-      paymentDeadline.setHours(paymentDeadline.getHours() + 3);
+      paymentDeadline.setMinutes(paymentDeadline.getMinutes() + 30);
 
       const reservationData = {
         slotId: slot.id,
@@ -784,9 +784,11 @@ export default function UserReservePage() {
           {slotsForSelectedDay.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slotsForSelectedDay.map((slot) => {
-                // 현재 사용자가 어떤 슬롯이든 활성 예약을 가지고 있는지 확인
-                const hasAnyActiveReservation =
-                  reservation && reservation.status !== "cancelled";
+                // 현재 사용자가 이 슬롯을 예약했는지 확인
+                const isBookedByCurrentUser =
+                  reservation &&
+                  reservation.slotId === slot.id &&
+                  reservation.status !== "cancelled";
 
                 // 이 슬롯에 대한 활성 예약이 있는지 확인 (다른 사용자 포함)
                 const slotReservation = allReservations.find(
@@ -806,15 +808,15 @@ export default function UserReservePage() {
                   slotReservation.userId !== user?.uid &&
                   (!hasApprovedReservation || !isTimePassed);
 
-                // 예약 불가능한 경우: 현재 사용자가 활성 예약을 가지고 있거나, 다른 사용자가 예약했거나
-                const isDisabled = hasAnyActiveReservation || isBookedByOthers;
+                // 예약 불가능한 경우: 현재 사용자가 이 슬롯을 예약했거나, 다른 사용자가 예약했거나
+                const isDisabled = isBookedByCurrentUser || isBookedByOthers;
 
                 return (
                   <div key={slot.id} className="relative">
                     <button
                       className={`focus:ring-green-400 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                        hasAnyActiveReservation
-                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                        isBookedByCurrentUser
+                          ? "border-blue-200 bg-blue-50 text-blue-600 cursor-not-allowed"
                           : isBookedByOthers
                           ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed"
                           : "border-green-200 text-green-700 hover:border-green-300 hover:bg-green-50 hover:shadow-md bg-white"
@@ -822,8 +824,8 @@ export default function UserReservePage() {
                       disabled={isDisabled}
                       onClick={() => !isDisabled && setShowReserveBtn(slot.id)}
                       title={
-                        hasAnyActiveReservation
-                          ? "이미 다른 예약이 있습니다."
+                        isBookedByCurrentUser
+                          ? "이미 예약한 시간입니다."
                           : isBookedByOthers
                           ? hasApprovedReservation && !isTimePassed
                             ? "확정된 예약이 있습니다."
