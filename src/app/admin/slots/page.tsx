@@ -1147,9 +1147,32 @@ export default function SlotManagement() {
 
             {/* Slot Dialog (existing code) */}
             <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
+              <DialogContent
+                className={`
+                h-full max-h-[90vh] w-full
+                max-w-4xl overflow-y-auto rounded-lg
+                !bg-white p-0
+                sm:max-h-[85vh]
+                sm:max-w-2xl
+                sm:p-6
+              `}
+                style={{
+                  // 모바일에서 적당한 크기로 조정
+                  ...(typeof window !== "undefined" && window.innerWidth < 640
+                    ? {
+                        width: "95vw",
+                        height: "90vh",
+                        maxWidth: "95vw",
+                        maxHeight: "90vh",
+                        borderRadius: "8px",
+                      }
+                    : {}),
+                }}
+              >
                 <DialogHeader>
-                  <DialogTitle>새 슬롯 추가</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">
+                    새 슬롯 추가
+                  </DialogTitle>
                 </DialogHeader>
                 <form
                   onSubmit={handleCreateSlot}
@@ -1985,22 +2008,22 @@ export default function SlotManagement() {
       >
         <DialogContent
           className={`
-            h-full max-h-[95vh] w-full
+            h-full max-h-[90vh] w-full
             max-w-4xl overflow-y-auto rounded-lg
             !bg-white p-0
-            sm:max-h-[90vh]
+            sm:max-h-[85vh]
             sm:max-w-2xl
             sm:p-6
           `}
           style={{
-            // 모바일에서 꽉 차게
+            // 모바일에서 적당한 크기로 조정
             ...(typeof window !== "undefined" && window.innerWidth < 640
               ? {
-                  width: "100vw",
-                  height: "100vh",
-                  maxWidth: "100vw",
-                  maxHeight: "100vh",
-                  borderRadius: 0,
+                  width: "95vw",
+                  height: "90vh",
+                  maxWidth: "95vw",
+                  maxHeight: "90vh",
+                  borderRadius: "8px",
                 }
               : {}),
           }}
