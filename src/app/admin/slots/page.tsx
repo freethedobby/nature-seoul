@@ -515,6 +515,7 @@ export default function SlotManagement() {
 
       // Fetch full user data for all userIds
       const kycNameMap: Record<string, string> = {};
+      const kycContactMap: Record<string, string> = {};
       const userDataMapTemp: Record<string, UserData> = {};
       await Promise.all(
         Array.from(userIds).map(async (uid) => {
@@ -524,6 +525,9 @@ export default function SlotManagement() {
               const data = userDoc.data();
               if (data && data.name) {
                 kycNameMap[uid] = data.name;
+              }
+              if (data && data.contact) {
+                kycContactMap[uid] = data.contact;
               }
               // Store full user data for KYC information display
               userDataMapTemp[uid] = {
@@ -556,6 +560,7 @@ export default function SlotManagement() {
 
       setReservations(resList);
       setKycNames((prev) => ({ ...prev, ...kycNameMap }));
+      setKycContacts((prev) => ({ ...prev, ...kycContactMap }));
       setUserDataMap((prev) => ({ ...prev, ...userDataMapTemp }));
     });
 
@@ -2035,20 +2040,6 @@ export default function SlotManagement() {
           </DialogHeader>
           {selectedReservationDetail && (
             <div className="space-y-6 p-4 sm:p-6">
-              {/* 디버깅 정보 */}
-              <div className="bg-yellow-100 border-yellow-400 rounded-lg border-2 p-4">
-                <div className="text-yellow-800 font-medium">
-                  🔍 디버깅 정보
-                </div>
-                <div className="text-yellow-700 mt-2 text-sm">
-                  <div>
-                    selectedReservationDetail.userId:{" "}
-                    {selectedReservationDetail.userId}
-                  </div>
-                  <div>KycPhoto 컴포넌트 호출 예정...</div>
-                </div>
-              </div>
-
               {/* KYC 정보 섹션 */}
               {userDataMap[selectedReservationDetail.userId] && (
                 <div className="space-y-4">
