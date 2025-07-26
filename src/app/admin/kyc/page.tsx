@@ -149,6 +149,14 @@ export default function KYCDashboard() {
   const [kycTab, setKycTab] = useState<"pending" | "approved" | "rejected">(
     "pending"
   );
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+  });
+  const [showPastReservations, setShowPastReservations] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -845,7 +853,36 @@ export default function KYCDashboard() {
               <Calendar className="h-5 w-5" />
               <span>예약 관리</span>
               <span className="py-0.5 rounded-full bg-white/20 px-2 text-xs text-white">
-                {reservations.length}
+                {(() => {
+                  const filtered = reservations.filter((reservation) => {
+                    const reservationDate = new Date(
+                      reservation.date || reservation.createdAt
+                    );
+                    const reservationMonth = `${reservationDate.getFullYear()}-${String(
+                      reservationDate.getMonth() + 1
+                    ).padStart(2, "0")}`;
+
+                    // 월 필터
+                    if (reservationMonth !== selectedMonth) return false;
+
+                    // 지난 예약 필터
+                    if (!showPastReservations) {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (reservation.date) {
+                        const [year, month, day] = reservation.date
+                          .split("-")
+                          .map(Number);
+                        const resDate = new Date(year, month - 1, day);
+                        if (resDate < today) return false;
+                      }
+                    }
+
+                    return true;
+                  });
+                  return filtered.length;
+                })()}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -2145,14 +2182,138 @@ export default function KYCDashboard() {
 
           {/* Reservations Management Tab */}
           <TabsContent value="reservations" className="space-y-4">
-            {reservations.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-gray-500">예약이 없습니다.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              reservations.map((reservation) => (
+            {/* Filters */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="month-filter" className="text-sm font-medium">
+                    월 필터:
+                  </label>
+                  <select
+                    id="month-filter"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-3 text-sm focus:outline-none"
+                  >
+                    {(() => {
+                      const months = [];
+                      const today = new Date();
+                      // 현재 월부터 6개월 전까지, 그리고 6개월 후까지
+                      for (let i = -6; i <= 6; i++) {
+                        const date = new Date(
+                          today.getFullYear(),
+                          today.getMonth() + i,
+                          1
+                        );
+                        const value = `${date.getFullYear()}-${String(
+                          date.getMonth() + 1
+                        ).padStart(2, "0")}`;
+                        const label = date.toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "long",
+                        });
+                        months.push({ value, label });
+                      }
+                      return months.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={showPastReservations}
+                      onChange={(e) =>
+                        setShowPastReservations(e.target.checked)
+                      }
+                      className="rounded"
+                    />
+                    지난 예약 포함
+                  </label>
+                </div>
+              </div>
+              <div className="text-gray-500 text-sm">
+                {(() => {
+                  const filtered = reservations.filter((reservation) => {
+                    const reservationDate = new Date(
+                      reservation.date || reservation.createdAt
+                    );
+                    const reservationMonth = `${reservationDate.getFullYear()}-${String(
+                      reservationDate.getMonth() + 1
+                    ).padStart(2, "0")}`;
+
+                    // 월 필터
+                    if (reservationMonth !== selectedMonth) return false;
+
+                    // 지난 예약 필터
+                    if (!showPastReservations) {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (reservation.date) {
+                        const [year, month, day] = reservation.date
+                          .split("-")
+                          .map(Number);
+                        const resDate = new Date(year, month - 1, day);
+                        if (resDate < today) return false;
+                      }
+                    }
+
+                    return true;
+                  });
+                  return `${filtered.length}개 예약`;
+                })()}
+              </div>
+            </div>
+
+            {(() => {
+              const filteredReservations = reservations.filter(
+                (reservation) => {
+                  const reservationDate = new Date(
+                    reservation.date || reservation.createdAt
+                  );
+                  const reservationMonth = `${reservationDate.getFullYear()}-${String(
+                    reservationDate.getMonth() + 1
+                  ).padStart(2, "0")}`;
+
+                  // 월 필터
+                  if (reservationMonth !== selectedMonth) return false;
+
+                  // 지난 예약 필터
+                  if (!showPastReservations) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (reservation.date) {
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      const resDate = new Date(year, month - 1, day);
+                      if (resDate < today) return false;
+                    }
+                  }
+
+                  return true;
+                }
+              );
+
+              if (filteredReservations.length === 0) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">
+                        선택한 기간에 예약이 없습니다.
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+              return filteredReservations.map((reservation) => (
                 <Card
                   key={reservation.id}
                   className="hover:shadow-md cursor-pointer transition-shadow"
@@ -2437,8 +2598,8 @@ export default function KYCDashboard() {
                     </div>
                   </CardHeader>
                 </Card>
-              ))
-            )}
+              ));
+            })()}
           </TabsContent>
         </Tabs>
       </div>
