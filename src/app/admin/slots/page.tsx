@@ -1719,12 +1719,12 @@ export default function SlotManagement() {
                                     setIsReservationDetailDialogOpen(true);
                                   }}
                                 >
-                                  <div className="flex-1">
+                                  <div className="min-w-0 flex-1">
                                     <div className="text-blue-900 font-semibold">
                                       {kycNames[reservation.userId] ||
                                         "Unknown"}
                                     </div>
-                                    <div className="text-blue-700 text-sm">
+                                    <div className="text-blue-700 break-all text-sm">
                                       {reservation.userEmail}
                                     </div>
                                     <div className="text-blue-600 text-xs">
@@ -1732,7 +1732,7 @@ export default function SlotManagement() {
                                       {kycContacts[reservation.userId] || "-"}
                                     </div>
                                   </div>
-                                  <div className="text-right">
+                                  <div className="ml-2 flex-shrink-0 text-right">
                                     <div className="text-blue-600 text-lg font-bold">
                                       {slot
                                         ? format(new Date(slot.start), "HH:mm")
@@ -1931,12 +1931,12 @@ export default function SlotManagement() {
                                     setIsReservationDetailDialogOpen(true);
                                   }}
                                 >
-                                  <div className="flex-1">
+                                  <div className="min-w-0 flex-1">
                                     <div className="text-blue-900 font-semibold">
                                       {kycNames[reservation.userId] ||
                                         "Unknown"}
                                     </div>
-                                    <div className="text-blue-700 text-sm">
+                                    <div className="text-blue-700 break-all text-sm">
                                       {reservation.userEmail}
                                     </div>
                                     <div className="text-blue-600 text-xs">
@@ -1944,7 +1944,7 @@ export default function SlotManagement() {
                                       {kycContacts[reservation.userId] || "-"}
                                     </div>
                                   </div>
-                                  <div className="text-right">
+                                  <div className="ml-2 flex-shrink-0 text-right">
                                     <div className="text-blue-600 text-lg font-bold">
                                       {slot
                                         ? format(new Date(slot.start), "HH:mm")
