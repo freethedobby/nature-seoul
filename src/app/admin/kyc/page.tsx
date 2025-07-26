@@ -2920,8 +2920,6 @@ export default function KYCDashboard() {
                 </div>
               )}
 
-              {/* KYC 정보 섹션 */}
-              {userDataMap[selectedReservationDetail.userId] && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
