@@ -487,7 +487,7 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                Schedule
+                예약관리
               </CardTitle>
               <CardDescription>예약 가능한 시간대 관리</CardDescription>
             </CardHeader>

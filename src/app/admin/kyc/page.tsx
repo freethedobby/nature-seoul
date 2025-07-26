@@ -145,6 +145,10 @@ export default function KYCDashboard() {
   const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
     useState(false);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
+  const [mainTab, setMainTab] = useState<"kyc" | "reservations">("kyc");
+  const [kycTab, setKycTab] = useState<"pending" | "approved" | "rejected">(
+    "pending"
+  );
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -815,490 +819,100 @@ export default function KYCDashboard() {
           </div>
         </div>
 
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="bg-gray-100 mb-4 flex w-full gap-x-1 rounded-lg p-1 pl-1 pr-1 sm:grid sm:grid-cols-4 sm:gap-x-0 sm:overflow-visible sm:bg-transparent sm:p-0">
+        {/* Main Tabs */}
+        <Tabs
+          value={mainTab}
+          onValueChange={(value) => setMainTab(value as "kyc" | "reservations")}
+          className="space-y-6"
+        >
+          <TabsList className="bg-gray-100 mb-6 flex w-full gap-x-2 rounded-lg p-1 sm:w-auto sm:bg-transparent sm:p-0">
             <TabsTrigger
-              value="pending"
-              className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
+              value="kyc"
+              className="data-[state=active]:bg-blue-500 data-[state=active]:ring-blue-300 data-[state=active]:shadow flex flex-1 items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:flex-initial"
             >
-              <ClipboardList className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="hidden sm:inline">
-                KYC ({pendingUsers.length})
+              <ClipboardList className="h-5 w-5" />
+              <span>KYC 관리</span>
+              <span className="py-0.5 rounded-full bg-white/20 px-2 text-xs text-white">
+                {pendingUsers.length +
+                  approvedUsers.length +
+                  rejectedUsers.length}
               </span>
-              <span className="sm:hidden">KYC</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="approved"
-              className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
-            >
-              <CheckCircle className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="hidden sm:inline">
-                승인 ({approvedUsers.length})
-              </span>
-              <span className="sm:hidden">승인</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="rejected"
-              className="data-[state=active]:bg-red-500 data-[state=active]:ring-red-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
-            >
-              <XCircle className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="hidden sm:inline">
-                반려 ({rejectedUsers.length})
-              </span>
-              <span className="sm:hidden">반려</span>
             </TabsTrigger>
             <TabsTrigger
               value="reservations"
-              className="data-[state=active]:bg-blue-500 data-[state=active]:ring-blue-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-0 rounded-full px-1 py-1 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:gap-2 sm:text-sm"
+              className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:flex-initial"
             >
-              <Calendar className="mb-0.5 h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="hidden sm:inline">
-                예약 ({reservations.length})
+              <Calendar className="h-5 w-5" />
+              <span>예약 관리</span>
+              <span className="py-0.5 rounded-full bg-white/20 px-2 text-xs text-white">
+                {reservations.length}
               </span>
-              <span className="sm:hidden">예약</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="space-y-4">
-            {pendingUsers.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-gray-500">
-                    대기 중인 KYC 신청이 없습니다.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              pendingUsers.map((user) => (
-                <Card key={user.id}>
-                  <CardHeader
-                    className="cursor-pointer pb-4"
-                    onClick={() =>
-                      setExpandedUserId(
-                        expandedUserId === user.id ? null : user.id
-                      )
-                    }
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{user.name}</CardTitle>
-                        <CardDescription>{user.contact}</CardDescription>
-                        <div className="text-gray-500 text-sm">
-                          {user.email}
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                            <Calendar className="text-gray-400 h-4 w-4" />
-                            {user.createdAt
-                              ? user.createdAt.toLocaleString("ko-KR", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "-"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApprove(user.id);
-                          }}
-                        >
-                          <CheckCircle className="mr-1 h-4 w-4" />
-                          승인
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedUserId(user.id);
-                            setIsRejectDialogOpen(true);
-                          }}
-                        >
-                          <XCircle className="mr-1 h-4 w-4" />
-                          반려
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {expandedUserId === user.id && (
-                    <CardContent className="space-y-6">
-                      {/* Basic Information */}
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            기본 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이름</span>
-                              <span className="font-medium">{user.name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">성별</span>
-                              <span className="font-medium">
-                                {user.gender === "male"
-                                  ? "남성"
-                                  : user.gender === "female"
-                                  ? "여성"
-                                  : user.gender === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">출생년도</span>
-                              <span className="font-medium">
-                                {user.birthYear || "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">연락처</span>
-                              <span className="font-medium">
-                                {user.contact}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">시군구</span>
-                              <span className="font-medium">
-                                {user.district
-                                  ? districts.find(
-                                      (d) => d.value === user.district
-                                    )?.label || user.district
-                                  : "-"}
-                              </span>
-                            </div>
-                            {user.detailedAddress && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">상세주소</span>
-                                <span className="font-medium">
-                                  {user.detailedAddress}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이메일</span>
-                              <span className="font-medium">{user.email}</span>
-                            </div>
-                          </div>
-                        </div>
+          {/* KYC Management Tab */}
+          <TabsContent value="kyc" className="space-y-6">
+            <Tabs
+              value={kycTab}
+              onValueChange={(value) =>
+                setKycTab(value as "pending" | "approved" | "rejected")
+              }
+              className="space-y-4"
+            >
+              <TabsList className="bg-gray-50 mb-4 flex w-full gap-x-1 rounded-lg p-1 sm:grid sm:grid-cols-3 sm:gap-x-0">
+                <TabsTrigger
+                  value="pending"
+                  className="data-[state=active]:bg-orange-500 data-[state=active]:ring-orange-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:text-sm"
+                >
+                  <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>대기중 ({pendingUsers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="approved"
+                  className="data-[state=active]:bg-green-500 data-[state=active]:ring-green-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:text-sm"
+                >
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>승인됨 ({approvedUsers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="rejected"
+                  className="data-[state=active]:bg-red-500 data-[state=active]:ring-red-300 data-[state=active]:shadow flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors data-[state=active]:scale-105 data-[state=active]:text-white data-[state=active]:ring-2 sm:text-sm"
+                >
+                  <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>반려됨 ({rejectedUsers.length})</span>
+                </TabsTrigger>
+              </TabsList>
 
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            시술 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">피부타입</span>
-                              <span className="font-medium">
-                                {user.skinType === "oily"
-                                  ? "지성"
-                                  : user.skinType === "dry"
-                                  ? "건성"
-                                  : user.skinType === "normal"
-                                  ? "중성"
-                                  : user.skinType === "combination"
-                                  ? "복합성"
-                                  : user.skinType === "unknown"
-                                  ? "모르겠음"
-                                  : user.skinType === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">
-                                기존 시술 경험
-                              </span>
-                              <span className="font-medium">
-                                {user.hasPreviousTreatment ? "있음" : "없음"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">신청일</span>
-                              <span className="font-medium">
-                                {user.createdAt
-                                  ? user.createdAt.toLocaleString("ko-KR", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })
-                                  : "-"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Photos */}
-                      <div className="space-y-4">
-                        <h4 className="text-gray-900 font-semibold">
-                          눈썹 사진
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                          {/* Left Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              좌측
-                            </h5>
-                            {(user.photoURLs?.left || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.left || user.photoURL || ""
-                                  }
-                                  alt="좌측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.left ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load left image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Front Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              정면
-                            </h5>
-                            {(user.photoURLs?.front || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.front || user.photoURL || ""
-                                  }
-                                  alt="정면 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.front ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load front image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Right Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              우측
-                            </h5>
-                            {(user.photoURLs?.right || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.right || user.photoURL || ""
-                                  }
-                                  alt="우측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.right ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load right image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+              <TabsContent value="pending" className="space-y-4">
+                {pendingUsers.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">
+                        대기 중인 KYC 신청이 없습니다.
+                      </p>
                     </CardContent>
-                  )}
-                </Card>
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="approved" className="space-y-4">
-            {approvedUsers.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-gray-500">승인된 사용자가 없습니다.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              approvedUsers.map((user) => (
-                <Card key={user.id}>
-                  <CardHeader
-                    className="cursor-pointer"
-                    onClick={() =>
-                      setExpandedUserId(
-                        expandedUserId === user.id ? null : user.id
-                      )
-                    }
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{user.name}</CardTitle>
-                        <CardDescription>{user.contact}</CardDescription>
-                        <div className="text-gray-500 text-sm">
-                          {user.email}
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                            <Calendar className="text-gray-400 h-4 w-4" />
-                            {user.createdAt
-                              ? user.createdAt.toLocaleString("ko-KR", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "-"}
-                          </span>
-                          {user.approvedAt && (
-                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <CheckCircle className="text-green-500 h-4 w-4" />
-                              {user.approvedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                          {user.rejectedAt && (
-                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <XCircle className="text-red-500 h-4 w-4" />
-                              {user.rejectedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="bg-green-50">
-                        승인됨
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  {expandedUserId === user.id && (
-                    <CardContent className="space-y-6">
-                      {/* Basic Information */}
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            기본 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이름</span>
-                              <span className="font-medium">{user.name}</span>
+                  </Card>
+                ) : (
+                  pendingUsers.map((user) => (
+                    <Card key={user.id}>
+                      <CardHeader
+                        className="cursor-pointer pb-4"
+                        onClick={() =>
+                          setExpandedUserId(
+                            expandedUserId === user.id ? null : user.id
+                          )
+                        }
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle>{user.name}</CardTitle>
+                            <CardDescription>{user.contact}</CardDescription>
+                            <div className="text-gray-500 text-sm">
+                              {user.email}
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">성별</span>
-                              <span className="font-medium">
-                                {user.gender === "male"
-                                  ? "남성"
-                                  : user.gender === "female"
-                                  ? "여성"
-                                  : user.gender === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">출생년도</span>
-                              <span className="font-medium">
-                                {user.birthYear || "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">연락처</span>
-                              <span className="font-medium">
-                                {user.contact}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이메일</span>
-                              <span className="font-medium">{user.email}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            시술 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">피부타입</span>
-                              <span className="font-medium">
-                                {user.skinType === "oily"
-                                  ? "지성"
-                                  : user.skinType === "dry"
-                                  ? "건성"
-                                  : user.skinType === "normal"
-                                  ? "중성"
-                                  : user.skinType === "combination"
-                                  ? "복합성"
-                                  : user.skinType === "unknown"
-                                  ? "모르겠음"
-                                  : user.skinType === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">
-                                기존 시술 경험
-                              </span>
-                              <span className="font-medium">
-                                {user.hasPreviousTreatment ? "있음" : "없음"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">신청일</span>
-                              <span className="font-medium">
+                            <div className="mt-2 flex gap-2">
+                              <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                <Calendar className="text-gray-400 h-4 w-4" />
                                 {user.createdAt
                                   ? user.createdAt.toLocaleString("ko-KR", {
                                       year: "numeric",
@@ -1310,10 +924,323 @@ export default function KYCDashboard() {
                                   : "-"}
                               </span>
                             </div>
-                            {user.approvedAt && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">승인일</span>
-                                <span className="font-medium">
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(user.id);
+                              }}
+                            >
+                              <CheckCircle className="mr-1 h-4 w-4" />
+                              승인
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedUserId(user.id);
+                                setIsRejectDialogOpen(true);
+                              }}
+                            >
+                              <XCircle className="mr-1 h-4 w-4" />
+                              반려
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      {expandedUserId === user.id && (
+                        <CardContent className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male"
+                                      ? "남성"
+                                      : user.gender === "female"
+                                      ? "여성"
+                                      : user.gender === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    출생년도
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthYear || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">시군구</span>
+                                  <span className="font-medium">
+                                    {user.district
+                                      ? districts.find(
+                                          (d) => d.value === user.district
+                                        )?.label || user.district
+                                      : "-"}
+                                  </span>
+                                </div>
+                                {user.detailedAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      상세주소
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.detailedAddress}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                시술 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    피부타입
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.skinType === "oily"
+                                      ? "지성"
+                                      : user.skinType === "dry"
+                                      ? "건성"
+                                      : user.skinType === "normal"
+                                      ? "중성"
+                                      : user.skinType === "combination"
+                                      ? "복합성"
+                                      : user.skinType === "unknown"
+                                      ? "모르겠음"
+                                      : user.skinType === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    기존 시술 경험
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.hasPreviousTreatment
+                                      ? "있음"
+                                      : "없음"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">신청일</span>
+                                  <span className="font-medium">
+                                    {user.createdAt
+                                      ? user.createdAt.toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Photos */}
+                          <div className="space-y-4">
+                            <h4 className="text-gray-900 font-semibold">
+                              눈썹 사진
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                              {/* Left Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  좌측
+                                </h5>
+                                {(user.photoURLs?.left || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="좌측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load left image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Front Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  정면
+                                </h5>
+                                {(user.photoURLs?.front || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="정면 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load front image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  우측
+                                </h5>
+                                {(user.photoURLs?.right || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="우측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load right image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="approved" className="space-y-4">
+                {approvedUsers.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">승인된 사용자가 없습니다.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  approvedUsers.map((user) => (
+                    <Card key={user.id}>
+                      <CardHeader
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setExpandedUserId(
+                            expandedUserId === user.id ? null : user.id
+                          )
+                        }
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle>{user.name}</CardTitle>
+                            <CardDescription>{user.contact}</CardDescription>
+                            <div className="text-gray-500 text-sm">
+                              {user.email}
+                            </div>
+                            <div className="mt-2 flex gap-2">
+                              <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                <Calendar className="text-gray-400 h-4 w-4" />
+                                {user.createdAt
+                                  ? user.createdAt.toLocaleString("ko-KR", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "-"}
+                              </span>
+                              {user.approvedAt && (
+                                <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                  <CheckCircle className="text-green-500 h-4 w-4" />
                                   {user.approvedAt.toLocaleString("ko-KR", {
                                     year: "numeric",
                                     month: "long",
@@ -1322,275 +1249,298 @@ export default function KYCDashboard() {
                                     minute: "2-digit",
                                   })}
                                 </span>
-                              </div>
-                            )}
+                              )}
+                              {user.rejectedAt && (
+                                <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                  <XCircle className="text-red-500 h-4 w-4" />
+                                  {user.rejectedAt.toLocaleString("ko-KR", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          <Badge variant="outline" className="bg-green-50">
+                            승인됨
+                          </Badge>
                         </div>
-                      </div>
+                      </CardHeader>
+                      {expandedUserId === user.id && (
+                        <CardContent className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male"
+                                      ? "남성"
+                                      : user.gender === "female"
+                                      ? "여성"
+                                      : user.gender === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    출생년도
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthYear || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
 
-                      {/* Photos */}
-                      <div className="space-y-4">
-                        <h4 className="text-gray-900 font-semibold">
-                          눈썹 사진
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                          {/* Left Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              좌측
-                            </h5>
-                            {(user.photoURLs?.left || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.left || user.photoURL || ""
-                                  }
-                                  alt="좌측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.left ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load left image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                시술 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    피부타입
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.skinType === "oily"
+                                      ? "지성"
+                                      : user.skinType === "dry"
+                                      ? "건성"
+                                      : user.skinType === "normal"
+                                      ? "중성"
+                                      : user.skinType === "combination"
+                                      ? "복합성"
+                                      : user.skinType === "unknown"
+                                      ? "모르겠음"
+                                      : user.skinType === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    기존 시술 경험
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.hasPreviousTreatment
+                                      ? "있음"
+                                      : "없음"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">신청일</span>
+                                  <span className="font-medium">
+                                    {user.createdAt
+                                      ? user.createdAt.toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </span>
+                                </div>
+                                {user.approvedAt && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      승인일
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.approvedAt.toLocaleString("ko-KR", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
                                   </div>
                                 )}
                               </div>
-                            )}
+                            </div>
                           </div>
 
-                          {/* Front Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              정면
-                            </h5>
-                            {(user.photoURLs?.front || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.front || user.photoURL || ""
-                                  }
-                                  alt="정면 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.front ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load front image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
+                          {/* Photos */}
+                          <div className="space-y-4">
+                            <h4 className="text-gray-900 font-semibold">
+                              눈썹 사진
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                              {/* Left Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  좌측
+                                </h5>
+                                {(user.photoURLs?.left || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="좌측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load left image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                            )}
-                          </div>
 
-                          {/* Right Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              우측
-                            </h5>
-                            {(user.photoURLs?.right || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.right || user.photoURL || ""
-                                  }
-                                  alt="우측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.right ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load right image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
+                              {/* Front Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  정면
+                                </h5>
+                                {(user.photoURLs?.front || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="정면 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load front image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                            )}
+
+                              {/* Right Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  우측
+                                </h5>
+                                {(user.photoURLs?.right || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="우측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load right image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="space-y-4">
+                {rejectedUsers.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">반려된 사용자가 없습니다.</p>
                     </CardContent>
-                  )}
-                </Card>
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="rejected" className="space-y-4">
-            {rejectedUsers.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-gray-500">반려된 사용자가 없습니다.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              rejectedUsers.map((user) => (
-                <Card key={user.id}>
-                  <CardHeader
-                    className="cursor-pointer"
-                    onClick={() =>
-                      setExpandedUserId(
-                        expandedUserId === user.id ? null : user.id
-                      )
-                    }
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{user.name}</CardTitle>
-                        <CardDescription>{user.contact}</CardDescription>
-                        <div className="text-gray-500 text-sm">
-                          {user.email}
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                            <Calendar className="text-gray-400 h-4 w-4" />
-                            {user.createdAt
-                              ? user.createdAt.toLocaleString("ko-KR", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "-"}
-                          </span>
-                          {user.approvedAt && (
-                            <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <CheckCircle className="text-green-500 h-4 w-4" />
-                              {user.approvedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                          {user.rejectedAt && (
-                            <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
-                              <XCircle className="text-red-500 h-4 w-4" />
-                              {user.rejectedAt.toLocaleString("ko-KR", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="bg-red-50 text-red-700"
+                  </Card>
+                ) : (
+                  rejectedUsers.map((user) => (
+                    <Card key={user.id}>
+                      <CardHeader
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setExpandedUserId(
+                            expandedUserId === user.id ? null : user.id
+                          )
+                        }
                       >
-                        반려됨
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  {expandedUserId === user.id && (
-                    <CardContent className="space-y-6">
-                      {/* Basic Information */}
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            기본 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이름</span>
-                              <span className="font-medium">{user.name}</span>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle>{user.name}</CardTitle>
+                            <CardDescription>{user.contact}</CardDescription>
+                            <div className="text-gray-500 text-sm">
+                              {user.email}
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">성별</span>
-                              <span className="font-medium">
-                                {user.gender === "male"
-                                  ? "남성"
-                                  : user.gender === "female"
-                                  ? "여성"
-                                  : user.gender === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">출생년도</span>
-                              <span className="font-medium">
-                                {user.birthYear || "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">연락처</span>
-                              <span className="font-medium">
-                                {user.contact}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">이메일</span>
-                              <span className="font-medium">{user.email}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="text-gray-900 font-semibold">
-                            시술 정보
-                          </h4>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">피부타입</span>
-                              <span className="font-medium">
-                                {user.skinType === "oily"
-                                  ? "지성"
-                                  : user.skinType === "dry"
-                                  ? "건성"
-                                  : user.skinType === "normal"
-                                  ? "중성"
-                                  : user.skinType === "combination"
-                                  ? "복합성"
-                                  : user.skinType === "unknown"
-                                  ? "모르겠음"
-                                  : user.skinType === "other"
-                                  ? "기타"
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">
-                                기존 시술 경험
-                              </span>
-                              <span className="font-medium">
-                                {user.hasPreviousTreatment ? "있음" : "없음"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">신청일</span>
-                              <span className="font-medium">
+                            <div className="mt-2 flex gap-2">
+                              <span className="bg-gray-100 py-0.5 text-gray-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                <Calendar className="text-gray-400 h-4 w-4" />
                                 {user.createdAt
                                   ? user.createdAt.toLocaleString("ko-KR", {
                                       year: "numeric",
@@ -1601,11 +1551,21 @@ export default function KYCDashboard() {
                                     })
                                   : "-"}
                               </span>
-                            </div>
-                            {user.rejectedAt && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">반려일</span>
-                                <span className="font-medium">
+                              {user.approvedAt && (
+                                <span className="bg-green-100 py-0.5 text-green-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                  <CheckCircle className="text-green-500 h-4 w-4" />
+                                  {user.approvedAt.toLocaleString("ko-KR", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                              {user.rejectedAt && (
+                                <span className="bg-red-100 py-0.5 text-red-700 inline-flex items-center gap-1 rounded-full px-2 text-xs font-medium">
+                                  <XCircle className="text-red-500 h-4 w-4" />
                                   {user.rejectedAt.toLocaleString("ko-KR", {
                                     year: "numeric",
                                     month: "long",
@@ -1614,133 +1574,576 @@ export default function KYCDashboard() {
                                     minute: "2-digit",
                                   })}
                                 </span>
+                              )}
+                            </div>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="bg-red-50 text-red-700"
+                          >
+                            반려됨
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      {expandedUserId === user.id && (
+                        <CardContent className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male"
+                                      ? "남성"
+                                      : user.gender === "female"
+                                      ? "여성"
+                                      : user.gender === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    출생년도
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthYear || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
                               </div>
-                            )}
-                            {user.rejectReason && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">반려 사유</span>
-                                <span className="text-red-600 font-medium">
-                                  {user.rejectReason}
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                시술 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    피부타입
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.skinType === "oily"
+                                      ? "지성"
+                                      : user.skinType === "dry"
+                                      ? "건성"
+                                      : user.skinType === "normal"
+                                      ? "중성"
+                                      : user.skinType === "combination"
+                                      ? "복합성"
+                                      : user.skinType === "unknown"
+                                      ? "모르겠음"
+                                      : user.skinType === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    기존 시술 경험
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.hasPreviousTreatment
+                                      ? "있음"
+                                      : "없음"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">신청일</span>
+                                  <span className="font-medium">
+                                    {user.createdAt
+                                      ? user.createdAt.toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </span>
+                                </div>
+                                {user.rejectedAt && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      반려일
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.rejectedAt.toLocaleString("ko-KR", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                                {user.rejectReason && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      반려 사유
+                                    </span>
+                                    <span className="text-red-600 font-medium">
+                                      {user.rejectReason}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Photos */}
+                          <div className="space-y-4">
+                            <h4 className="text-gray-900 font-semibold">
+                              눈썹 사진
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                              {/* Left Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  좌측
+                                </h5>
+                                {(user.photoURLs?.left || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="좌측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load left image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Front Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  정면
+                                </h5>
+                                {(user.photoURLs?.front || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="정면 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load front image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  우측
+                                </h5>
+                                {(user.photoURLs?.right || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="우측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load right image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="reservations" className="space-y-4">
+                {reservations.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">예약이 없습니다.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  reservations.map((reservation) => (
+                    <Card
+                      key={reservation.id}
+                      className="hover:shadow-md cursor-pointer transition-shadow"
+                      onClick={() => {
+                        setSelectedReservationDetail(reservation);
+                        setIsReservationDetailDialogOpen(true);
+                      }}
+                    >
+                      <CardHeader>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="break-words text-lg sm:text-xl">
+                              {reservation.userName}
+                            </CardTitle>
+                            <CardDescription className="mt-2">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                <span className="flex items-center text-sm">
+                                  예약일: {reservation.date || "미정"}
+                                </span>
+                                <span className="flex items-center text-sm">
+                                  시간: {reservation.time || "미정"}
                                 </span>
                               </div>
+                            </CardDescription>
+                            <div className="mt-2">
+                              <div className="text-gray-500 text-xs sm:text-sm">
+                                예약 생성일:{" "}
+                                {reservation.createdAt &&
+                                !isNaN(reservation.createdAt.getTime())
+                                  ? reservation.createdAt.toLocaleString(
+                                      "ko-KR",
+                                      {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )
+                                  : "날짜 정보 없음"}
+                              </div>
+                              {/* 입금 대기 상태에서 타이머 표시 */}
+                              {reservation.status === "payment_required" && (
+                                <div className="mt-2">
+                                  {(() => {
+                                    const now = new Date();
+                                    const reservationTime = new Date(
+                                      reservation.createdAt
+                                    );
+                                    const timeLimit = new Date(
+                                      reservationTime.getTime() + 30 * 60 * 1000
+                                    );
+                                    const remaining =
+                                      timeLimit.getTime() - now.getTime();
+
+                                    if (remaining <= 0) {
+                                      return (
+                                        <div className="text-red-600 text-xs font-medium sm:text-sm">
+                                          ⏰ 입금 시간 만료됨
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="space-y-1">
+                                          <div className="text-orange-600 text-xs font-medium sm:text-sm">
+                                            ⏰ 입금 마감까지
+                                          </div>
+                                          <CountdownTimer
+                                            deadline={timeLimit}
+                                            onExpired={() => {
+                                              // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
+                                              window.location.reload();
+                                            }}
+                                            compact={true}
+                                            testMode={
+                                              process.env.NODE_ENV ===
+                                              "development"
+                                            }
+                                          />
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
+
+                              {/* 입금 확인중 상태에서 타이머 표시 */}
+                              {reservation.status === "payment_confirmed" && (
+                                <div className="mt-2">
+                                  {(() => {
+                                    const now = new Date();
+                                    // paymentConfirmedAt이 있으면 그것을 기준으로, 없으면 createdAt 기준으로
+                                    const baseTime = (() => {
+                                      const paymentConfirmedAt =
+                                        reservation.paymentConfirmedAt;
+                                      const createdAt = reservation.createdAt;
+
+                                      // paymentConfirmedAt이 Date 객체인지 확인
+                                      if (
+                                        paymentConfirmedAt &&
+                                        paymentConfirmedAt instanceof Date
+                                      ) {
+                                        return paymentConfirmedAt;
+                                      }
+
+                                      // createdAt이 Date 객체인지 확인
+                                      if (
+                                        createdAt &&
+                                        createdAt instanceof Date
+                                      ) {
+                                        return createdAt;
+                                      }
+
+                                      // 둘 다 Date 객체가 아니면 현재 시간 사용
+                                      return new Date();
+                                    })();
+
+                                    const timeLimit = new Date(
+                                      baseTime.getTime() + 24 * 60 * 60 * 1000
+                                    ); // 24시간
+                                    const remaining =
+                                      timeLimit.getTime() - now.getTime();
+
+                                    if (remaining <= 0) {
+                                      return (
+                                        <div className="text-red-600 text-xs font-medium sm:text-sm">
+                                          ⏰ 관리자 승인 시간 만료됨
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="space-y-1">
+                                          <div className="text-blue-600 text-xs font-medium sm:text-sm">
+                                            ⏰ 관리자 승인 마감까지
+                                          </div>
+                                          <CountdownTimer
+                                            deadline={timeLimit}
+                                            onExpired={() => {
+                                              // 타이머 만료 시 페이지 새로고침
+                                              window.location.reload();
+                                            }}
+                                            compact={true}
+                                            testMode={
+                                              process.env.NODE_ENV ===
+                                              "development"
+                                            }
+                                          />
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
+                            <Badge
+                              variant={
+                                reservation.status === "approved"
+                                  ? "default"
+                                  : reservation.status === "payment_confirmed"
+                                  ? "secondary"
+                                  : reservation.status === "payment_required"
+                                  ? (() => {
+                                      const now = new Date();
+                                      const reservationTime = new Date(
+                                        reservation.createdAt
+                                      );
+                                      const timeLimit = new Date(
+                                        reservationTime.getTime() +
+                                          30 * 60 * 1000
+                                      );
+                                      return now > timeLimit
+                                        ? "destructive"
+                                        : "outline";
+                                    })()
+                                  : reservation.status === "cancelled"
+                                  ? "destructive"
+                                  : reservation.status === "rejected"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                            >
+                              {reservation.status === "approved"
+                                ? "확정"
+                                : reservation.status === "payment_confirmed"
+                                ? "입금확인중"
+                                : reservation.status === "payment_required"
+                                ? (() => {
+                                    const now = new Date();
+                                    const reservationTime = new Date(
+                                      reservation.createdAt
+                                    );
+                                    const timeLimit = new Date(
+                                      reservationTime.getTime() + 30 * 60 * 1000
+                                    );
+                                    return now > timeLimit
+                                      ? "입금시간만료"
+                                      : "입금대기";
+                                  })()
+                                : reservation.status === "cancelled"
+                                ? "취소됨"
+                                : reservation.status === "rejected"
+                                ? "거절"
+                                : "대기"}
+                            </Badge>
+
+                            {/* 승인/거절 버튼 - 입금확인 상태일 때만 표시 */}
+                            {reservation.status === "payment_confirmed" && (
+                              <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row">
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    handleReservationApprove(reservation.id)
+                                  }
+                                  className="bg-green-500 hover:bg-green-600 text-xs text-white sm:text-sm"
+                                >
+                                  승인
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    setSelectedReservationId(reservation.id);
+                                    setIsReservationRejectDialogOpen(true);
+                                  }}
+                                  className="text-xs sm:text-sm"
+                                >
+                                  거절
+                                </Button>
+                              </div>
                             )}
+
+                            {/* 확정 버튼 - 입금시간 만료된 예약일 때만 표시 */}
+                            {reservation.status === "payment_required" &&
+                              (() => {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  reservation.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                return now > timeLimit ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleReservationApprove(reservation.id)
+                                    }
+                                    className="bg-green-500 hover:bg-green-600 w-full text-xs text-white sm:w-auto sm:text-sm"
+                                  >
+                                    확정
+                                  </Button>
+                                ) : null;
+                              })()}
+
+                            {/* 삭제 버튼 - 입금시간 만료된 예약이 아닐 때만 표시 */}
+                            {(() => {
+                              if (reservation.status === "payment_required") {
+                                const now = new Date();
+                                const reservationTime = new Date(
+                                  reservation.createdAt
+                                );
+                                const timeLimit = new Date(
+                                  reservationTime.getTime() + 30 * 60 * 1000
+                                );
+                                // 입금시간 만료된 예약은 삭제 버튼 숨김
+                                if (now > timeLimit) {
+                                  return null;
+                                }
+                              }
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    setSelectedReservationId(reservation.id);
+                                    setIsReservationDeleteDialogOpen(true);
+                                  }}
+                                  className="w-full text-xs sm:w-auto sm:text-sm"
+                                >
+                                  삭제
+                                </Button>
+                              );
+                            })()}
                           </div>
                         </div>
-                      </div>
-
-                      {/* Photos */}
-                      <div className="space-y-4">
-                        <h4 className="text-gray-900 font-semibold">
-                          눈썹 사진
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                          {/* Left Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              좌측
-                            </h5>
-                            {(user.photoURLs?.left || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.left || user.photoURL || ""
-                                  }
-                                  alt="좌측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.left ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load left image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Front Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              정면
-                            </h5>
-                            {(user.photoURLs?.front || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.front || user.photoURL || ""
-                                  }
-                                  alt="정면 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.front ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load front image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Right Photo */}
-                          <div className="space-y-2">
-                            <h5 className="text-gray-700 text-sm font-medium">
-                              우측
-                            </h5>
-                            {(user.photoURLs?.right || user.photoURL) && (
-                              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
-                                <Image
-                                  src={
-                                    user.photoURLs?.right || user.photoURL || ""
-                                  }
-                                  alt="우측 눈썹"
-                                  fill
-                                  className="object-contain"
-                                  unoptimized={(
-                                    user.photoURLs?.right ||
-                                    user.photoURL ||
-                                    ""
-                                  ).startsWith("data:")}
-                                  onError={(e) => {
-                                    console.error("Failed to load right image");
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                                {user.photoType === "base64" && (
-                                  <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
-                                    Base64
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))
-            )}
+                      </CardHeader>
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
+          {/* Reservations Management Tab */}
           <TabsContent value="reservations" className="space-y-4">
             {reservations.length === 0 ? (
               <Card>
@@ -1862,7 +2265,7 @@ export default function KYCDashboard() {
 
                                 const timeLimit = new Date(
                                   baseTime.getTime() + 24 * 60 * 60 * 1000
-                                ); // 24시간
+                                );
                                 const remaining =
                                   timeLimit.getTime() - now.getTime();
 
@@ -1953,9 +2356,10 @@ export default function KYCDashboard() {
                           <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row">
                             <Button
                               size="sm"
-                              onClick={() =>
-                                handleReservationApprove(reservation.id)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReservationApprove(reservation.id);
+                              }}
                               className="bg-green-500 hover:bg-green-600 text-xs text-white sm:text-sm"
                             >
                               승인
@@ -1963,7 +2367,8 @@ export default function KYCDashboard() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedReservationId(reservation.id);
                                 setIsReservationRejectDialogOpen(true);
                               }}
@@ -1987,9 +2392,10 @@ export default function KYCDashboard() {
                             return now > timeLimit ? (
                               <Button
                                 size="sm"
-                                onClick={() =>
-                                  handleReservationApprove(reservation.id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReservationApprove(reservation.id);
+                                }}
                                 className="bg-green-500 hover:bg-green-600 w-full text-xs text-white sm:w-auto sm:text-sm"
                               >
                                 확정
@@ -2016,7 +2422,8 @@ export default function KYCDashboard() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedReservationId(reservation.id);
                                 setIsReservationDeleteDialogOpen(true);
                               }}
