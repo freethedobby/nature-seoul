@@ -39,6 +39,7 @@ import {
   doc,
   onSnapshot,
   Timestamp,
+  getDoc,
 } from "firebase/firestore";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
@@ -143,6 +144,7 @@ export default function KYCDashboard() {
     useState<ReservationData | null>(null);
   const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
     useState(false);
+  const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -313,37 +315,80 @@ export default function KYCDashboard() {
       where("status", "!=", "cancelled")
     );
 
-    const unsubReservations = onSnapshot(reservationsQuery, (snapshot) => {
-      const reservs: ReservationData[] = [];
-      snapshot.forEach((doc) => {
-        try {
-          const data = doc.data();
-          reservs.push({
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt && data.createdAt.toDate
-                ? data.createdAt.toDate()
-                : new Date(data.createdAt || Date.now()),
-          } as ReservationData);
-        } catch (error) {
-          console.error(
-            "Error processing reservation document:",
-            doc.id,
-            error
-          );
-        }
-      });
+    const unsubReservations = onSnapshot(
+      reservationsQuery,
+      async (snapshot) => {
+        const reservs: ReservationData[] = [];
+        const userIds = new Set<string>();
 
-      // admin 페이지에서는 모든 예약 표시 (cancelled 포함하여 관리자가 모든 상태 확인 가능)
-      const filteredReservs = reservs;
+        snapshot.forEach((doc) => {
+          try {
+            const data = doc.data();
+            reservs.push({
+              id: doc.id,
+              ...data,
+              createdAt:
+                data.createdAt && data.createdAt.toDate
+                  ? data.createdAt.toDate()
+                  : new Date(data.createdAt || Date.now()),
+            } as ReservationData);
+            if (data.userId) userIds.add(data.userId);
+          } catch (error) {
+            console.error(
+              "Error processing reservation document:",
+              doc.id,
+              error
+            );
+          }
+        });
 
-      filteredReservs.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setReservations(filteredReservs);
-    });
+        // admin 페이지에서는 모든 예약 표시 (cancelled 포함하여 관리자가 모든 상태 확인 가능)
+        const filteredReservs = reservs;
+
+        filteredReservs.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setReservations(filteredReservs);
+
+        // Fetch user data for all userIds
+        const userDataMapTemp: Record<string, UserData> = {};
+        await Promise.all(
+          Array.from(userIds).map(async (uid) => {
+            try {
+              const userDoc = await getDoc(doc(db, "users", uid));
+              if (userDoc.exists()) {
+                const data = userDoc.data();
+                userDataMapTemp[uid] = {
+                  id: userDoc.id,
+                  userId: data.userId || uid,
+                  email: data.email || "",
+                  name: data.name || "",
+                  gender: data.gender,
+                  birthYear: data.birthYear,
+                  contact: data.contact || "",
+                  district: data.district,
+                  detailedAddress: data.detailedAddress,
+                  skinType: data.skinType,
+                  photoURLs: data.photoURLs,
+                  photoURL: data.photoURL,
+                  photoType: data.photoType,
+                  kycStatus: data.kycStatus || "pending",
+                  hasPreviousTreatment: data.hasPreviousTreatment,
+                  rejectReason: data.rejectReason,
+                  createdAt: data.createdAt?.toDate?.() || new Date(),
+                  approvedAt: data.approvedAt?.toDate?.() || undefined,
+                  rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+                };
+              }
+            } catch {
+              // ignore
+            }
+          })
+        );
+        setUserDataMap(userDataMapTemp);
+      }
+    );
 
     return () => {
       unsubPending();
@@ -2576,6 +2621,276 @@ export default function KYCDashboard() {
                         })()}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* KYC 정보 섹션 */}
+              {userDataMap[selectedReservationDetail.userId] && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                      KYC 정보
+                    </h3>
+                    {(() => {
+                      const user =
+                        userDataMap[selectedReservationDetail.userId];
+                      return (
+                        <div className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male"
+                                      ? "남성"
+                                      : user.gender === "female"
+                                      ? "여성"
+                                      : user.gender === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    출생년도
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthYear || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">시군구</span>
+                                  <span className="font-medium">
+                                    {user.district
+                                      ? districts.find(
+                                          (d) => d.value === user.district
+                                        )?.label || user.district
+                                      : "-"}
+                                  </span>
+                                </div>
+                                {user.detailedAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      상세주소
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.detailedAddress}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                시술 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    피부타입
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.skinType === "oily"
+                                      ? "지성"
+                                      : user.skinType === "dry"
+                                      ? "건성"
+                                      : user.skinType === "normal"
+                                      ? "중성"
+                                      : user.skinType === "combination"
+                                      ? "복합성"
+                                      : user.skinType === "unknown"
+                                      ? "모르겠음"
+                                      : user.skinType === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    기존 시술 경험
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.hasPreviousTreatment
+                                      ? "있음"
+                                      : "없음"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">신청일</span>
+                                  <span className="font-medium">
+                                    {user.createdAt
+                                      ? user.createdAt.toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Photos */}
+                          <div className="space-y-4">
+                            <h4 className="text-gray-900 font-semibold">
+                              눈썹 사진
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                              {/* Left Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  좌측
+                                </h5>
+                                {(user.photoURLs?.left || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="좌측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load left image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Front Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  정면
+                                </h5>
+                                {(user.photoURLs?.front || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="정면 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load front image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  우측
+                                </h5>
+                                {(user.photoURLs?.right || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="우측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load right image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 거절 사유 (있는 경우) */}
+                          {user.rejectReason && (
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                거절 사유
+                              </h4>
+                              <div className="text-red-600 bg-red-50 border-red-200 rounded-lg border p-3 text-sm">
+                                {user.rejectReason}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
