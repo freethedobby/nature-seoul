@@ -3186,7 +3186,7 @@ export default function KYCDashboard() {
                     })()}
                   </div>
                 </div>
-              )}
+            })
             </div>
           )}
           <DialogFooter>
