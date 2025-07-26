@@ -149,9 +149,18 @@ export default function KYCDashboard() {
   const [kycTab, setKycTab] = useState<"pending" | "approved" | "rejected">(
     "pending"
   );
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+  const [startMonth, setStartMonth] = useState<string>(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+  });
+  const [endMonth, setEndMonth] = useState<string>(() => {
+    const today = new Date();
+    // 기본적으로 현재 월부터 2개월 후까지
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    return `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(
       2,
       "0"
     )}`;
@@ -855,28 +864,45 @@ export default function KYCDashboard() {
               <span className="py-0.5 rounded-full bg-white/20 px-2 text-xs text-white">
                 {(() => {
                   const filtered = reservations.filter((reservation) => {
-                    const reservationDate = new Date(
-                      reservation.date || reservation.createdAt
-                    );
-                    const reservationMonth = `${reservationDate.getFullYear()}-${String(
-                      reservationDate.getMonth() + 1
-                    ).padStart(2, "0")}`;
+                    // 예약 날짜 기준으로 기간 필터링
+                    let reservationDate;
+                    let reservationMonth;
 
-                    // 월 필터
-                    if (reservationMonth !== selectedMonth) return false;
+                    if (reservation.date) {
+                      // 예약 날짜가 있으면 그것을 기준으로
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    } else {
+                      // 예약 날짜가 없으면 생성일 기준으로
+                      reservationDate = new Date(reservation.createdAt);
+                      reservationMonth = `${reservationDate.getFullYear()}-${String(
+                        reservationDate.getMonth() + 1
+                      ).padStart(2, "0")}`;
+                    }
+
+                    // 기간 필터 (시작월부터 끝월까지)
+                    if (
+                      reservationMonth < startMonth ||
+                      reservationMonth > endMonth
+                    )
+                      return false;
 
                     // 지난 예약 필터
-                    if (!showPastReservations) {
+                    if (!showPastReservations && reservation.date) {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
 
-                      if (reservation.date) {
-                        const [year, month, day] = reservation.date
-                          .split("-")
-                          .map(Number);
-                        const resDate = new Date(year, month - 1, day);
-                        if (resDate < today) return false;
-                      }
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      const resDate = new Date(year, month - 1, day);
+                      if (resDate < today) return false;
                     }
 
                     return true;
@@ -2186,41 +2212,73 @@ export default function KYCDashboard() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="month-filter" className="text-sm font-medium">
-                    월 필터:
-                  </label>
-                  <select
-                    id="month-filter"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-3 text-sm focus:outline-none"
-                  >
-                    {(() => {
-                      const months = [];
-                      const today = new Date();
-                      // 현재 월부터 6개월 전까지, 그리고 6개월 후까지
-                      for (let i = -6; i <= 6; i++) {
-                        const date = new Date(
-                          today.getFullYear(),
-                          today.getMonth() + i,
-                          1
-                        );
-                        const value = `${date.getFullYear()}-${String(
-                          date.getMonth() + 1
-                        ).padStart(2, "0")}`;
-                        const label = date.toLocaleDateString("ko-KR", {
-                          year: "numeric",
-                          month: "long",
-                        });
-                        months.push({ value, label });
-                      }
-                      return months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ));
-                    })()}
-                  </select>
+                  <label className="text-sm font-medium">기간 필터:</label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={startMonth}
+                      onChange={(e) => setStartMonth(e.target.value)}
+                      className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-3 text-sm focus:outline-none"
+                    >
+                      {(() => {
+                        const months = [];
+                        const today = new Date();
+                        // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
+                        for (let i = -12; i <= 12; i++) {
+                          const date = new Date(
+                            today.getFullYear(),
+                            today.getMonth() + i,
+                            1
+                          );
+                          const value = `${date.getFullYear()}-${String(
+                            date.getMonth() + 1
+                          ).padStart(2, "0")}`;
+                          const label = date.toLocaleDateString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                          });
+                          months.push({ value, label });
+                        }
+                        return months.map((month) => (
+                          <option key={month.value} value={month.value}>
+                            {month.label}
+                          </option>
+                        ));
+                      })()}
+                    </select>
+                    <span className="text-gray-500 text-sm">부터</span>
+                    <select
+                      value={endMonth}
+                      onChange={(e) => setEndMonth(e.target.value)}
+                      className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-3 text-sm focus:outline-none"
+                    >
+                      {(() => {
+                        const months = [];
+                        const today = new Date();
+                        // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
+                        for (let i = -12; i <= 12; i++) {
+                          const date = new Date(
+                            today.getFullYear(),
+                            today.getMonth() + i,
+                            1
+                          );
+                          const value = `${date.getFullYear()}-${String(
+                            date.getMonth() + 1
+                          ).padStart(2, "0")}`;
+                          const label = date.toLocaleDateString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                          });
+                          months.push({ value, label });
+                        }
+                        return months.map((month) => (
+                          <option key={month.value} value={month.value}>
+                            {month.label}
+                          </option>
+                        ));
+                      })()}
+                    </select>
+                    <span className="text-gray-500 text-sm">까지</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-2 text-sm">
@@ -2239,28 +2297,45 @@ export default function KYCDashboard() {
               <div className="text-gray-500 text-sm">
                 {(() => {
                   const filtered = reservations.filter((reservation) => {
-                    const reservationDate = new Date(
-                      reservation.date || reservation.createdAt
-                    );
-                    const reservationMonth = `${reservationDate.getFullYear()}-${String(
-                      reservationDate.getMonth() + 1
-                    ).padStart(2, "0")}`;
+                    // 예약 날짜 기준으로 월 필터링
+                    let reservationDate;
+                    let reservationMonth;
 
-                    // 월 필터
-                    if (reservationMonth !== selectedMonth) return false;
+                    if (reservation.date) {
+                      // 예약 날짜가 있으면 그것을 기준으로
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    } else {
+                      // 예약 날짜가 없으면 생성일 기준으로
+                      reservationDate = new Date(reservation.createdAt);
+                      reservationMonth = `${reservationDate.getFullYear()}-${String(
+                        reservationDate.getMonth() + 1
+                      ).padStart(2, "0")}`;
+                    }
+
+                    // 기간 필터 (시작월부터 끝월까지)
+                    if (
+                      reservationMonth < startMonth ||
+                      reservationMonth > endMonth
+                    )
+                      return false;
 
                     // 지난 예약 필터
-                    if (!showPastReservations) {
+                    if (!showPastReservations && reservation.date) {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
 
-                      if (reservation.date) {
-                        const [year, month, day] = reservation.date
-                          .split("-")
-                          .map(Number);
-                        const resDate = new Date(year, month - 1, day);
-                        if (resDate < today) return false;
-                      }
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      const resDate = new Date(year, month - 1, day);
+                      if (resDate < today) return false;
                     }
 
                     return true;
@@ -2273,28 +2348,45 @@ export default function KYCDashboard() {
             {(() => {
               const filteredReservations = reservations.filter(
                 (reservation) => {
-                  const reservationDate = new Date(
-                    reservation.date || reservation.createdAt
-                  );
-                  const reservationMonth = `${reservationDate.getFullYear()}-${String(
-                    reservationDate.getMonth() + 1
-                  ).padStart(2, "0")}`;
+                  // 예약 날짜 기준으로 월 필터링
+                  let reservationDate;
+                  let reservationMonth;
 
-                  // 월 필터
-                  if (reservationMonth !== selectedMonth) return false;
+                  if (reservation.date) {
+                    // 예약 날짜가 있으면 그것을 기준으로
+                    const [year, month, day] = reservation.date
+                      .split("-")
+                      .map(Number);
+                    reservationDate = new Date(year, month - 1, day);
+                    reservationMonth = `${year}-${String(month).padStart(
+                      2,
+                      "0"
+                    )}`;
+                  } else {
+                    // 예약 날짜가 없으면 생성일 기준으로
+                    reservationDate = new Date(reservation.createdAt);
+                    reservationMonth = `${reservationDate.getFullYear()}-${String(
+                      reservationDate.getMonth() + 1
+                    ).padStart(2, "0")}`;
+                  }
+
+                  // 기간 필터 (시작월부터 끝월까지)
+                  if (
+                    reservationMonth < startMonth ||
+                    reservationMonth > endMonth
+                  )
+                    return false;
 
                   // 지난 예약 필터
-                  if (!showPastReservations) {
+                  if (!showPastReservations && reservation.date) {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
 
-                    if (reservation.date) {
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      const resDate = new Date(year, month - 1, day);
-                      if (resDate < today) return false;
-                    }
+                    const [year, month, day] = reservation.date
+                      .split("-")
+                      .map(Number);
+                    const resDate = new Date(year, month - 1, day);
+                    if (resDate < today) return false;
                   }
 
                   return true;
