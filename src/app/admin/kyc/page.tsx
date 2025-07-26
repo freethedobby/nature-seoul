@@ -3186,22 +3186,24 @@ export default function KYCDashboard() {
                     })()}
                   </div>
                 </div>
-            })
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsReservationDetailDialogOpen(false);
-                setSelectedReservationDetail(null);
-              }}
-            >
-              닫기
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setIsReservationDetailDialogOpen(false);
+            setSelectedReservationDetail(null);
+          }}
+        >
+          닫기
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
     </div>
   );
 }
