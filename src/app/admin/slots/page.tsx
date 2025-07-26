@@ -27,6 +27,7 @@ import {
   where,
   getDocs,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { ko } from "date-fns/locale";
 import { DayPicker, DateRange } from "react-day-picker";
@@ -226,6 +227,17 @@ export default function SlotManagement() {
   const slotTouchRef = useRef<{ [key: string]: number }>({});
   const calendarTouchRef = useRef<{ [key: string]: number }>({});
 
+  // Month range settings
+  const [monthRangeSettings, setMonthRangeSettings] = useState({
+    startMonth: 0, // 현재 월 기준 상대적 월 수
+    endMonth: 6, // 현재 월로부터 6개월 후
+  });
+  const [showMonthRangeDialog, setShowMonthRangeDialog] = useState(false);
+  const [tempMonthRangeSettings, setTempMonthRangeSettings] = useState({
+    startMonth: 0,
+    endMonth: 6,
+  });
+
   // Add new state for range selection:
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(
     undefined
@@ -366,6 +378,28 @@ export default function SlotManagement() {
       );
       setSlots(slotData);
     });
+
+    // Load month range settings
+    const loadMonthRangeSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "monthRange"));
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          setMonthRangeSettings({
+            startMonth: settings.startMonth || 0,
+            endMonth: settings.endMonth || 6,
+          });
+          setTempMonthRangeSettings({
+            startMonth: settings.startMonth || 0,
+            endMonth: settings.endMonth || 6,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading month range settings:", error);
+      }
+    };
+
+    loadMonthRangeSettings();
 
     return () => {
       unsubSlots();
@@ -731,6 +765,24 @@ export default function SlotManagement() {
     }
   };
 
+  const handleSaveMonthRangeSettings = async () => {
+    try {
+      await setDoc(doc(db, "settings", "monthRange"), {
+        startMonth: tempMonthRangeSettings.startMonth,
+        endMonth: tempMonthRangeSettings.endMonth,
+        updatedAt: Timestamp.now(),
+        updatedBy: user?.email,
+      });
+
+      setMonthRangeSettings(tempMonthRangeSettings);
+      setShowMonthRangeDialog(false);
+      alert("공개범위 설정이 저장되었습니다.");
+    } catch (error) {
+      console.error("Error saving month range settings:", error);
+      alert("설정 저장에 실패했습니다.");
+    }
+  };
+
   // Calendar event handlers
   const handleSingleClickSlot = (slot: SlotData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event from bubbling up to calendar
@@ -839,9 +891,43 @@ export default function SlotManagement() {
               <h1 className="text-gray-900 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
                 예약 슬롯 관리
               </h1>
+              <div className="text-gray-500 mt-1 text-xs sm:text-sm">
+                설정범위:{" "}
+                {(() => {
+                  const startDate = new Date();
+                  startDate.setMonth(
+                    startDate.getMonth() + monthRangeSettings.startMonth
+                  );
+                  const endDate = new Date();
+                  endDate.setMonth(
+                    endDate.getMonth() + monthRangeSettings.endMonth
+                  );
+
+                  const startYear = startDate
+                    .getFullYear()
+                    .toString()
+                    .slice(-2);
+                  const startMonth = (startDate.getMonth() + 1).toString();
+                  const endYear = endDate.getFullYear().toString().slice(-2);
+                  const endMonth = (endDate.getMonth() + 1).toString();
+
+                  return `${startYear}/${startMonth}~${endYear}/${endMonth}`;
+                })()}
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTempMonthRangeSettings(monthRangeSettings);
+                setShowMonthRangeDialog(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              공개범위 설정
+            </Button>
             <Button
               variant={viewMode === "list" ? "default" : "outline"}
               size="sm"
@@ -2395,6 +2481,87 @@ export default function SlotManagement() {
             >
               닫기
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Month Range Settings Dialog */}
+      <Dialog
+        open={showMonthRangeDialog}
+        onOpenChange={setShowMonthRangeDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>조회 범위 설정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">시작</label>
+              <select
+                value={tempMonthRangeSettings.startMonth}
+                onChange={(e) =>
+                  setTempMonthRangeSettings((prev) => ({
+                    ...prev,
+                    startMonth: parseInt(e.target.value),
+                  }))
+                }
+                className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+              >
+                {Array.from({ length: 13 }, (_, i) => i - 6).map((offset) => (
+                  <option key={offset} value={offset}>
+                    {offset === 0
+                      ? "현재 월"
+                      : offset > 0
+                      ? `${offset}개월 후`
+                      : `${Math.abs(offset)}개월 전`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">종료</label>
+              <select
+                value={tempMonthRangeSettings.endMonth}
+                onChange={(e) =>
+                  setTempMonthRangeSettings((prev) => ({
+                    ...prev,
+                    endMonth: parseInt(e.target.value),
+                  }))
+                }
+                className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+              >
+                {Array.from({ length: 25 }, (_, i) => i).map((offset) => (
+                  <option key={offset} value={offset}>
+                    {offset === 0 ? "현재 월" : `${offset}개월 후`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="bg-blue-50 text-blue-800 rounded-md p-3 text-sm">
+              <p className="font-medium">미리보기:</p>
+              <p>
+                사용자는{" "}
+                {tempMonthRangeSettings.startMonth === 0
+                  ? "현재 월"
+                  : tempMonthRangeSettings.startMonth > 0
+                  ? `${tempMonthRangeSettings.startMonth}개월 후`
+                  : `${Math.abs(tempMonthRangeSettings.startMonth)}개월 전`}
+                부터{" "}
+                {tempMonthRangeSettings.endMonth === 0
+                  ? "현재 월"
+                  : `${tempMonthRangeSettings.endMonth}개월 후`}
+                까지 예약할 수 있습니다.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowMonthRangeDialog(false)}
+            >
+              취소
+            </Button>
+            <Button onClick={handleSaveMonthRangeSettings}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

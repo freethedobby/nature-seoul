@@ -14,6 +14,7 @@ import {
   onSnapshot,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +68,10 @@ export default function UserReservePage() {
   const [reserving, setReserving] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [monthRangeSettings, setMonthRangeSettings] = useState({
+    startMonth: 0,
+    endMonth: 6,
+  });
   const popupRef = useRef<HTMLDivElement | null>(null);
   const confirmRef = useRef<HTMLDivElement | null>(null);
 
@@ -79,6 +84,27 @@ export default function UserReservePage() {
       }
     }
   }, [user, authLoading, router]);
+
+  // Load month range settings
+  useEffect(() => {
+    const loadMonthRangeSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "monthRange"));
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          setMonthRangeSettings({
+            startMonth: settings.startMonth || 0,
+            endMonth: settings.endMonth || 6,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading month range settings:", error);
+        // 기본값 유지
+      }
+    };
+
+    loadMonthRangeSettings();
+  }, []);
 
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
   // Only show future dates for users (current date and later)
@@ -764,13 +790,22 @@ export default function UserReservePage() {
                   today.setDate(1); // 월의 첫날로 설정
                   today.setHours(0, 0, 0, 0);
 
+                  const minMonth = new Date();
+                  minMonth.setMonth(
+                    minMonth.getMonth() + monthRangeSettings.startMonth
+                  );
+                  minMonth.setDate(1); // 월의 첫날로 설정
+                  minMonth.setHours(0, 0, 0, 0);
+
                   const maxMonth = new Date();
-                  maxMonth.setMonth(maxMonth.getMonth() + 6);
+                  maxMonth.setMonth(
+                    maxMonth.getMonth() + monthRangeSettings.endMonth
+                  );
                   maxMonth.setDate(1); // 월의 첫날로 설정
                   maxMonth.setHours(0, 0, 0, 0);
 
-                  // 현재 월부터 +6개월까지만 이동 가능
-                  if (newMonth >= today && newMonth <= maxMonth) {
+                  // 설정된 월 범위 내에서만 이동 가능
+                  if (newMonth >= minMonth && newMonth <= maxMonth) {
                     setCurrentMonth(newMonth);
                   }
                 }
