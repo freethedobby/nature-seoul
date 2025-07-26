@@ -886,11 +886,12 @@ export default function KYCDashboard() {
                       ).padStart(2, "0")}`;
                     }
 
-                    // 기간 필터 (시작월부터 끝월까지)
-                    if (
-                      reservationMonth < startMonth ||
-                      reservationMonth > endMonth
-                    )
+                    // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
+                    const startDate = new Date(startMonth + "-01");
+                    const endDate = new Date(endMonth + "-01");
+                    const resMonthDate = new Date(reservationMonth + "-01");
+
+                    if (resMonthDate < startDate || resMonthDate > endDate)
                       return false;
 
                     // 지난 예약 필터
@@ -2319,11 +2320,12 @@ export default function KYCDashboard() {
                       ).padStart(2, "0")}`;
                     }
 
-                    // 기간 필터 (시작월부터 끝월까지)
-                    if (
-                      reservationMonth < startMonth ||
-                      reservationMonth > endMonth
-                    )
+                    // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
+                    const startDate = new Date(startMonth + "-01");
+                    const endDate = new Date(endMonth + "-01");
+                    const resMonthDate = new Date(reservationMonth + "-01");
+
+                    if (resMonthDate < startDate || resMonthDate > endDate)
                       return false;
 
                     // 지난 예약 필터
@@ -2370,11 +2372,26 @@ export default function KYCDashboard() {
                     ).padStart(2, "0")}`;
                   }
 
-                  // 기간 필터 (시작월부터 끝월까지)
-                  if (
-                    reservationMonth < startMonth ||
-                    reservationMonth > endMonth
-                  )
+                  // 디버깅용 로그
+                  if (process.env.NODE_ENV === "development") {
+                    console.log("Filtering reservation:", {
+                      userName: reservation.userName,
+                      date: reservation.date,
+                      reservationMonth,
+                      startMonth,
+                      endMonth,
+                      isInRange:
+                        reservationMonth >= startMonth &&
+                        reservationMonth <= endMonth,
+                    });
+                  }
+
+                  // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
+                  const startDate = new Date(startMonth + "-01");
+                  const endDate = new Date(endMonth + "-01");
+                  const resMonthDate = new Date(reservationMonth + "-01");
+
+                  if (resMonthDate < startDate || resMonthDate > endDate)
                     return false;
 
                   // 지난 예약 필터
