@@ -891,15 +891,37 @@ export default function KYCDashboard() {
                     // 예약일이 없으면 필터링에서 제외
                     if (!reservation.date) return false;
 
-                    // 예약일 기준으로 기간 필터링
-                    const [year, month, day] = reservation.date
-                      .split("-")
-                      .map(Number);
-                    const reservationDate = new Date(year, month - 1, day);
-                    const reservationMonth = `${year}-${String(month).padStart(
-                      2,
-                      "0"
-                    )}`;
+                    // 예약일 파싱 (다양한 형식 지원)
+                    let reservationDate;
+                    let reservationMonth;
+
+                    // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
+                    if (reservation.date.includes(".")) {
+                      // '2025. 7. 30.' 형식
+                      const parts = reservation.date
+                        .replace(/\./g, "")
+                        .trim()
+                        .split(" ")
+                        .filter((p) => p);
+                      const year = parseInt(parts[0]);
+                      const month = parseInt(parts[1]);
+                      const day = parseInt(parts[2]);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    } else {
+                      // '2025-07-30' 형식
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    }
 
                     // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
                     const startDate = new Date(startMonth + "-01");
@@ -2312,15 +2334,37 @@ export default function KYCDashboard() {
                     // 예약일이 없으면 필터링에서 제외
                     if (!reservation.date) return false;
 
-                    // 예약일 기준으로 기간 필터링
-                    const [year, month, day] = reservation.date
-                      .split("-")
-                      .map(Number);
-                    const reservationDate = new Date(year, month - 1, day);
-                    const reservationMonth = `${year}-${String(month).padStart(
-                      2,
-                      "0"
-                    )}`;
+                    // 예약일 파싱 (다양한 형식 지원)
+                    let reservationDate;
+                    let reservationMonth;
+
+                    // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
+                    if (reservation.date.includes(".")) {
+                      // '2025. 7. 30.' 형식
+                      const parts = reservation.date
+                        .replace(/\./g, "")
+                        .trim()
+                        .split(" ")
+                        .filter((p) => p);
+                      const year = parseInt(parts[0]);
+                      const month = parseInt(parts[1]);
+                      const day = parseInt(parts[2]);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    } else {
+                      // '2025-07-30' 형식
+                      const [year, month, day] = reservation.date
+                        .split("-")
+                        .map(Number);
+                      reservationDate = new Date(year, month - 1, day);
+                      reservationMonth = `${year}-${String(month).padStart(
+                        2,
+                        "0"
+                      )}`;
+                    }
 
                     // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
                     const startDate = new Date(startMonth + "-01");
@@ -2375,15 +2419,37 @@ export default function KYCDashboard() {
                     return false;
                   }
 
-                  // 예약일 기준으로 월 필터링
-                  const [year, month, day] = reservation.date
-                    .split("-")
-                    .map(Number);
-                  const reservationDate = new Date(year, month - 1, day);
-                  const reservationMonth = `${year}-${String(month).padStart(
-                    2,
-                    "0"
-                  )}`;
+                  // 예약일 파싱 (다양한 형식 지원)
+                  let reservationDate;
+                  let reservationMonth;
+
+                  // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
+                  if (reservation.date.includes(".")) {
+                    // '2025. 7. 30.' 형식
+                    const parts = reservation.date
+                      .replace(/\./g, "")
+                      .trim()
+                      .split(" ")
+                      .filter((p) => p);
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]);
+                    const day = parseInt(parts[2]);
+                    reservationDate = new Date(year, month - 1, day);
+                    reservationMonth = `${year}-${String(month).padStart(
+                      2,
+                      "0"
+                    )}`;
+                  } else {
+                    // '2025-07-30' 형식
+                    const [year, month, day] = reservation.date
+                      .split("-")
+                      .map(Number);
+                    reservationDate = new Date(year, month - 1, day);
+                    reservationMonth = `${year}-${String(month).padStart(
+                      2,
+                      "0"
+                    )}`;
+                  }
 
                   // 기간 필터 체크
                   const startDate = new Date(startMonth + "-01");
@@ -2466,16 +2532,16 @@ export default function KYCDashboard() {
                         <CardTitle className="break-words text-lg sm:text-xl">
                           {reservation.userName}
                         </CardTitle>
-                        <CardDescription className="mt-2">
+                        <div className="mt-2">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                            <span className="flex items-center text-sm">
+                            <span className="text-gray-500 flex items-center text-sm">
                               예약일: {reservation.date || "미정"}
                             </span>
-                            <span className="flex items-center text-sm">
+                            <span className="text-gray-500 flex items-center text-sm">
                               시간: {reservation.time || "미정"}
                             </span>
                           </div>
-                        </CardDescription>
+                        </div>
                         <div className="mt-2">
                           <div className="text-gray-500 text-xs sm:text-sm">
                             예약 생성일:{" "}
