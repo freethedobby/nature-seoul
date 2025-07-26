@@ -2078,13 +2078,19 @@ function KycPhoto({ userId }: { userId: string }) {
 
   console.log("🎯 KycPhoto component rendered with userId:", userId);
 
+  // 즉시 실행되는 디버깅
+  console.log("🚀 KycPhoto: Component function started");
+
   useEffect(() => {
+    console.log("📅 KycPhoto: useEffect triggered");
     let ignore = false;
     (async () => {
       try {
+        console.log("🔄 KycPhoto: Starting async function");
         setLoading(true);
         console.log("🔍 KycPhoto: Fetching user data for userId:", userId);
         const userDoc = await getDoc(doc(db, "users", userId));
+        console.log("📄 KycPhoto: getDoc completed, exists:", userDoc.exists());
         if (userDoc.exists()) {
           const data = userDoc.data();
           console.log("📄 KycPhoto: User data found:", data);
@@ -2124,11 +2130,13 @@ function KycPhoto({ userId }: { userId: string }) {
         console.error("🚨 KycPhoto: Error fetching user data:", error);
       } finally {
         if (!ignore) {
+          console.log("🏁 KycPhoto: Setting loading to false");
           setLoading(false);
         }
       }
     })();
     return () => {
+      console.log("🧹 KycPhoto: Cleanup function called");
       ignore = true;
     };
   }, [userId]);
@@ -2140,11 +2148,21 @@ function KycPhoto({ userId }: { userId: string }) {
     userData
   );
 
+  // 강제로 항상 뭔가를 렌더링하도록 수정
+  console.log(
+    "🎨 KycPhoto: About to render, loading:",
+    loading,
+    "userData:",
+    userData
+  );
+
   if (loading) {
     console.log("⏳ KycPhoto: Showing loading state");
     return (
       <div className="border-blue-300 bg-blue-50 flex items-center justify-center rounded-lg border-2 p-4">
-        <div className="text-blue-600 text-sm font-medium">사진 로딩 중...</div>
+        <div className="text-blue-600 text-sm font-medium">
+          사진 로딩 중... (userId: {userId})
+        </div>
       </div>
     );
   }
@@ -2172,6 +2190,9 @@ function KycPhoto({ userId }: { userId: string }) {
   return (
     <div className="border-green-300 bg-green-50 space-y-4 rounded-lg border-2 p-4">
       <div className="text-green-800 font-medium">🎯 KYC 정보 로드 완료!</div>
+      <div className="text-green-700 text-sm">
+        사용자: {userData.name || "Unknown"}
+      </div>
 
       {/* KYC 기본 정보 */}
       <div className="space-y-2">
