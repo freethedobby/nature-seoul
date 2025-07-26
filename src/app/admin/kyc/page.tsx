@@ -2158,42 +2158,75 @@ export default function KYCDashboard() {
         open={isReservationDetailDialogOpen}
         onOpenChange={setIsReservationDetailDialogOpen}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent
+          className={`
+            h-full max-h-[90vh] w-full
+            max-w-4xl overflow-y-auto rounded-lg
+            !bg-white p-0
+            sm:max-h-[85vh]
+            sm:max-w-2xl
+            sm:p-6
+          `}
+          style={{
+            // 모바일에서 적당한 크기로 조정
+            ...(typeof window !== "undefined" && window.innerWidth < 640
+              ? {
+                  width: "95vw",
+                  height: "90vh",
+                  maxWidth: "95vw",
+                  maxHeight: "90vh",
+                  borderRadius: "8px",
+                }
+              : {}),
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>예약 상세 정보</DialogTitle>
-            <DialogDescription>
-              예약자의 상세 정보를 확인할 수 있습니다.
-            </DialogDescription>
+            <DialogTitle className="text-xl font-bold">
+              예약 상세 정보
+            </DialogTitle>
           </DialogHeader>
           {selectedReservationDetail && (
-            <div className="space-y-6">
-              {/* 기본 정보 */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-6 p-4 sm:p-6">
+              {/* 예약 정보 섹션 */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-gray-900 font-semibold">기본 정보</h3>
-                  <div className="space-y-1 text-sm">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 정보
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-4 sm:text-sm">
                     <div>
-                      <span className="font-medium">이름:</span>{" "}
-                      {selectedReservationDetail.userName}
+                      <span className="font-medium">예약 시간:</span>{" "}
+                      {selectedReservationDetail.date &&
+                      selectedReservationDetail.time
+                        ? `${selectedReservationDetail.date} ${selectedReservationDetail.time}`
+                        : "시간 미정"}
                     </div>
                     <div>
-                      <span className="font-medium">이메일:</span>{" "}
-                      {selectedReservationDetail.userEmail}
+                      <span className="font-medium">예약 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.id}
+                      </span>
                     </div>
                     <div>
-                      <span className="font-medium">예약일:</span>{" "}
-                      {selectedReservationDetail.date || "미정"}
+                      <span className="font-medium">사용자 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.userId}
+                      </span>
                     </div>
                     <div>
-                      <span className="font-medium">시간:</span>{" "}
-                      {selectedReservationDetail.time || "미정"}
+                      <span className="font-medium">슬롯 ID:</span>{" "}
+                      <span className="break-all">
+                        {selectedReservationDetail.slotId || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-gray-900 font-semibold">예약 상태</h3>
-                  <div className="space-y-1 text-sm">
+                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                    예약 상태
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm">
                     <div>
                       <span className="font-medium">상태:</span>{" "}
                       <Badge
@@ -2249,14 +2282,6 @@ export default function KYCDashboard() {
                           ? "거절"
                           : "대기"}
                       </Badge>
-                    </div>
-                    <div>
-                      <span className="font-medium">예약 ID:</span>{" "}
-                      {selectedReservationDetail.id}
-                    </div>
-                    <div>
-                      <span className="font-medium">사용자 ID:</span>{" "}
-                      {selectedReservationDetail.userId}
                     </div>
                   </div>
                 </div>
