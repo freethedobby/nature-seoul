@@ -33,6 +33,34 @@ import { DayPicker, DateRange } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
 
+// 서울시 시군구 데이터
+const districts = [
+  { value: "gangnam", label: "강남구" },
+  { value: "gangdong", label: "강동구" },
+  { value: "gangbuk", label: "강북구" },
+  { value: "gangseo", label: "강서구" },
+  { value: "gwanak", label: "관악구" },
+  { value: "gwangjin", label: "광진구" },
+  { value: "guro", label: "구로구" },
+  { value: "geumcheon", label: "금천구" },
+  { value: "nowon", label: "노원구" },
+  { value: "dobong", label: "도봉구" },
+  { value: "dongdaemun", label: "동대문구" },
+  { value: "dongjak", label: "동작구" },
+  { value: "mapo", label: "마포구" },
+  { value: "seodaemun", label: "서대문구" },
+  { value: "seocho", label: "서초구" },
+  { value: "seongbuk", label: "성북구" },
+  { value: "songpa", label: "송파구" },
+  { value: "yangcheon", label: "양천구" },
+  { value: "yeongdeungpo", label: "영등포구" },
+  { value: "yongsan", label: "용산구" },
+  { value: "eunpyeong", label: "은평구" },
+  { value: "jongno", label: "종로구" },
+  { value: "junggu", label: "중구" },
+  { value: "jungnang", label: "중랑구" },
+];
+
 interface SlotData {
   id: string;
   start: Date;
@@ -240,6 +268,9 @@ export default function SlotManagement() {
   const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
     useState(false);
 
+  // Add state for user data (for KYC information display)
+  const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
+
   // Click-away handler for popover
   useEffect(() => {
     if (!popoverOpenSlotId) return;
@@ -406,9 +437,10 @@ export default function SlotManagement() {
         }
       });
       setReservations(resList);
-      // Fetch KYC names and contacts for all userIds
+      // Fetch full user data for all userIds
       const kycNameMap: Record<string, string> = {};
       const kycContactMap: Record<string, string> = {};
+      const userDataMapTemp: Record<string, UserData> = {};
       await Promise.all(
         Array.from(userIds).map(async (uid) => {
           try {
@@ -421,6 +453,28 @@ export default function SlotManagement() {
               if (data && data.contact) {
                 kycContactMap[uid] = data.contact;
               }
+              // Store full user data for KYC information display
+              userDataMapTemp[uid] = {
+                id: userDoc.id,
+                userId: data.userId || uid,
+                email: data.email || "",
+                name: data.name || "",
+                gender: data.gender,
+                birthYear: data.birthYear,
+                contact: data.contact || "",
+                district: data.district,
+                detailedAddress: data.detailedAddress,
+                skinType: data.skinType,
+                photoURLs: data.photoURLs,
+                photoURL: data.photoURL,
+                photoType: data.photoType,
+                kycStatus: data.kycStatus || "pending",
+                hasPreviousTreatment: data.hasPreviousTreatment,
+                rejectReason: data.rejectReason,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                approvedAt: data.approvedAt?.toDate?.() || undefined,
+                rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+              };
             }
           } catch {
             // ignore
@@ -429,6 +483,7 @@ export default function SlotManagement() {
       );
       setKycNames(kycNameMap);
       setKycContacts(kycContactMap);
+      setUserDataMap(userDataMapTemp);
     });
   }, [selectedDate, slots]);
 
@@ -458,8 +513,9 @@ export default function SlotManagement() {
         }
       });
 
-      // Fetch KYC names for all userIds
+      // Fetch full user data for all userIds
       const kycNameMap: Record<string, string> = {};
+      const userDataMapTemp: Record<string, UserData> = {};
       await Promise.all(
         Array.from(userIds).map(async (uid) => {
           try {
@@ -469,6 +525,28 @@ export default function SlotManagement() {
               if (data && data.name) {
                 kycNameMap[uid] = data.name;
               }
+              // Store full user data for KYC information display
+              userDataMapTemp[uid] = {
+                id: userDoc.id,
+                userId: data.userId || uid,
+                email: data.email || "",
+                name: data.name || "",
+                gender: data.gender,
+                birthYear: data.birthYear,
+                contact: data.contact || "",
+                district: data.district,
+                detailedAddress: data.detailedAddress,
+                skinType: data.skinType,
+                photoURLs: data.photoURLs,
+                photoURL: data.photoURL,
+                photoType: data.photoType,
+                kycStatus: data.kycStatus || "pending",
+                hasPreviousTreatment: data.hasPreviousTreatment,
+                rejectReason: data.rejectReason,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                approvedAt: data.approvedAt?.toDate?.() || undefined,
+                rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+              };
             }
           } catch {
             // ignore
@@ -478,6 +556,7 @@ export default function SlotManagement() {
 
       setReservations(resList);
       setKycNames((prev) => ({ ...prev, ...kycNameMap }));
+      setUserDataMap((prev) => ({ ...prev, ...userDataMapTemp }));
     });
 
     return () => unsubscribe();
@@ -1904,14 +1983,35 @@ export default function SlotManagement() {
         open={isReservationDetailDialogOpen}
         onOpenChange={setIsReservationDetailDialogOpen}
       >
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogContent
+          className={`
+            h-full max-h-[95vh] w-full
+            max-w-4xl overflow-y-auto rounded-lg
+            !bg-white p-0
+            sm:max-h-[90vh]
+            sm:max-w-2xl
+            sm:p-6
+          `}
+          style={{
+            // 모바일에서 꽉 차게
+            ...(typeof window !== "undefined" && window.innerWidth < 640
+              ? {
+                  width: "100vw",
+                  height: "100vh",
+                  maxWidth: "100vw",
+                  maxHeight: "100vh",
+                  borderRadius: 0,
+                }
+              : {}),
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               예약 상세 정보
             </DialogTitle>
           </DialogHeader>
           {selectedReservationDetail && (
-            <div className="space-y-6">
+            <div className="space-y-6 p-4 sm:p-6">
               {/* 디버깅 정보 */}
               <div className="bg-yellow-100 border-yellow-400 rounded-lg border-2 p-4">
                 <div className="text-yellow-800 font-medium">
@@ -1927,22 +2027,274 @@ export default function SlotManagement() {
               </div>
 
               {/* KYC 정보 섹션 */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
-                    KYC 정보
-                  </h3>
-                  <div className="bg-blue-100 border-blue-300 rounded border p-2">
-                    <div className="text-blue-800 text-sm">
-                      KycPhoto 컴포넌트 시작
-                    </div>
-                    <KycPhoto userId={selectedReservationDetail.userId} />
-                    <div className="text-blue-800 text-sm">
-                      KycPhoto 컴포넌트 끝
-                    </div>
+              {userDataMap[selectedReservationDetail.userId] && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
+                      KYC 정보
+                    </h3>
+                    {(() => {
+                      const user =
+                        userDataMap[selectedReservationDetail.userId];
+                      return (
+                        <div className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male"
+                                      ? "남성"
+                                      : user.gender === "female"
+                                      ? "여성"
+                                      : user.gender === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    출생년도
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthYear || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">시군구</span>
+                                  <span className="font-medium">
+                                    {user.district
+                                      ? districts.find(
+                                          (d) => d.value === user.district
+                                        )?.label || user.district
+                                      : "-"}
+                                  </span>
+                                </div>
+                                {user.detailedAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      상세주소
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.detailedAddress}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                시술 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    피부타입
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.skinType === "oily"
+                                      ? "지성"
+                                      : user.skinType === "dry"
+                                      ? "건성"
+                                      : user.skinType === "normal"
+                                      ? "중성"
+                                      : user.skinType === "combination"
+                                      ? "복합성"
+                                      : user.skinType === "unknown"
+                                      ? "모르겠음"
+                                      : user.skinType === "other"
+                                      ? "기타"
+                                      : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    기존 시술 경험
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.hasPreviousTreatment
+                                      ? "있음"
+                                      : "없음"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">신청일</span>
+                                  <span className="font-medium">
+                                    {user.createdAt
+                                      ? user.createdAt.toLocaleString("ko-KR", {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Photos */}
+                          <div className="space-y-4">
+                            <h4 className="text-gray-900 font-semibold">
+                              눈썹 사진
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                              {/* Left Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  좌측
+                                </h5>
+                                {(user.photoURLs?.left || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="좌측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.left ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load left image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Front Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  정면
+                                </h5>
+                                {(user.photoURLs?.front || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="정면 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.front ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load front image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Photo */}
+                              <div className="space-y-2">
+                                <h5 className="text-gray-700 text-sm font-medium">
+                                  우측
+                                </h5>
+                                {(user.photoURLs?.right || user.photoURL) && (
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-white">
+                                    <Image
+                                      src={
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      }
+                                      alt="우측 눈썹"
+                                      fill
+                                      className="object-contain"
+                                      unoptimized={(
+                                        user.photoURLs?.right ||
+                                        user.photoURL ||
+                                        ""
+                                      ).startsWith("data:")}
+                                      onError={(e) => {
+                                        console.error(
+                                          "Failed to load right image"
+                                        );
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    {user.photoType === "base64" && (
+                                      <div className="bg-blue-100 text-blue-800 absolute top-2 right-2 rounded px-2 py-1 text-xs">
+                                        Base64
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 거절 사유 (있는 경우) */}
+                          {user.rejectReason && (
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                거절 사유
+                              </h4>
+                              <div className="text-red-600 bg-red-50 border-red-200 rounded-lg border p-3 text-sm">
+                                {user.rejectReason}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* 예약 정보 섹션 */}
               <div className="space-y-4">
