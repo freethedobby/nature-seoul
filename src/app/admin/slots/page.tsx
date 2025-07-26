@@ -1912,13 +1912,35 @@ export default function SlotManagement() {
           </DialogHeader>
           {selectedReservationDetail && (
             <div className="space-y-6">
+              {/* 디버깅 정보 */}
+              <div className="bg-yellow-100 border-yellow-400 rounded-lg border-2 p-4">
+                <div className="text-yellow-800 font-medium">
+                  🔍 디버깅 정보
+                </div>
+                <div className="text-yellow-700 mt-2 text-sm">
+                  <div>
+                    selectedReservationDetail.userId:{" "}
+                    {selectedReservationDetail.userId}
+                  </div>
+                  <div>KycPhoto 컴포넌트 호출 예정...</div>
+                </div>
+              </div>
+
               {/* KYC 정보 섹션 */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <h3 className="text-gray-900 text-base font-semibold sm:text-lg">
                     KYC 정보
                   </h3>
-                  <KycPhoto userId={selectedReservationDetail.userId} />
+                  <div className="bg-blue-100 border-blue-300 rounded border p-2">
+                    <div className="text-blue-800 text-sm">
+                      KycPhoto 컴포넌트 시작
+                    </div>
+                    <KycPhoto userId={selectedReservationDetail.userId} />
+                    <div className="text-blue-800 text-sm">
+                      KycPhoto 컴포넌트 끝
+                    </div>
+                  </div>
                 </div>
               </div>
 
