@@ -151,15 +151,16 @@ export default function KYCDashboard() {
   );
   const [startMonth, setStartMonth] = useState<string>(() => {
     const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}`;
+    // 기본적으로 3개월 전부터
+    const startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    return `${startDate.getFullYear()}-${String(
+      startDate.getMonth() + 1
+    ).padStart(2, "0")}`;
   });
   const [endMonth, setEndMonth] = useState<string>(() => {
     const today = new Date();
-    // 기본적으로 현재 월부터 2개월 후까지
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    // 기본적으로 3개월 후까지
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 3, 1);
     return `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(
       2,
       "0"
@@ -370,6 +371,29 @@ export default function KYCDashboard() {
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
+
+        console.log(
+          "🔄 Reservations snapshot received, count:",
+          filteredReservs.length
+        );
+        if (filteredReservs.length > 0) {
+          console.log("📋 Sample reservation data:", {
+            userName: filteredReservs[0].userName,
+            date: filteredReservs[0].date,
+            status: filteredReservs[0].status,
+            createdAt: filteredReservs[0].createdAt,
+            id: filteredReservs[0].id,
+          });
+          console.log(
+            "📋 All reservations:",
+            filteredReservs.map((r) => ({
+              userName: r.userName,
+              date: r.date,
+              status: r.status,
+            }))
+          );
+        }
+
         setReservations(filteredReservs);
 
         // Fetch user data for all userIds
@@ -864,27 +888,18 @@ export default function KYCDashboard() {
               <span className="py-0.5 rounded-full bg-white/20 px-2 text-xs text-white">
                 {(() => {
                   const filtered = reservations.filter((reservation) => {
-                    // 예약 날짜 기준으로 기간 필터링
-                    let reservationDate;
-                    let reservationMonth;
+                    // 예약일이 없으면 필터링에서 제외
+                    if (!reservation.date) return false;
 
-                    if (reservation.date) {
-                      // 예약 날짜가 있으면 그것을 기준으로
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      reservationDate = new Date(year, month - 1, day);
-                      reservationMonth = `${year}-${String(month).padStart(
-                        2,
-                        "0"
-                      )}`;
-                    } else {
-                      // 예약 날짜가 없으면 생성일 기준으로
-                      reservationDate = new Date(reservation.createdAt);
-                      reservationMonth = `${reservationDate.getFullYear()}-${String(
-                        reservationDate.getMonth() + 1
-                      ).padStart(2, "0")}`;
-                    }
+                    // 예약일 기준으로 기간 필터링
+                    const [year, month, day] = reservation.date
+                      .split("-")
+                      .map(Number);
+                    const reservationDate = new Date(year, month - 1, day);
+                    const reservationMonth = `${year}-${String(month).padStart(
+                      2,
+                      "0"
+                    )}`;
 
                     // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
                     const startDate = new Date(startMonth + "-01");
@@ -895,15 +910,11 @@ export default function KYCDashboard() {
                       return false;
 
                     // 지난 예약 필터
-                    if (!showPastReservations && reservation.date) {
+                    if (!showPastReservations) {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
 
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      const resDate = new Date(year, month - 1, day);
-                      if (resDate < today) return false;
+                      if (reservationDate < today) return false;
                     }
 
                     return true;
@@ -2298,27 +2309,18 @@ export default function KYCDashboard() {
               <div className="text-gray-500 text-sm">
                 {(() => {
                   const filtered = reservations.filter((reservation) => {
-                    // 예약 날짜 기준으로 월 필터링
-                    let reservationDate;
-                    let reservationMonth;
+                    // 예약일이 없으면 필터링에서 제외
+                    if (!reservation.date) return false;
 
-                    if (reservation.date) {
-                      // 예약 날짜가 있으면 그것을 기준으로
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      reservationDate = new Date(year, month - 1, day);
-                      reservationMonth = `${year}-${String(month).padStart(
-                        2,
-                        "0"
-                      )}`;
-                    } else {
-                      // 예약 날짜가 없으면 생성일 기준으로
-                      reservationDate = new Date(reservation.createdAt);
-                      reservationMonth = `${reservationDate.getFullYear()}-${String(
-                        reservationDate.getMonth() + 1
-                      ).padStart(2, "0")}`;
-                    }
+                    // 예약일 기준으로 기간 필터링
+                    const [year, month, day] = reservation.date
+                      .split("-")
+                      .map(Number);
+                    const reservationDate = new Date(year, month - 1, day);
+                    const reservationMonth = `${year}-${String(month).padStart(
+                      2,
+                      "0"
+                    )}`;
 
                     // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
                     const startDate = new Date(startMonth + "-01");
@@ -2329,15 +2331,11 @@ export default function KYCDashboard() {
                       return false;
 
                     // 지난 예약 필터
-                    if (!showPastReservations && reservation.date) {
+                    if (!showPastReservations) {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
 
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      const resDate = new Date(year, month - 1, day);
-                      if (resDate < today) return false;
+                      if (reservationDate < today) return false;
                     }
 
                     return true;
@@ -2348,67 +2346,98 @@ export default function KYCDashboard() {
             </div>
 
             {(() => {
+              console.log("🔄 Starting reservation filtering with:", {
+                totalReservations: reservations.length,
+                startMonth,
+                endMonth,
+                showPastReservations,
+                today: new Date().toISOString().split("T")[0],
+              });
+
+              // 모든 예약의 기본 정보 출력
+              reservations.forEach((reservation, index) => {
+                console.log(`📄 Reservation ${index + 1}:`, {
+                  userName: reservation.userName,
+                  date: reservation.date,
+                  status: reservation.status,
+                  hasDate: !!reservation.date,
+                });
+              });
+
               const filteredReservations = reservations.filter(
                 (reservation) => {
-                  // 예약 날짜 기준으로 월 필터링
-                  let reservationDate;
-                  let reservationMonth;
-
-                  if (reservation.date) {
-                    // 예약 날짜가 있으면 그것을 기준으로
-                    const [year, month, day] = reservation.date
-                      .split("-")
-                      .map(Number);
-                    reservationDate = new Date(year, month - 1, day);
-                    reservationMonth = `${year}-${String(month).padStart(
-                      2,
-                      "0"
-                    )}`;
-                  } else {
-                    // 예약 날짜가 없으면 생성일 기준으로
-                    reservationDate = new Date(reservation.createdAt);
-                    reservationMonth = `${reservationDate.getFullYear()}-${String(
-                      reservationDate.getMonth() + 1
-                    ).padStart(2, "0")}`;
+                  // 예약일이 없으면 필터링에서 제외
+                  if (!reservation.date) {
+                    console.log(
+                      "⚠️ Skipping reservation without date:",
+                      reservation.userName
+                    );
+                    return false;
                   }
 
-                  // 디버깅용 로그
-                  if (process.env.NODE_ENV === "development") {
-                    console.log("Filtering reservation:", {
-                      userName: reservation.userName,
-                      date: reservation.date,
-                      reservationMonth,
-                      startMonth,
-                      endMonth,
-                      isInRange:
-                        reservationMonth >= startMonth &&
-                        reservationMonth <= endMonth,
-                    });
-                  }
+                  // 예약일 기준으로 월 필터링
+                  const [year, month, day] = reservation.date
+                    .split("-")
+                    .map(Number);
+                  const reservationDate = new Date(year, month - 1, day);
+                  const reservationMonth = `${year}-${String(month).padStart(
+                    2,
+                    "0"
+                  )}`;
 
-                  // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
+                  // 기간 필터 체크
                   const startDate = new Date(startMonth + "-01");
                   const endDate = new Date(endMonth + "-01");
                   const resMonthDate = new Date(reservationMonth + "-01");
+                  const isInDateRange =
+                    resMonthDate >= startDate && resMonthDate <= endDate;
 
-                  if (resMonthDate < startDate || resMonthDate > endDate)
+                  // 지난 예약 체크
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isPastReservation = reservationDate < today;
+                  const shouldShowPastReservation =
+                    showPastReservations || !isPastReservation;
+
+                  // 디버깅용 로그
+                  console.log("🔍 Filtering reservation:", {
+                    userName: reservation.userName,
+                    date: reservation.date,
+                    reservationMonth,
+                    startMonth,
+                    endMonth,
+                    isInDateRange,
+                    isPastReservation,
+                    shouldShowPastReservation,
+                    showPastReservations,
+                    finalResult: isInDateRange && shouldShowPastReservation,
+                  });
+
+                  // 기간 및 지난 예약 필터 적용
+                  if (!isInDateRange) {
+                    console.log("❌ Failed date range filter");
                     return false;
-
-                  // 지난 예약 필터
-                  if (!showPastReservations && reservation.date) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    const [year, month, day] = reservation.date
-                      .split("-")
-                      .map(Number);
-                    const resDate = new Date(year, month - 1, day);
-                    if (resDate < today) return false;
                   }
 
+                  if (!shouldShowPastReservation) {
+                    console.log("❌ Failed past reservation filter");
+                    return false;
+                  }
+
+                  console.log("✅ Passed all filters");
                   return true;
                 }
               );
+
+              console.log("✅ Filtering completed:", {
+                totalReservations: reservations.length,
+                filteredCount: filteredReservations.length,
+                filteredReservations: filteredReservations.map((r) => ({
+                  userName: r.userName,
+                  date: r.date,
+                  status: r.status,
+                })),
+              });
 
               if (filteredReservations.length === 0) {
                 return (
