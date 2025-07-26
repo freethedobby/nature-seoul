@@ -1083,64 +1083,28 @@ export default function SlotManagement() {
                           </button>
                           {/* 예약자 이름 badge below the button */}
                           {slot.status === "booked" && reservation && (
-                            <>
-                              <span
-                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
-                                onClick={() => setPopoverOpenSlotId(slot.id)}
-                                tabIndex={0}
-                                role="button"
-                                onKeyDown={(event) => {
-                                  if (
-                                    event.key === "Enter" ||
-                                    event.key === " "
-                                  ) {
-                                    setPopoverOpenSlotId(slot.id);
-                                  }
-                                }}
-                              >
-                                {kycNames[reservation.userId] ||
-                                  reservation.userName ||
-                                  "-"}
-                              </span>
-                              {popoverOpenSlotId === slot.id && (
-                                <div
-                                  ref={popoverRef}
-                                  className="w-72 border-green-200 shadow-xl fixed left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-xl border bg-white p-4"
-                                  style={{ minWidth: 260 }}
-                                >
-                                  <div className="text-green-700 mb-1 text-lg font-bold">
-                                    {kycNames[reservation.userId] ||
-                                      reservation.userName ||
-                                      "-"}
-                                  </div>
-                                  <div className="text-green-600 mb-1 break-all text-sm">
-                                    {reservation.userEmail}
-                                  </div>
-                                  <div className="text-green-600 mb-1 break-all text-sm">
-                                    연락처:{" "}
-                                    {kycContacts[reservation.userId] || "-"}
-                                  </div>
-                                  <div className="text-gray-500 mb-1 text-xs">
-                                    예약 생성:{" "}
-                                    {reservation.createdAt
-                                      ? new Date(
-                                          reservation.createdAt
-                                        ).toLocaleString("ko-KR", {
-                                          year: "numeric",
-                                          month: "2-digit",
-                                          day: "2-digit",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })
-                                      : "-"}
-                                  </div>
-                                  {/* Eyebrow photo */}
-                                  {reservation.userId && (
-                                    <KycPhoto userId={reservation.userId} />
-                                  )}
-                                </div>
-                              )}
-                            </>
+                            <span
+                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                              onClick={() => {
+                                setSelectedReservationDetail(reservation);
+                                setIsReservationDetailDialogOpen(true);
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  setSelectedReservationDetail(reservation);
+                                  setIsReservationDetailDialogOpen(true);
+                                }
+                              }}
+                            >
+                              {kycNames[reservation.userId] ||
+                                reservation.userName ||
+                                "-"}
+                            </span>
                           )}
                         </div>
                       );
