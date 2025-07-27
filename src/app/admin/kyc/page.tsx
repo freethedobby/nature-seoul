@@ -1930,362 +1930,560 @@ export default function AdminKYCPage() {
               </TabsContent>
             </Tabs>
           </TabsContent>
-        </Tabs>
 
-        <Tabs
-          value={reservationTab}
-          onValueChange={(value) =>
-            setReservationTab(value as "upcoming" | "procedure")
-          }
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upcoming">예약 관리</TabsTrigger>
-            <TabsTrigger value="procedure">시술 관리</TabsTrigger>
-          </TabsList>
+          <TabsContent value="reservations" className="space-y-4">
+            <Tabs
+              value={reservationTab}
+              onValueChange={(value) =>
+                setReservationTab(value as "upcoming" | "procedure")
+              }
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upcoming">예약 관리</TabsTrigger>
+                <TabsTrigger value="procedure">시술 관리</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="upcoming" className="space-y-4">
-            {/* Filters */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="이름 검색"
-                  className="border-gray-300 py-1.5 focus:border-blue-500 w-full rounded-md border px-3 text-sm focus:outline-none sm:w-auto"
-                />
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <select
-                    value={startMonth}
-                    onChange={(e) => setStartMonth(e.target.value)}
-                    className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-2 text-sm focus:outline-none"
-                  >
+              <TabsContent value="upcoming" className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="이름 검색"
+                      className="border-gray-300 py-1.5 focus:border-blue-500 w-full rounded-md border px-3 text-sm focus:outline-none sm:w-auto"
+                    />
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <select
+                        value={startMonth}
+                        onChange={(e) => setStartMonth(e.target.value)}
+                        className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-2 text-sm focus:outline-none"
+                      >
+                        {(() => {
+                          const months = [];
+                          const today = new Date();
+                          // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
+                          for (let i = -12; i <= 12; i++) {
+                            const date = new Date(
+                              today.getFullYear(),
+                              today.getMonth() + i,
+                              1
+                            );
+                            const value = `${date.getFullYear()}-${String(
+                              date.getMonth() + 1
+                            ).padStart(2, "0")}`;
+                            const label = date.toLocaleDateString("ko-KR", {
+                              year: "2-digit",
+                              month: "short",
+                            });
+                            months.push({ value, label });
+                          }
+                          return months.map((month) => (
+                            <option key={month.value} value={month.value}>
+                              {month.label}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                      <span className="text-gray-400 text-xs">~</span>
+                      <select
+                        value={endMonth}
+                        onChange={(e) => setEndMonth(e.target.value)}
+                        className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-2 text-sm focus:outline-none"
+                      >
+                        {(() => {
+                          const months = [];
+                          const today = new Date();
+                          // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
+                          for (let i = -12; i <= 12; i++) {
+                            const date = new Date(
+                              today.getFullYear(),
+                              today.getMonth() + i,
+                              1
+                            );
+                            const value = `${date.getFullYear()}-${String(
+                              date.getMonth() + 1
+                            ).padStart(2, "0")}`;
+                            const label = date.toLocaleDateString("ko-KR", {
+                              year: "2-digit",
+                              month: "short",
+                            });
+                            months.push({ value, label });
+                          }
+                          return months.map((month) => (
+                            <option key={month.value} value={month.value}>
+                              {month.label}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 whitespace-nowrap text-sm">
+                      <input
+                        type="checkbox"
+                        checked={showPastReservations}
+                        onChange={(e) =>
+                          setShowPastReservations(e.target.checked)
+                        }
+                        className="rounded"
+                      />
+                      지난 예약 포함
+                    </label>
+                  </div>
+                  <div className="text-gray-500 text-sm">
                     {(() => {
-                      const months = [];
-                      const today = new Date();
-                      // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
-                      for (let i = -12; i <= 12; i++) {
-                        const date = new Date(
-                          today.getFullYear(),
-                          today.getMonth() + i,
-                          1
-                        );
-                        const value = `${date.getFullYear()}-${String(
-                          date.getMonth() + 1
-                        ).padStart(2, "0")}`;
-                        const label = date.toLocaleDateString("ko-KR", {
-                          year: "2-digit",
-                          month: "short",
-                        });
-                        months.push({ value, label });
-                      }
-                      return months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ));
+                      const filtered = reservations.filter((reservation) => {
+                        // 예약일이 없으면 필터링에서 제외
+                        if (!reservation.date) return false;
+
+                        // 이름 검색 필터
+                        if (
+                          searchQuery.trim() &&
+                          !reservation.userName
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase().trim())
+                        ) {
+                          return false;
+                        }
+
+                        // 예약일 파싱 (다양한 형식 지원)
+                        let reservationDate;
+                        let reservationMonth;
+
+                        // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
+                        if (reservation.date.includes(".")) {
+                          // '2025. 7. 30.' 형식
+                          const parts = reservation.date
+                            .replace(/\./g, "")
+                            .trim()
+                            .split(" ")
+                            .filter((p) => p);
+                          const year = parseInt(parts[0]);
+                          const month = parseInt(parts[1]);
+                          const day = parseInt(parts[2]);
+                          reservationDate = new Date(year, month - 1, day);
+                          reservationMonth = `${year}-${String(month).padStart(
+                            2,
+                            "0"
+                          )}`;
+                        } else {
+                          // '2025-07-30' 형식
+                          const [year, month, day] = reservation.date
+                            .split("-")
+                            .map(Number);
+                          reservationDate = new Date(year, month - 1, day);
+                          reservationMonth = `${year}-${String(month).padStart(
+                            2,
+                            "0"
+                          )}`;
+                        }
+
+                        // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
+                        const startDate = new Date(startMonth + "-01");
+                        const endDate = new Date(endMonth + "-01");
+                        const resMonthDate = new Date(reservationMonth + "-01");
+
+                        if (resMonthDate < startDate || resMonthDate > endDate)
+                          return false;
+
+                        // 지난 예약 필터
+                        if (!showPastReservations) {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+
+                          if (reservationDate < today) return false;
+                        }
+
+                        return true;
+                      });
+                      return filtered.length;
                     })()}
-                  </select>
-                  <span className="text-gray-400 text-xs">~</span>
-                  <select
-                    value={endMonth}
-                    onChange={(e) => setEndMonth(e.target.value)}
-                    className="border-gray-300 py-1.5 focus:border-blue-500 rounded-md border px-2 text-sm focus:outline-none"
-                  >
-                    {(() => {
-                      const months = [];
-                      const today = new Date();
-                      // 현재 월부터 12개월 전까지, 그리고 12개월 후까지
-                      for (let i = -12; i <= 12; i++) {
-                        const date = new Date(
-                          today.getFullYear(),
-                          today.getMonth() + i,
-                          1
-                        );
-                        const value = `${date.getFullYear()}-${String(
-                          date.getMonth() + 1
-                        ).padStart(2, "0")}`;
-                        const label = date.toLocaleDateString("ko-KR", {
-                          year: "2-digit",
-                          month: "short",
-                        });
-                        months.push({ value, label });
-                      }
-                      return months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ));
-                    })()}
-                  </select>
+                  </div>
                 </div>
-                <label className="flex items-center gap-2 whitespace-nowrap text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showPastReservations}
-                    onChange={(e) => setShowPastReservations(e.target.checked)}
-                    className="rounded"
-                  />
-                  지난 예약 포함
-                </label>
-              </div>
-              <div className="text-gray-500 text-sm">
+
                 {(() => {
-                  const filtered = reservations.filter((reservation) => {
-                    // 예약일이 없으면 필터링에서 제외
-                    if (!reservation.date) return false;
-
-                    // 이름 검색 필터
-                    if (
-                      searchQuery.trim() &&
-                      !reservation.userName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase().trim())
-                    ) {
-                      return false;
-                    }
-
-                    // 예약일 파싱 (다양한 형식 지원)
-                    let reservationDate;
-                    let reservationMonth;
-
-                    // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
-                    if (reservation.date.includes(".")) {
-                      // '2025. 7. 30.' 형식
-                      const parts = reservation.date
-                        .replace(/\./g, "")
-                        .trim()
-                        .split(" ")
-                        .filter((p) => p);
-                      const year = parseInt(parts[0]);
-                      const month = parseInt(parts[1]);
-                      const day = parseInt(parts[2]);
-                      reservationDate = new Date(year, month - 1, day);
-                      reservationMonth = `${year}-${String(month).padStart(
-                        2,
-                        "0"
-                      )}`;
-                    } else {
-                      // '2025-07-30' 형식
-                      const [year, month, day] = reservation.date
-                        .split("-")
-                        .map(Number);
-                      reservationDate = new Date(year, month - 1, day);
-                      reservationMonth = `${year}-${String(month).padStart(
-                        2,
-                        "0"
-                      )}`;
-                    }
-
-                    // 기간 필터 (시작월부터 끝월까지) - Date 객체로 비교
-                    const startDate = new Date(startMonth + "-01");
-                    const endDate = new Date(endMonth + "-01");
-                    const resMonthDate = new Date(reservationMonth + "-01");
-
-                    if (resMonthDate < startDate || resMonthDate > endDate)
-                      return false;
-
-                    // 지난 예약 필터
-                    if (!showPastReservations) {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-
-                      if (reservationDate < today) return false;
-                    }
-
-                    return true;
-                  });
-                  return filtered.length;
-                })()}
-              </div>
-            </div>
-
-            {(() => {
-              console.log("🔄 Starting reservation filtering with:", {
-                totalReservations: reservations.length,
-                searchQuery,
-                startMonth,
-                endMonth,
-                showPastReservations,
-                today: new Date().toISOString().split("T")[0],
-              });
-
-              // 모든 예약의 기본 정보 출력
-              reservations.forEach((reservation, index) => {
-                console.log(`📄 Reservation ${index + 1}:`, {
-                  userName: reservation.userName,
-                  date: reservation.date,
-                  status: reservation.status,
-                  hasDate: !!reservation.date,
-                });
-              });
-
-              const filteredReservations = reservations.filter(
-                (reservation) => {
-                  // 예약일이 없으면 필터링에서 제외
-                  if (!reservation.date) {
-                    console.log(
-                      "⚠️ Skipping reservation without date:",
-                      reservation.userName
-                    );
-                    return false;
-                  }
-
-                  // 이름 검색 필터
-                  if (
-                    searchQuery.trim() &&
-                    !reservation.userName
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase().trim())
-                  ) {
-                    console.log(
-                      "❌ Failed name search filter:",
-                      reservation.userName
-                    );
-                    return false;
-                  }
-
-                  // 예약일 파싱 (다양한 형식 지원)
-                  let reservationDate;
-                  let reservationMonth;
-
-                  // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
-                  if (reservation.date.includes(".")) {
-                    // '2025. 7. 30.' 형식
-                    const parts = reservation.date
-                      .replace(/\./g, "")
-                      .trim()
-                      .split(" ")
-                      .filter((p) => p);
-                    const year = parseInt(parts[0]);
-                    const month = parseInt(parts[1]);
-                    const day = parseInt(parts[2]);
-                    reservationDate = new Date(year, month - 1, day);
-                    reservationMonth = `${year}-${String(month).padStart(
-                      2,
-                      "0"
-                    )}`;
-                  } else {
-                    // '2025-07-30' 형식
-                    const [year, month, day] = reservation.date
-                      .split("-")
-                      .map(Number);
-                    reservationDate = new Date(year, month - 1, day);
-                    reservationMonth = `${year}-${String(month).padStart(
-                      2,
-                      "0"
-                    )}`;
-                  }
-
-                  // 기간 필터 체크
-                  const startDate = new Date(startMonth + "-01");
-                  const endDate = new Date(endMonth + "-01");
-                  const resMonthDate = new Date(reservationMonth + "-01");
-                  const isInDateRange =
-                    resMonthDate >= startDate && resMonthDate <= endDate;
-
-                  // 지난 예약 체크
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const isPastReservation = reservationDate < today;
-                  const shouldShowPastReservation =
-                    showPastReservations || !isPastReservation;
-
-                  // 디버깅용 로그
-                  console.log("🔍 Filtering reservation:", {
-                    userName: reservation.userName,
-                    date: reservation.date,
-                    reservationMonth,
+                  console.log("🔄 Starting reservation filtering with:", {
+                    totalReservations: reservations.length,
+                    searchQuery,
                     startMonth,
                     endMonth,
-                    isInDateRange,
-                    isPastReservation,
-                    shouldShowPastReservation,
                     showPastReservations,
-                    finalResult: isInDateRange && shouldShowPastReservation,
+                    today: new Date().toISOString().split("T")[0],
                   });
 
-                  // 기간 및 지난 예약 필터 적용
-                  if (!isInDateRange) {
-                    console.log("❌ Failed date range filter");
-                    return false;
+                  // 모든 예약의 기본 정보 출력
+                  reservations.forEach((reservation, index) => {
+                    console.log(`📄 Reservation ${index + 1}:`, {
+                      userName: reservation.userName,
+                      date: reservation.date,
+                      status: reservation.status,
+                      hasDate: !!reservation.date,
+                    });
+                  });
+
+                  const filteredReservations = reservations.filter(
+                    (reservation) => {
+                      // 예약일이 없으면 필터링에서 제외
+                      if (!reservation.date) {
+                        console.log(
+                          "⚠️ Skipping reservation without date:",
+                          reservation.userName
+                        );
+                        return false;
+                      }
+
+                      // 이름 검색 필터
+                      if (
+                        searchQuery.trim() &&
+                        !reservation.userName
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase().trim())
+                      ) {
+                        console.log(
+                          "❌ Failed name search filter:",
+                          reservation.userName
+                        );
+                        return false;
+                      }
+
+                      // 예약일 파싱 (다양한 형식 지원)
+                      let reservationDate;
+                      let reservationMonth;
+
+                      // 날짜 형식 파싱 ('2025. 7. 30.' 또는 '2025-07-30' 형식 모두 지원)
+                      if (reservation.date.includes(".")) {
+                        // '2025. 7. 30.' 형식
+                        const parts = reservation.date
+                          .replace(/\./g, "")
+                          .trim()
+                          .split(" ")
+                          .filter((p) => p);
+                        const year = parseInt(parts[0]);
+                        const month = parseInt(parts[1]);
+                        const day = parseInt(parts[2]);
+                        reservationDate = new Date(year, month - 1, day);
+                        reservationMonth = `${year}-${String(month).padStart(
+                          2,
+                          "0"
+                        )}`;
+                      } else {
+                        // '2025-07-30' 형식
+                        const [year, month, day] = reservation.date
+                          .split("-")
+                          .map(Number);
+                        reservationDate = new Date(year, month - 1, day);
+                        reservationMonth = `${year}-${String(month).padStart(
+                          2,
+                          "0"
+                        )}`;
+                      }
+
+                      // 기간 필터 체크
+                      const startDate = new Date(startMonth + "-01");
+                      const endDate = new Date(endMonth + "-01");
+                      const resMonthDate = new Date(reservationMonth + "-01");
+                      const isInDateRange =
+                        resMonthDate >= startDate && resMonthDate <= endDate;
+
+                      // 지난 예약 체크
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const isPastReservation = reservationDate < today;
+                      const shouldShowPastReservation =
+                        showPastReservations || !isPastReservation;
+
+                      // 디버깅용 로그
+                      console.log("🔍 Filtering reservation:", {
+                        userName: reservation.userName,
+                        date: reservation.date,
+                        reservationMonth,
+                        startMonth,
+                        endMonth,
+                        isInDateRange,
+                        isPastReservation,
+                        shouldShowPastReservation,
+                        showPastReservations,
+                        finalResult: isInDateRange && shouldShowPastReservation,
+                      });
+
+                      // 기간 및 지난 예약 필터 적용
+                      if (!isInDateRange) {
+                        console.log("❌ Failed date range filter");
+                        return false;
+                      }
+
+                      if (!shouldShowPastReservation) {
+                        console.log("❌ Failed past reservation filter");
+                        return false;
+                      }
+
+                      console.log("✅ Passed all filters");
+                      return true;
+                    }
+                  );
+
+                  console.log("✅ Filtering completed:", {
+                    totalReservations: reservations.length,
+                    filteredCount: filteredReservations.length,
+                    filteredReservations: filteredReservations.map((r) => ({
+                      userName: r.userName,
+                      date: r.date,
+                      status: r.status,
+                    })),
+                  });
+
+                  if (filteredReservations.length === 0) {
+                    return (
+                      <Card>
+                        <CardContent className="py-8 text-center">
+                          <p className="text-gray-500">
+                            선택한 기간에 예약이 없습니다.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
                   }
 
-                  if (!shouldShowPastReservation) {
-                    console.log("❌ Failed past reservation filter");
-                    return false;
-                  }
-
-                  console.log("✅ Passed all filters");
-                  return true;
-                }
-              );
-
-              console.log("✅ Filtering completed:", {
-                totalReservations: reservations.length,
-                filteredCount: filteredReservations.length,
-                filteredReservations: filteredReservations.map((r) => ({
-                  userName: r.userName,
-                  date: r.date,
-                  status: r.status,
-                })),
-              });
-
-              if (filteredReservations.length === 0) {
-                return (
-                  <Card>
-                    <CardContent className="py-8 text-center">
-                      <p className="text-gray-500">
-                        선택한 기간에 예약이 없습니다.
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              return filteredReservations.map((reservation) => (
-                <Card
-                  key={reservation.id}
-                  className="hover:shadow-md cursor-pointer transition-shadow"
-                  onClick={() => {
-                    setSelectedReservationDetail(reservation);
-                    setIsReservationDetailDialogOpen(true);
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="break-words text-lg sm:text-xl">
-                          {reservation.userName}
-                        </CardTitle>
-                        <div className="mt-2">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                            <span className="text-gray-500 flex items-center text-sm">
-                              예약일: {reservation.date || "미정"}
-                            </span>
-                            <span className="text-gray-500 flex items-center text-sm">
-                              시간: {reservation.time || "미정"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-gray-500 text-xs sm:text-sm">
-                            예약 생성일:{" "}
-                            {reservation.createdAt &&
-                            !isNaN(reservation.createdAt.getTime())
-                              ? reservation.createdAt.toLocaleString("ko-KR", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "날짜 정보 없음"}
-                          </div>
-                          {/* 입금 대기 상태에서 타이머 표시 */}
-                          {reservation.status === "payment_required" && (
+                  return filteredReservations.map((reservation) => (
+                    <Card
+                      key={reservation.id}
+                      className="hover:shadow-md cursor-pointer transition-shadow"
+                      onClick={() => {
+                        setSelectedReservationDetail(reservation);
+                        setIsReservationDetailDialogOpen(true);
+                      }}
+                    >
+                      <CardHeader>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="break-words text-lg sm:text-xl">
+                              {reservation.userName}
+                            </CardTitle>
                             <div className="mt-2">
-                              {(() => {
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                <span className="text-gray-500 flex items-center text-sm">
+                                  예약일: {reservation.date || "미정"}
+                                </span>
+                                <span className="text-gray-500 flex items-center text-sm">
+                                  시간: {reservation.time || "미정"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-2">
+                              <div className="text-gray-500 text-xs sm:text-sm">
+                                예약 생성일:{" "}
+                                {reservation.createdAt &&
+                                !isNaN(reservation.createdAt.getTime())
+                                  ? reservation.createdAt.toLocaleString(
+                                      "ko-KR",
+                                      {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )
+                                  : "날짜 정보 없음"}
+                              </div>
+                              {/* 입금 대기 상태에서 타이머 표시 */}
+                              {reservation.status === "payment_required" && (
+                                <div className="mt-2">
+                                  {(() => {
+                                    const now = new Date();
+                                    const reservationTime = new Date(
+                                      reservation.createdAt
+                                    );
+                                    const timeLimit = new Date(
+                                      reservationTime.getTime() + 30 * 60 * 1000
+                                    );
+                                    const remaining =
+                                      timeLimit.getTime() - now.getTime();
+
+                                    if (remaining <= 0) {
+                                      return (
+                                        <div className="text-red-600 text-xs font-medium sm:text-sm">
+                                          ⏰ 입금 시간 만료됨
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="space-y-1">
+                                          <div className="text-orange-600 text-xs font-medium sm:text-sm">
+                                            ⏰ 입금 마감까지
+                                          </div>
+                                          <CountdownTimer
+                                            deadline={timeLimit}
+                                            onExpired={() => {
+                                              // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
+                                              window.location.reload();
+                                            }}
+                                            compact={true}
+                                            testMode={
+                                              process.env.NODE_ENV ===
+                                              "development"
+                                            }
+                                          />
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
+
+                              {/* 입금 확인중 상태에서 타이머 표시 */}
+                              {reservation.status === "payment_confirmed" && (
+                                <div className="mt-2">
+                                  {(() => {
+                                    const now = new Date();
+                                    // paymentConfirmedAt이 있으면 그것을 기준으로, 없으면 createdAt 기준으로
+                                    const baseTime = (() => {
+                                      const paymentConfirmedAt =
+                                        reservation.paymentConfirmedAt;
+                                      const createdAt = reservation.createdAt;
+
+                                      // paymentConfirmedAt이 Date 객체인지 확인
+                                      if (
+                                        paymentConfirmedAt &&
+                                        paymentConfirmedAt instanceof Date
+                                      ) {
+                                        return paymentConfirmedAt;
+                                      }
+
+                                      // createdAt이 Date 객체인지 확인
+                                      if (
+                                        createdAt &&
+                                        createdAt instanceof Date
+                                      ) {
+                                        return createdAt;
+                                      }
+
+                                      // 둘 다 Date 객체가 아니면 현재 시간 사용
+                                      return new Date();
+                                    })();
+
+                                    const timeLimit = new Date(
+                                      baseTime.getTime() + 24 * 60 * 60 * 1000
+                                    );
+                                    const remaining =
+                                      timeLimit.getTime() - now.getTime();
+
+                                    if (remaining <= 0) {
+                                      return (
+                                        <div className="text-red-600 text-xs font-medium sm:text-sm">
+                                          ⏰ 관리자 승인 시간 만료됨
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="space-y-1">
+                                          <div className="text-blue-600 text-xs font-medium sm:text-sm">
+                                            ⏰ 관리자 승인 마감까지
+                                          </div>
+                                          <CountdownTimer
+                                            deadline={timeLimit}
+                                            onExpired={() => {
+                                              // 타이머 만료 시 페이지 새로고침
+                                              window.location.reload();
+                                            }}
+                                            compact={true}
+                                            testMode={
+                                              process.env.NODE_ENV ===
+                                              "development"
+                                            }
+                                          />
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
+                            <Badge
+                              variant={
+                                reservation.status === "approved"
+                                  ? "default"
+                                  : reservation.status === "payment_confirmed"
+                                  ? "secondary"
+                                  : reservation.status === "payment_required"
+                                  ? (() => {
+                                      const now = new Date();
+                                      const reservationTime = new Date(
+                                        reservation.createdAt
+                                      );
+                                      const timeLimit = new Date(
+                                        reservationTime.getTime() +
+                                          30 * 60 * 1000
+                                      );
+                                      return now > timeLimit
+                                        ? "destructive"
+                                        : "outline";
+                                    })()
+                                  : reservation.status === "cancelled"
+                                  ? "destructive"
+                                  : reservation.status === "rejected"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                            >
+                              {reservation.status === "approved"
+                                ? "확정"
+                                : reservation.status === "payment_confirmed"
+                                ? "입금확인중"
+                                : reservation.status === "payment_required"
+                                ? (() => {
+                                    const now = new Date();
+                                    const reservationTime = new Date(
+                                      reservation.createdAt
+                                    );
+                                    const timeLimit = new Date(
+                                      reservationTime.getTime() + 30 * 60 * 1000
+                                    );
+                                    return now > timeLimit
+                                      ? "입금시간만료"
+                                      : "입금대기";
+                                  })()
+                                : reservation.status === "cancelled"
+                                ? "취소됨"
+                                : reservation.status === "rejected"
+                                ? "거절"
+                                : "대기"}
+                            </Badge>
+
+                            {/* 승인/거절 버튼 - 입금확인 상태일 때만 표시 */}
+                            {reservation.status === "payment_confirmed" && (
+                              <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row">
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReservationApprove(reservation.id);
+                                  }}
+                                  className="bg-green-500 hover:bg-green-600 text-xs text-white sm:text-sm"
+                                >
+                                  승인
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedReservationId(reservation.id);
+                                    setIsReservationRejectDialogOpen(true);
+                                  }}
+                                  className="text-xs sm:text-sm"
+                                >
+                                  거절
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* 확정 버튼 - 입금시간 만료된 예약일 때만 표시 */}
+                            {reservation.status === "payment_required" &&
+                              (() => {
                                 const now = new Date();
                                 const reservationTime = new Date(
                                   reservation.createdAt
@@ -2293,137 +2491,23 @@ export default function AdminKYCPage() {
                                 const timeLimit = new Date(
                                   reservationTime.getTime() + 30 * 60 * 1000
                                 );
-                                const remaining =
-                                  timeLimit.getTime() - now.getTime();
-
-                                if (remaining <= 0) {
-                                  return (
-                                    <div className="text-red-600 text-xs font-medium sm:text-sm">
-                                      ⏰ 입금 시간 만료됨
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <div className="space-y-1">
-                                      <div className="text-orange-600 text-xs font-medium sm:text-sm">
-                                        ⏰ 입금 마감까지
-                                      </div>
-                                      <CountdownTimer
-                                        deadline={timeLimit}
-                                        onExpired={() => {
-                                          // 타이머 만료 시 페이지 새로고침 또는 상태 업데이트
-                                          window.location.reload();
-                                        }}
-                                        compact={true}
-                                        testMode={
-                                          process.env.NODE_ENV === "development"
-                                        }
-                                      />
-                                    </div>
-                                  );
-                                }
+                                return now > timeLimit ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReservationApprove(reservation.id);
+                                    }}
+                                    className="bg-green-500 hover:bg-green-600 w-full text-xs text-white sm:w-auto sm:text-sm"
+                                  >
+                                    확정
+                                  </Button>
+                                ) : null;
                               })()}
-                            </div>
-                          )}
 
-                          {/* 입금 확인중 상태에서 타이머 표시 */}
-                          {reservation.status === "payment_confirmed" && (
-                            <div className="mt-2">
-                              {(() => {
-                                const now = new Date();
-                                // paymentConfirmedAt이 있으면 그것을 기준으로, 없으면 createdAt 기준으로
-                                const baseTime = (() => {
-                                  const paymentConfirmedAt =
-                                    reservation.paymentConfirmedAt;
-                                  const createdAt = reservation.createdAt;
-
-                                  // paymentConfirmedAt이 Date 객체인지 확인
-                                  if (
-                                    paymentConfirmedAt &&
-                                    paymentConfirmedAt instanceof Date
-                                  ) {
-                                    return paymentConfirmedAt;
-                                  }
-
-                                  // createdAt이 Date 객체인지 확인
-                                  if (createdAt && createdAt instanceof Date) {
-                                    return createdAt;
-                                  }
-
-                                  // 둘 다 Date 객체가 아니면 현재 시간 사용
-                                  return new Date();
-                                })();
-
-                                const timeLimit = new Date(
-                                  baseTime.getTime() + 24 * 60 * 60 * 1000
-                                );
-                                const remaining =
-                                  timeLimit.getTime() - now.getTime();
-
-                                if (remaining <= 0) {
-                                  return (
-                                    <div className="text-red-600 text-xs font-medium sm:text-sm">
-                                      ⏰ 관리자 승인 시간 만료됨
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <div className="space-y-1">
-                                      <div className="text-blue-600 text-xs font-medium sm:text-sm">
-                                        ⏰ 관리자 승인 마감까지
-                                      </div>
-                                      <CountdownTimer
-                                        deadline={timeLimit}
-                                        onExpired={() => {
-                                          // 타이머 만료 시 페이지 새로고침
-                                          window.location.reload();
-                                        }}
-                                        compact={true}
-                                        testMode={
-                                          process.env.NODE_ENV === "development"
-                                        }
-                                      />
-                                    </div>
-                                  );
-                                }
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
-                        <Badge
-                          variant={
-                            reservation.status === "approved"
-                              ? "default"
-                              : reservation.status === "payment_confirmed"
-                              ? "secondary"
-                              : reservation.status === "payment_required"
-                              ? (() => {
-                                  const now = new Date();
-                                  const reservationTime = new Date(
-                                    reservation.createdAt
-                                  );
-                                  const timeLimit = new Date(
-                                    reservationTime.getTime() + 30 * 60 * 1000
-                                  );
-                                  return now > timeLimit
-                                    ? "destructive"
-                                    : "outline";
-                                })()
-                              : reservation.status === "cancelled"
-                              ? "destructive"
-                              : reservation.status === "rejected"
-                              ? "destructive"
-                              : "outline"
-                          }
-                        >
-                          {reservation.status === "approved"
-                            ? "확정"
-                            : reservation.status === "payment_confirmed"
-                            ? "입금확인중"
-                            : reservation.status === "payment_required"
-                            ? (() => {
+                            {/* 삭제 버튼 - 입금시간 만료된 예약이 아닐 때만 표시 */}
+                            {(() => {
+                              if (reservation.status === "payment_required") {
                                 const now = new Date();
                                 const reservationTime = new Date(
                                   reservation.createdAt
@@ -2431,194 +2515,129 @@ export default function AdminKYCPage() {
                                 const timeLimit = new Date(
                                   reservationTime.getTime() + 30 * 60 * 1000
                                 );
-                                return now > timeLimit
-                                  ? "입금시간만료"
-                                  : "입금대기";
-                              })()
-                            : reservation.status === "cancelled"
-                            ? "취소됨"
-                            : reservation.status === "rejected"
-                            ? "거절"
-                            : "대기"}
-                        </Badge>
-
-                        {/* 승인/거절 버튼 - 입금확인 상태일 때만 표시 */}
-                        {reservation.status === "payment_confirmed" && (
-                          <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row">
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReservationApprove(reservation.id);
-                              }}
-                              className="bg-green-500 hover:bg-green-600 text-xs text-white sm:text-sm"
-                            >
-                              승인
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedReservationId(reservation.id);
-                                setIsReservationRejectDialogOpen(true);
-                              }}
-                              className="text-xs sm:text-sm"
-                            >
-                              거절
-                            </Button>
+                                // 입금시간 만료된 예약은 삭제 버튼 숨김
+                                if (now > timeLimit) {
+                                  return null;
+                                }
+                              }
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedReservationId(reservation.id);
+                                    setIsReservationDeleteDialogOpen(true);
+                                  }}
+                                  className="w-full text-xs sm:w-auto sm:text-sm"
+                                >
+                                  삭제
+                                </Button>
+                              );
+                            })()}
                           </div>
-                        )}
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  ));
+                })()}
+              </TabsContent>
 
-                        {/* 확정 버튼 - 입금시간 만료된 예약일 때만 표시 */}
-                        {reservation.status === "payment_required" &&
-                          (() => {
-                            const now = new Date();
-                            const reservationTime = new Date(
-                              reservation.createdAt
-                            );
-                            const timeLimit = new Date(
-                              reservationTime.getTime() + 30 * 60 * 1000
-                            );
-                            return now > timeLimit ? (
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReservationApprove(reservation.id);
-                                }}
-                                className="bg-green-500 hover:bg-green-600 w-full text-xs text-white sm:w-auto sm:text-sm"
-                              >
-                                확정
-                              </Button>
-                            ) : null;
-                          })()}
-
-                        {/* 삭제 버튼 - 입금시간 만료된 예약이 아닐 때만 표시 */}
-                        {(() => {
-                          if (reservation.status === "payment_required") {
-                            const now = new Date();
-                            const reservationTime = new Date(
-                              reservation.createdAt
-                            );
-                            const timeLimit = new Date(
-                              reservationTime.getTime() + 30 * 60 * 1000
-                            );
-                            // 입금시간 만료된 예약은 삭제 버튼 숨김
-                            if (now > timeLimit) {
-                              return null;
-                            }
-                          }
-                          return (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedReservationId(reservation.id);
-                                setIsReservationDeleteDialogOpen(true);
-                              }}
-                              className="w-full text-xs sm:w-auto sm:text-sm"
-                            >
-                              삭제
-                            </Button>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ));
-            })()}
-          </TabsContent>
-
-          <TabsContent value="procedure" className="space-y-4">
-            {reservations.filter((r) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const reservationDate = new Date(r.date);
-              return reservationDate < today && r.status === "approved";
-            }).length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-gray-500">시술 대상 예약이 없습니다.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              reservations
-                .filter((r) => {
+              <TabsContent value="procedure" className="space-y-4">
+                {reservations.filter((r) => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const reservationDate = new Date(r.date);
                   return reservationDate < today && r.status === "approved";
-                })
-                .map((reservation) => {
-                  // Find corresponding user to check procedure status
-                  const correspondingUser =
-                    pendingUsers.find(
-                      (u) => u.email === reservation.userEmail
-                    ) ||
-                    approvedUsers.find(
-                      (u) => u.email === reservation.userEmail
-                    ) ||
-                    rejectedUsers.find(
-                      (u) => u.email === reservation.userEmail
-                    );
+                }).length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">
+                        시술 대상 예약이 없습니다.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  reservations
+                    .filter((r) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const reservationDate = new Date(r.date);
+                      return reservationDate < today && r.status === "approved";
+                    })
+                    .map((reservation) => {
+                      // Find corresponding user to check procedure status
+                      const correspondingUser =
+                        pendingUsers.find(
+                          (u) => u.email === reservation.userEmail
+                        ) ||
+                        approvedUsers.find(
+                          (u) => u.email === reservation.userEmail
+                        ) ||
+                        rejectedUsers.find(
+                          (u) => u.email === reservation.userEmail
+                        );
 
-                  const isProcedureCompleted =
-                    correspondingUser?.eyebrowProcedure === "completed";
+                      const isProcedureCompleted =
+                        correspondingUser?.eyebrowProcedure === "completed";
 
-                  return (
-                    <Card
-                      key={reservation.id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <div className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs font-medium">
-                                {reservation.userName}
+                      return (
+                        <Card
+                          key={reservation.id}
+                          className="hover:shadow-md transition-shadow"
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs font-medium">
+                                    {reservation.userName}
+                                  </div>
+                                  <Badge
+                                    variant={
+                                      isProcedureCompleted
+                                        ? "secondary"
+                                        : "default"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {isProcedureCompleted
+                                      ? "시술완료"
+                                      : "시술대기"}
+                                  </Badge>
+                                </div>
+                                <p className="text-gray-600 text-sm">
+                                  {reservation.date} {reservation.time}
+                                </p>
+                                <p className="text-gray-500 text-xs">
+                                  📧 {reservation.userEmail}
+                                </p>
+                                {correspondingUser?.procedureNote && (
+                                  <p className="text-gray-600 bg-gray-50 mt-2 rounded p-2 text-xs">
+                                    💬 {correspondingUser.procedureNote}
+                                  </p>
+                                )}
                               </div>
-                              <Badge
-                                variant={
-                                  isProcedureCompleted ? "secondary" : "default"
-                                }
-                                className="text-xs"
-                              >
-                                {isProcedureCompleted ? "시술완료" : "시술대기"}
-                              </Badge>
-                            </div>
-                            <p className="text-gray-600 text-sm">
-                              �� {reservation.date} {reservation.time}
-                            </p>
-                            <p className="text-gray-500 text-xs">
-                              📧 {reservation.userEmail}
-                            </p>
-                            {correspondingUser?.procedureNote && (
-                              <p className="text-gray-600 bg-gray-50 mt-2 rounded p-2 text-xs">
-                                💬 {correspondingUser.procedureNote}
-                              </p>
-                            )}
-                          </div>
 
-                          {!isProcedureCompleted && (
-                            <Button
-                              onClick={() => {
-                                setSelectedReservation(reservation);
-                                setShowProcedureDialog(true);
-                              }}
-                              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                            >
-                              시술 완료
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  );
-                })
-            )}
+                              {!isProcedureCompleted && (
+                                <Button
+                                  onClick={() => {
+                                    setSelectedReservation(reservation);
+                                    setShowProcedureDialog(true);
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                                >
+                                  시술 완료
+                                </Button>
+                              )}
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
 
