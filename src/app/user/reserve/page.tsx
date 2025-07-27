@@ -72,6 +72,8 @@ export default function UserReservePage() {
     startMonth: 0,
     endMonth: 6,
   });
+  const [showMonthRangeMessage, setShowMonthRangeMessage] = useState(false);
+  const [monthRangeMessage, setMonthRangeMessage] = useState("");
   const popupRef = useRef<HTMLDivElement | null>(null);
   const confirmRef = useRef<HTMLDivElement | null>(null);
 
@@ -92,10 +94,34 @@ export default function UserReservePage() {
         const settingsDoc = await getDoc(doc(db, "settings", "monthRange"));
         if (settingsDoc.exists()) {
           const settings = settingsDoc.data();
-          setMonthRangeSettings({
+          const newSettings = {
             startMonth: settings.startMonth || 0,
             endMonth: settings.endMonth || 6,
-          });
+          };
+          setMonthRangeSettings(newSettings);
+
+          // 현재 월이 허용 범위 밖이면 허용 범위의 첫 번째 월로 이동
+          const today = new Date();
+          const currentMonthDate = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1
+          );
+
+          const minMonth = new Date();
+          minMonth.setMonth(minMonth.getMonth() + newSettings.startMonth);
+          minMonth.setDate(1);
+          minMonth.setHours(0, 0, 0, 0);
+
+          const maxMonth = new Date();
+          maxMonth.setMonth(maxMonth.getMonth() + newSettings.endMonth);
+          maxMonth.setDate(1);
+          maxMonth.setHours(0, 0, 0, 0);
+
+          // 현재 월이 허용 범위에 없으면 허용 범위의 시작월로 이동
+          if (currentMonthDate < minMonth || currentMonthDate > maxMonth) {
+            setCurrentMonth(minMonth);
+          }
         }
       } catch (error) {
         console.error("Error loading month range settings:", error);
@@ -773,6 +799,18 @@ export default function UserReservePage() {
             <h2 className="text-gray-800 text-xl font-bold">날짜 선택</h2>
           </div>
 
+          {/* Month Range Message */}
+          {showMonthRangeMessage && (
+            <div className="bg-amber-50 border-amber-200 mb-4 rounded-lg border p-3 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <AlertCircle className="text-amber-600 h-4 w-4" />
+                <p className="text-amber-800 text-sm font-medium">
+                  {monthRangeMessage}
+                </p>
+              </div>
+            </div>
+          )}
+
           {loading || authLoading ? (
             <div className="py-8 text-center">
               <div className="animate-spin border-gray-900 mx-auto mb-4 h-8 w-8 rounded-full border-b-2"></div>
@@ -807,6 +845,21 @@ export default function UserReservePage() {
                   // 설정된 월 범위 내에서만 이동 가능
                   if (newMonth >= minMonth && newMonth <= maxMonth) {
                     setCurrentMonth(newMonth);
+                  } else {
+                    // 허용되지 않은 달로 이동하려고 할 때 메시지 표시
+                    let message = "";
+                    if (newMonth < minMonth) {
+                      message = "이전 달 예약은 마감입니다.";
+                    } else if (newMonth > maxMonth) {
+                      message = "다음 달 예약은 아직 오픈되지 않았습니다.";
+                    }
+                    setMonthRangeMessage(message);
+                    setShowMonthRangeMessage(true);
+
+                    // 3초 후 메시지 자동 숨김
+                    setTimeout(() => {
+                      setShowMonthRangeMessage(false);
+                    }, 3000);
                   }
                 }
               }}

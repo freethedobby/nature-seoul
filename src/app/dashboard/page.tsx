@@ -526,7 +526,7 @@ export default function DashboardPage() {
           <div className="mb-8 text-center">
             <h2 className="text-gray-900 mb-2 text-2xl font-light">내 정보</h2>
             <p className="text-gray-600">
-              예약 현황과 고객 등록 상태를 확인하세요.
+              고객 등록 상태와 예약 현황을 확인하세요.
             </p>
           </div>
 
@@ -649,7 +649,7 @@ export default function DashboardPage() {
                       reservation.status !== "cancelled" &&
                       reservation.status !== "rejected"
                     ? "예약이 진행 중입니다."
-                    : "상담 승인 후 예약이 가능합니다."}
+                    : "고객 등록 승인 후 예약이 가능합니다."}
                 </p>
 
                 {user.kycStatus === "approved" && !user.noticeConfirmed && (
