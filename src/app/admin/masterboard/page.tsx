@@ -214,12 +214,30 @@ export default function Masterboard() {
   ) => {
     setIsSubmitting(true);
     try {
+      // Validate inputs
+      if (!userId) {
+        throw new Error("사용자 ID가 없습니다");
+      }
+
+      if (!updates || Object.keys(updates).length === 0) {
+        throw new Error("업데이트할 데이터가 없습니다");
+      }
+
+      // Validate required fields
+      if (updates.name && !updates.name.trim()) {
+        throw new Error("이름은 필수 항목입니다");
+      }
+
+      if (updates.email && !updates.email.trim()) {
+        throw new Error("이메일은 필수 항목입니다");
+      }
+
       const userRef = doc(db, "users", userId);
 
       // Get current user data to compare status changes
       const currentUser = users.find((u) => u.id === userId);
       if (!currentUser) {
-        throw new Error("User not found");
+        throw new Error("사용자를 찾을 수 없습니다");
       }
 
       // Check for status changes
@@ -306,7 +324,11 @@ export default function Masterboard() {
       }
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("사용자 정보 업데이트 중 오류가 발생했습니다.");
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+      alert(
+        `사용자 정보 업데이트 중 오류가 발생했습니다.\n\n오류 내용: ${errorMessage}\n\n문제가 지속되면 관리자에게 문의하세요.`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -460,9 +482,9 @@ export default function Masterboard() {
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-4">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button
                 variant="ghost"
                 onClick={() => router.push("/admin")}
@@ -471,25 +493,27 @@ export default function Masterboard() {
                 <ArrowLeft className="h-4 w-4" />
                 뒤로
               </Button>
-              <h1 className="text-gray-900 font-sans text-3xl font-extrabold tracking-tight">
+              <h1 className="text-gray-900 font-sans text-xl font-extrabold tracking-tight sm:text-3xl">
                 마스터보드
               </h1>
             </div>
-            <p className="text-gray-600">모든 사용자 정보를 관리합니다</p>
+            <p className="text-gray-600 sm:text-base text-sm">
+              모든 사용자 정보를 관리합니다
+            </p>
           </div>
         </div>
 
         {/* Search and Filter */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <Card className="mb-4 sm:mb-6">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="flex flex-1 items-center gap-2">
                 <Search className="text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="이름, 이메일, 전화번호로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
+                  className="w-full sm:max-w-sm"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -497,7 +521,7 @@ export default function Masterboard() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border-gray-300 rounded-md border px-3 py-2 text-sm"
+                  className="border-gray-300 w-full rounded-md border px-3 py-2 text-sm sm:w-auto"
                 >
                   <option value="all">모든 상태</option>
                   <option value="pending">KYC 대기중</option>
@@ -520,6 +544,336 @@ export default function Masterboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Mobile Card View */}
+            <div className="space-y-4 md:hidden">
+              {filteredUsers.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-gray-500">
+                    조건에 맞는 사용자가 없습니다.
+                  </p>
+                </div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <Card key={user.id} className="border-gray-200 border p-4">
+                    <div className="space-y-3">
+                      {/* User Basic Info */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <User className="text-gray-400 h-4 w-4" />
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                          <div className="mt-1 space-y-1">
+                            <div className="text-gray-600 flex items-center gap-2 text-sm">
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate">{user.email}</span>
+                            </div>
+                            <div className="text-gray-600 flex items-center gap-2 text-sm">
+                              <Phone className="h-3 w-3" />
+                              {user.phone}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        {getStatusBadge(user.kycStatus, "kyc")}
+                        {getStatusBadge(user.reservationStatus, "reservation")}
+                        {getStatusBadge(user.eyebrowProcedure, "procedure")}
+                      </div>
+
+                      {/* Latest Reservation */}
+                      {user.latestReservation && (
+                        <div className="text-gray-600 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              최근 예약: {user.latestReservation.date}{" "}
+                              {user.latestReservation.time}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-between gap-2 pt-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                            >
+                              <MessageSquare className="mr-1 h-3 w-3" />
+                              댓글
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>
+                                {user.name} - 관리자 댓글
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              {/* Comments display - same as desktop */}
+                              <div className="space-y-2">
+                                {getUserComments(user.id).map((comment) => (
+                                  <div
+                                    key={comment.id}
+                                    className="bg-gray-50 rounded-lg p-3"
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium">
+                                          {comment.adminEmail}
+                                        </p>
+                                        <p className="text-gray-600 mt-1 text-sm">
+                                          {comment.comment}
+                                        </p>
+                                        <p className="text-gray-500 mt-2 text-xs">
+                                          {(
+                                            comment.createdAt as {
+                                              toDate?: () => Date;
+                                            }
+                                          )
+                                            ?.toDate?.()
+                                            ?.toLocaleString("ko-KR") ||
+                                            new Date(
+                                              comment.createdAt as
+                                                | string
+                                                | number
+                                                | Date
+                                            ).toLocaleString("ko-KR")}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleDeleteComment(comment.id)
+                                        }
+                                        className="text-red-600 hover:text-red-700"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="space-y-2">
+                                <Textarea
+                                  placeholder="새 댓글을 입력하세요..."
+                                  value={newComment}
+                                  onChange={(e) =>
+                                    setNewComment(e.target.value)
+                                  }
+                                  rows={3}
+                                />
+                                <Button
+                                  onClick={() => handleAddComment(user.id)}
+                                  disabled={!newComment.trim() || isSubmitting}
+                                  className="w-full"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  댓글 추가
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingUser(user)}
+                              className="flex-1"
+                            >
+                              <Edit className="mr-1 h-3 w-3" />
+                              편집
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>사용자 정보 편집</DialogTitle>
+                              <DialogDescription>
+                                {user.name}의 정보를 수정합니다
+                              </DialogDescription>
+                            </DialogHeader>
+                            {editingUser && editingUser.id === user.id && (
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    이름
+                                  </label>
+                                  <Input
+                                    value={editingUser.name}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        name: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    이메일
+                                  </label>
+                                  <Input
+                                    value={editingUser.email}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        email: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    전화번호
+                                  </label>
+                                  <Input
+                                    value={editingUser.phone}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        phone: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    KYC 상태
+                                  </label>
+                                  <select
+                                    value={editingUser.kycStatus}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        kycStatus: e.target.value as
+                                          | "pending"
+                                          | "approved"
+                                          | "rejected",
+                                      })
+                                    }
+                                    className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                  >
+                                    <option value="pending">대기중</option>
+                                    <option value="approved">승인됨</option>
+                                    <option value="rejected">거부됨</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    예약 상태
+                                  </label>
+                                  <select
+                                    value={editingUser.reservationStatus}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        reservationStatus: e.target.value as
+                                          | "none"
+                                          | "scheduled"
+                                          | "completed"
+                                          | "cancelled",
+                                      })
+                                    }
+                                    className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                  >
+                                    <option value="none">예약 없음</option>
+                                    <option value="scheduled">예약됨</option>
+                                    <option value="completed">완료됨</option>
+                                    <option value="cancelled">취소됨</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    시술 진행
+                                  </label>
+                                  <select
+                                    value={editingUser.eyebrowProcedure}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        eyebrowProcedure: e.target.value as
+                                          | "not_started"
+                                          | "in_progress"
+                                          | "completed",
+                                      })
+                                    }
+                                    className="border-gray-300 w-full rounded-md border px-3 py-2"
+                                  >
+                                    <option value="not_started">
+                                      시작 안함
+                                    </option>
+                                    <option value="in_progress">진행중</option>
+                                    <option value="completed">완료됨</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    관리자 댓글
+                                  </label>
+                                  <Textarea
+                                    value={editingUser.adminComments}
+                                    onChange={(e) =>
+                                      setEditingUser({
+                                        ...editingUser,
+                                        adminComments: e.target.value,
+                                      })
+                                    }
+                                    rows={3}
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() =>
+                                      handleUpdateUser(
+                                        editingUser.id,
+                                        editingUser
+                                      )
+                                    }
+                                    disabled={isSubmitting}
+                                    className="flex-1"
+                                  >
+                                    저장
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setEditingUser(null)}
+                                    className="flex-1"
+                                  >
+                                    취소
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id, user.name)}
+                          disabled={isSubmitting}
+                          className="flex-1"
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
             {/* Desktop Table View */}
             <div className="hidden overflow-x-auto md:block">
               <Table>
@@ -704,7 +1058,7 @@ export default function Masterboard() {
                                   {user.name}의 정보를 수정합니다
                                 </DialogDescription>
                               </DialogHeader>
-                              {editingUser && (
+                              {editingUser && editingUser.id === user.id && (
                                 <div className="space-y-4">
                                   <div>
                                     <label className="text-sm font-medium">
@@ -915,7 +1269,7 @@ export default function Masterboard() {
                               {user.name}의 정보를 수정합니다
                             </DialogDescription>
                           </DialogHeader>
-                          {editingUser && (
+                          {editingUser && editingUser.id === user.id && (
                             <div className="space-y-4">
                               <div>
                                 <label className="text-sm font-medium">
