@@ -131,8 +131,7 @@ export default function AdminKYCPage() {
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<UserData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
@@ -182,7 +181,8 @@ export default function AdminKYCPage() {
 
   const [procedureNote, setProcedureNote] = useState("");
   const [showProcedureDialog, setShowProcedureDialog] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [selectedReservation, setSelectedReservation] =
+    useState<ReservationData | null>(null);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
