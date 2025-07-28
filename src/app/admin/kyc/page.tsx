@@ -1203,29 +1203,61 @@ export default function AdminKYCPage() {
                                     피부타입
                                   </span>
                                   <span className="font-medium">
-                                    {user.skinType === "oily"
-                                      ? "지성"
-                                      : user.skinType === "dry"
-                                      ? "건성"
-                                      : user.skinType === "normal"
-                                      ? "중성"
-                                      : user.skinType === "combination"
-                                      ? "복합성"
-                                      : user.skinType === "unknown"
-                                      ? "모르겠음"
-                                      : user.skinType === "other"
-                                      ? "기타"
+                                    {user.skinType
+                                      ? getSkinTypeLabel(user.skinType)
                                       : "-"}
+                                    {user.skinType === "other" &&
+                                      user.skinTypeOther && (
+                                        <span className="text-gray-500 block text-xs">
+                                          ({user.skinTypeOther})
+                                        </span>
+                                      )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    기존 시술 경험
+                                    반영구 이력
                                   </span>
                                   <span className="font-medium">
                                     {user.hasPreviousTreatment
                                       ? "있음"
                                       : "없음"}
+                                  </span>
+                                </div>
+                                {user.designDescription && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      원하는 눈썹 디자인
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.designDescription}
+                                    </span>
+                                  </div>
+                                )}
+                                {user.additionalNotes && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      기타 사항
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.additionalNotes}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    마케팅 동의
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.marketingConsent ? (
+                                      <span className="text-green-600">
+                                        동의 (5만원 할인)
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-500">
+                                        미동의
+                                      </span>
+                                    )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1539,29 +1571,61 @@ export default function AdminKYCPage() {
                                     피부타입
                                   </span>
                                   <span className="font-medium">
-                                    {user.skinType === "oily"
-                                      ? "지성"
-                                      : user.skinType === "dry"
-                                      ? "건성"
-                                      : user.skinType === "normal"
-                                      ? "중성"
-                                      : user.skinType === "combination"
-                                      ? "복합성"
-                                      : user.skinType === "unknown"
-                                      ? "모르겠음"
-                                      : user.skinType === "other"
-                                      ? "기타"
+                                    {user.skinType
+                                      ? getSkinTypeLabel(user.skinType)
                                       : "-"}
+                                    {user.skinType === "other" &&
+                                      user.skinTypeOther && (
+                                        <span className="text-gray-500 block text-xs">
+                                          ({user.skinTypeOther})
+                                        </span>
+                                      )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    기존 시술 경험
+                                    반영구 이력
                                   </span>
                                   <span className="font-medium">
                                     {user.hasPreviousTreatment
                                       ? "있음"
                                       : "없음"}
+                                  </span>
+                                </div>
+                                {user.designDescription && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      원하는 눈썹 디자인
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.designDescription}
+                                    </span>
+                                  </div>
+                                )}
+                                {user.additionalNotes && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      기타 사항
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.additionalNotes}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    마케팅 동의
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.marketingConsent ? (
+                                      <span className="text-green-600">
+                                        동의 (5만원 할인)
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-500">
+                                        미동의
+                                      </span>
+                                    )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1578,22 +1642,6 @@ export default function AdminKYCPage() {
                                       : "-"}
                                   </span>
                                 </div>
-                                {user.approvedAt && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">
-                                      승인일
-                                    </span>
-                                    <span className="font-medium">
-                                      {user.approvedAt.toLocaleString("ko-KR", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1894,29 +1942,61 @@ export default function AdminKYCPage() {
                                     피부타입
                                   </span>
                                   <span className="font-medium">
-                                    {user.skinType === "oily"
-                                      ? "지성"
-                                      : user.skinType === "dry"
-                                      ? "건성"
-                                      : user.skinType === "normal"
-                                      ? "중성"
-                                      : user.skinType === "combination"
-                                      ? "복합성"
-                                      : user.skinType === "unknown"
-                                      ? "모르겠음"
-                                      : user.skinType === "other"
-                                      ? "기타"
+                                    {user.skinType
+                                      ? getSkinTypeLabel(user.skinType)
                                       : "-"}
+                                    {user.skinType === "other" &&
+                                      user.skinTypeOther && (
+                                        <span className="text-gray-500 block text-xs">
+                                          ({user.skinTypeOther})
+                                        </span>
+                                      )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    기존 시술 경험
+                                    반영구 이력
                                   </span>
                                   <span className="font-medium">
                                     {user.hasPreviousTreatment
                                       ? "있음"
                                       : "없음"}
+                                  </span>
+                                </div>
+                                {user.designDescription && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      원하는 눈썹 디자인
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.designDescription}
+                                    </span>
+                                  </div>
+                                )}
+                                {user.additionalNotes && (
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-600 mb-1 text-sm">
+                                      기타 사항
+                                    </span>
+                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                      {user.additionalNotes}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    마케팅 동의
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.marketingConsent ? (
+                                      <span className="text-green-600">
+                                        동의 (5만원 할인)
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-500">
+                                        미동의
+                                      </span>
+                                    )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1933,32 +2013,6 @@ export default function AdminKYCPage() {
                                       : "-"}
                                   </span>
                                 </div>
-                                {user.rejectedAt && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">
-                                      반려일
-                                    </span>
-                                    <span className="font-medium">
-                                      {user.rejectedAt.toLocaleString("ko-KR", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                )}
-                                {user.rejectReason && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">
-                                      반려 사유
-                                    </span>
-                                    <span className="text-red-600 font-medium">
-                                      {user.rejectReason}
-                                    </span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
