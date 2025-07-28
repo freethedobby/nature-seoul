@@ -1482,6 +1482,45 @@ export default function AdminKYCPage() {
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
+                                  <span className="text-gray-600">주소</span>
+                                  <span className="font-medium">
+                                    {[
+                                      user.province
+                                        ? getAddressLabel(
+                                            "province",
+                                            user.province
+                                          )
+                                        : "",
+                                      user.district
+                                        ? getAddressLabel(
+                                            "district",
+                                            user.district,
+                                            user.province
+                                          )
+                                        : "",
+                                      user.dong
+                                        ? getAddressLabel(
+                                            "dong",
+                                            user.dong,
+                                            user.district
+                                          )
+                                        : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ") || "-"}
+                                  </span>
+                                </div>
+                                {user.detailedAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      상세주소
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.detailedAddress}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
                                   <span className="text-gray-600">이메일</span>
                                   <span className="font-medium">
                                     {user.email}
@@ -1797,6 +1836,45 @@ export default function AdminKYCPage() {
                                     {user.contact}
                                   </span>
                                 </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">주소</span>
+                                  <span className="font-medium">
+                                    {[
+                                      user.province
+                                        ? getAddressLabel(
+                                            "province",
+                                            user.province
+                                          )
+                                        : "",
+                                      user.district
+                                        ? getAddressLabel(
+                                            "district",
+                                            user.district,
+                                            user.province
+                                          )
+                                        : "",
+                                      user.dong
+                                        ? getAddressLabel(
+                                            "dong",
+                                            user.dong,
+                                            user.district
+                                          )
+                                        : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ") || "-"}
+                                  </span>
+                                </div>
+                                {user.detailedAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">
+                                      상세주소
+                                    </span>
+                                    <span className="font-medium">
+                                      {user.detailedAddress}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">이메일</span>
                                   <span className="font-medium">
@@ -2927,15 +3005,32 @@ export default function AdminKYCPage() {
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">
-                                      시군구
-                                    </span>
+                                    <span className="text-gray-600">주소</span>
                                     <span className="font-medium">
-                                      {user.district
-                                        ? districts.find(
-                                            (d) => d.value === user.district
-                                          )?.label || user.district
-                                        : "-"}
+                                      {[
+                                        user.province
+                                          ? getAddressLabel(
+                                              "province",
+                                              user.province
+                                            )
+                                          : "",
+                                        user.district
+                                          ? getAddressLabel(
+                                              "district",
+                                              user.district,
+                                              user.province
+                                            )
+                                          : "",
+                                        user.dong
+                                          ? getAddressLabel(
+                                              "dong",
+                                              user.dong,
+                                              user.district
+                                            )
+                                          : "",
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ") || "-"}
                                     </span>
                                   </div>
                                   {user.detailedAddress && (
