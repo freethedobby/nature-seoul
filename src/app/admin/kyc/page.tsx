@@ -1248,20 +1248,20 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.designDescription}
                                     </span>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.additionalNotes}
                                     </span>
                                   </div>
@@ -1616,20 +1616,20 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.designDescription}
                                     </span>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.additionalNotes}
                                     </span>
                                   </div>
@@ -1987,20 +1987,20 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.designDescription}
                                     </span>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-600 mb-1 text-sm">
+                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-gray-50 rounded p-2 text-sm font-medium">
+                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
                                       {user.additionalNotes}
                                     </span>
                                   </div>
