@@ -927,7 +927,7 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
             {/* Previous Treatment */}
             <div className="space-y-2">
               <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
-                기존 시술 여부 *
+                반영구 이력 *
               </Label>
               <RadioGroup
                 onValueChange={(value) =>
@@ -948,6 +948,13 @@ export default function KYCForm({ onSuccess }: KYCFormProps) {
                   </Label>
                 </div>
               </RadioGroup>
+              <div className="bg-amber-50 border-amber-200 mt-2 rounded-lg border p-3">
+                <p className="text-amber-800 text-sm leading-relaxed">
+                  💡 <strong>중요 안내:</strong> 잔흔이 거의 없으시거나 처음
+                  시술을 받으시는 분만 예약해 주세요. 현재 잔흔 제거 중이신
+                  고객님께서는 모든 제거가 완료된 후에 신청해 주시기 바랍니다.
+                </p>
+              </div>
               {errors.hasPreviousTreatment && (
                 <p className="text-red-500 bg-red-50 border-red-200 rounded border p-2 text-sm">
                   {errors.hasPreviousTreatment.message}
