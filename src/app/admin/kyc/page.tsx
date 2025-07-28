@@ -45,6 +45,11 @@ import {
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
 import CountdownTimer from "@/components/CountdownTimer";
+import {
+  provinces,
+  districts as districtData,
+  dongs as dongData,
+} from "@/lib/address-data";
 
 // 서울시 시군구 데이터
 const districts = [
@@ -82,9 +87,15 @@ interface UserData {
   gender?: string;
   birthYear?: string;
   contact: string;
+  province?: string;
   district?: string;
+  dong?: string;
   detailedAddress?: string;
   skinType?: string;
+  skinTypeOther?: string;
+  designDescription?: string;
+  additionalNotes?: string;
+  marketingConsent?: boolean;
   photoURLs?: {
     left: string;
     front: string;
@@ -122,6 +133,57 @@ interface ReservationData {
   paymentConfirmedAt?: Date;
   createdAt: Date;
 }
+
+// 주소 변환 함수
+const getAddressLabel = (
+  type: "province" | "district" | "dong",
+  value: string,
+  parentValue?: string
+): string => {
+  if (!value) return "";
+
+  try {
+    switch (type) {
+      case "province":
+        const province = provinces.find((p) => p.value === value);
+        return province?.label || value;
+
+      case "district":
+        if (!parentValue) return value;
+        const districtList = districtData[parentValue];
+        if (!districtList) return value;
+        const district = districtList.find((d) => d.value === value);
+        return district?.label || value;
+
+      case "dong":
+        if (!parentValue) return value;
+        const dongList = dongData[parentValue];
+        if (!dongList) return value;
+        const dong = dongList.find((d) => d.value === value);
+        return dong?.label || value;
+
+      default:
+        return value;
+    }
+  } catch (error) {
+    console.error("Address conversion error:", error);
+    return value;
+  }
+};
+
+// 피부타입 변환 함수
+const getSkinTypeLabel = (skinType: string): string => {
+  const skinTypeMap: { [key: string]: string } = {
+    oily: "지성",
+    dry: "건성",
+    normal: "보통",
+    combination: "복합성",
+    sensitive: "민감성",
+    unknown: "모름",
+    other: "기타",
+  };
+  return skinTypeMap[skinType] || skinType;
+};
 
 export default function AdminKYCPage() {
   const { user, loading } = useAuth();
@@ -1084,13 +1146,32 @@ export default function AdminKYCPage() {
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-gray-600">시군구</span>
+                                  <span className="text-gray-600">주소</span>
                                   <span className="font-medium">
-                                    {user.district
-                                      ? districts.find(
-                                          (d) => d.value === user.district
-                                        )?.label || user.district
-                                      : "-"}
+                                    {[
+                                      user.province
+                                        ? getAddressLabel(
+                                            "province",
+                                            user.province
+                                          )
+                                        : "",
+                                      user.district
+                                        ? getAddressLabel(
+                                            "district",
+                                            user.district,
+                                            user.province
+                                          )
+                                        : "",
+                                      user.dong
+                                        ? getAddressLabel(
+                                            "dong",
+                                            user.dong,
+                                            user.district
+                                          )
+                                        : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ") || "-"}
                                   </span>
                                 </div>
                                 {user.detailedAddress && (
