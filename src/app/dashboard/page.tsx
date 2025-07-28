@@ -535,7 +535,89 @@ export default function DashboardPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setShowKycData(true)}
+                            onClick={() => {
+                              console.log("신청 내용 보기 버튼 클릭됨");
+                              setShowKycData(true);
+                              // KYC 데이터를 다시 가져오기
+                              if (user?.uid) {
+                                const fetchKycData = async () => {
+                                  try {
+                                    console.log(
+                                      "대시보드 - KYC 데이터 조회 시작:",
+                                      user.uid
+                                    );
+                                    const userDoc = await getDoc(
+                                      doc(db, "users", user.uid)
+                                    );
+                                    console.log(
+                                      "대시보드 - 사용자 문서 존재 여부:",
+                                      userDoc.exists()
+                                    );
+                                    if (userDoc.exists()) {
+                                      const data = userDoc.data();
+                                      console.log(
+                                        "대시보드 - 사용자 데이터:",
+                                        data
+                                      );
+
+                                      // KYC 데이터 형식에 맞게 변환
+                                      const kycData: KYCData = {
+                                        name: data.name || "",
+                                        gender: data.gender || "",
+                                        birthYear: data.birthYear || "",
+                                        contact: data.contact || "",
+                                        province: data.province || "",
+                                        district: data.district || "",
+                                        dong: data.dong || "",
+                                        detailedAddress:
+                                          data.detailedAddress || "",
+                                        skinType: data.skinType || "",
+                                        skinTypeOther: data.skinTypeOther || "",
+                                        hasPreviousTreatment:
+                                          data.hasPreviousTreatment
+                                            ? "yes"
+                                            : "no",
+                                        designDescription:
+                                          data.designDescription || "",
+                                        additionalNotes:
+                                          data.additionalNotes || "",
+                                        marketingConsent:
+                                          data.marketingConsent || false,
+                                        eyebrowPhotoLeft:
+                                          data.photoURLs?.left || "",
+                                        eyebrowPhotoFront:
+                                          data.photoURLs?.front || "",
+                                        eyebrowPhotoRight:
+                                          data.photoURLs?.right || "",
+                                        status: data.kycStatus || "",
+                                        submittedAt: data.submittedAt,
+                                      };
+
+                                      console.log(
+                                        "대시보드 - 변환된 KYC 데이터:",
+                                        kycData
+                                      );
+                                      console.log("대시보드 - 새로운 필드들:", {
+                                        designDescription:
+                                          data.designDescription,
+                                        additionalNotes: data.additionalNotes,
+                                        marketingConsent: data.marketingConsent,
+                                      });
+                                      setKycData(kycData);
+                                      console.log(
+                                        "대시보드 - kycData 상태 설정 완료"
+                                      );
+                                    }
+                                  } catch (error) {
+                                    console.error(
+                                      "KYC 데이터 조회 실패:",
+                                      error
+                                    );
+                                  }
+                                };
+                                fetchKycData();
+                              }
+                            }}
                             className="text-gray-700 border-gray-300 hover:bg-gray-50 w-full"
                           >
                             <Eye className="mr-2 h-4 w-4" />
