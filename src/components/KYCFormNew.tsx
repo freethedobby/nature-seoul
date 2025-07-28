@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   Loader2,
@@ -85,10 +91,9 @@ interface KYCFormProps {
 export default function KYCFormNew({ onSuccess }: KYCFormProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
+
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [previewImages, setPreviewImages] = useState<{
     left: string | null;
     front: string | null;
@@ -287,7 +292,6 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
     }
 
     setIsSubmitting(true);
-    setSubmitStatus("idle");
     setErrorMessage("");
 
     // Set timeout for submission
@@ -463,8 +467,8 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
 
       console.log("Setting final success status");
       clearTimeout(timeoutId);
-      setSubmitStatus("success");
       setIsSubmitting(false);
+      setShowSuccessDialog(true);
       reset();
       setPreviewImages({ left: null, front: null, right: null });
       setSelectedFiles({ left: null, front: null, right: null });
@@ -500,8 +504,6 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
         console.error("Error creating notifications:", notificationError);
         // Don't fail the form submission if notifications fail
       }
-
-      onSuccess?.();
     } catch (error) {
       console.error("=== KYC SUBMISSION ERROR ===");
       console.error("Error:", error);
@@ -520,7 +522,6 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
 
       clearTimeout(timeoutId);
       setErrorMessage(errorMsg);
-      setSubmitStatus("error");
       setIsSubmitting(false);
     }
   };
@@ -1237,22 +1238,53 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                 </div>
               </div>
             )}
-
-            {/* Success Message */}
-            {submitStatus === "success" && (
-              <div className="bg-green-50 border-green-200 rounded-lg border p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="text-green-600 h-5 w-5" />
-                  <p className="text-green-700">
-                    신청서가 성공적으로 제출되었습니다! 검토 후
-                    연락드리겠습니다.
-                  </p>
-                </div>
-              </div>
-            )}
           </form>
         </CardContent>
       </Card>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 text-center text-xl font-semibold">
+              신청 완료
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            <div className="bg-green-100 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <CheckCircle className="text-green-600 h-6 w-6" />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-gray-900 text-lg font-medium">
+                신청서가 제출되었습니다
+              </p>
+              <p className="text-gray-600">검토 후 연락드리겠습니다.</p>
+              <div className="bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
+                <p className="mb-1 font-medium">안내사항</p>
+                <p>
+                  검토 후 승인 여부와 승인 불가 사유는 2일 이내에 사이트 내
+                  &ldquo;내 정보&rdquo;에서 확인하실 수 있도록 업데이트 됩니다.
+                  확인 부탁드립니다.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <Button
+              onClick={() => {
+                setShowSuccessDialog(false);
+                onSuccess?.();
+              }}
+              className="bg-gray-900 hover:bg-gray-800 w-full px-8 py-2 font-medium text-white sm:w-auto"
+            >
+              확인
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
