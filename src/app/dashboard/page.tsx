@@ -247,6 +247,11 @@ export default function DashboardPage() {
             };
 
             console.log("대시보드 - 변환된 KYC 데이터:", kycData);
+            console.log("대시보드 - 새로운 필드들:", {
+              designDescription: data.designDescription,
+              additionalNotes: data.additionalNotes,
+              marketingConsent: data.marketingConsent,
+            });
             setKycData(kycData);
             console.log("대시보드 - kycData 상태 설정 완료");
           } else {
@@ -943,28 +948,32 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           </div>
 
           {/* 원하는 눈썹 디자인 */}
-          {kycData.designDescription && (
-            <div>
-              <label className="text-gray-800 mb-2 block text-sm font-semibold">
-                원하는 눈썹 디자인
-              </label>
+          <div>
+            <label className="text-gray-800 mb-2 block text-sm font-semibold">
+              원하는 눈썹 디자인
+            </label>
+            {kycData.designDescription ? (
               <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                 {kycData.designDescription}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-500 text-sm">입력된 내용이 없습니다.</p>
+            )}
+          </div>
 
           {/* 기타 사항 */}
-          {kycData.additionalNotes && (
-            <div>
-              <label className="text-gray-800 mb-2 block text-sm font-semibold">
-                기타 사항
-              </label>
+          <div>
+            <label className="text-gray-800 mb-2 block text-sm font-semibold">
+              기타 사항
+            </label>
+            {kycData.additionalNotes ? (
               <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                 {kycData.additionalNotes}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-500 text-sm">입력된 내용이 없습니다.</p>
+            )}
+          </div>
 
           {/* 마케팅 동의 */}
           <div>
