@@ -51,8 +51,8 @@ import {
   dongs as dongData,
 } from "@/lib/address-data";
 
-// 서울시 시군구 데이터
-const districts = [
+// 레거시 서울시 시군구 데이터 (호환성을 위해 유지)
+const legacyDistricts = [
   { value: "gangnam", label: "강남구" },
   { value: "gangdong", label: "강동구" },
   { value: "gangbuk", label: "강북구" },
@@ -134,7 +134,7 @@ interface ReservationData {
   createdAt: Date;
 }
 
-// 주소 변환 함수
+// 주소 변환 함수 (강화된 버전)
 const getAddressLabel = (
   type: "province" | "district" | "dong",
   value: string,
@@ -149,18 +149,40 @@ const getAddressLabel = (
         return province?.label || value;
 
       case "district":
-        if (!parentValue) return value;
-        const districtList = districtData[parentValue];
-        if (!districtList) return value;
-        const district = districtList.find((d) => d.value === value);
-        return district?.label || value;
+        // 새로운 주소 데이터에서 먼저 찾기
+        if (parentValue) {
+          const districtList = districtData[parentValue];
+          if (districtList) {
+            const district = districtList.find((d) => d.value === value);
+            if (district) return district.label;
+          }
+        }
+
+        // 레거시 데이터 호환성 - 기존 서울 데이터에서 찾기
+        const legacyDistrict = legacyDistricts.find((d) => d.value === value);
+        if (legacyDistrict) return legacyDistrict.label;
+
+        // 일반적인 변환 시도
+        if (value.includes("seongdong")) return "성동구";
+        if (value.includes("gangnam")) return "강남구";
+        if (value.includes("seoul")) return "서울특별시";
+
+        return value;
 
       case "dong":
-        if (!parentValue) return value;
-        const dongList = dongData[parentValue];
-        if (!dongList) return value;
-        const dong = dongList.find((d) => d.value === value);
-        return dong?.label || value;
+        if (parentValue) {
+          const dongList = dongData[parentValue];
+          if (dongList) {
+            const dong = dongList.find((d) => d.value === value);
+            if (dong) return dong.label;
+          }
+        }
+
+        // 일반적인 동 변환 시도
+        if (value.includes("seongsu")) return "성수동";
+        if (value.includes("hangang")) return "한강로동";
+
+        return value;
 
       default:
         return value;
