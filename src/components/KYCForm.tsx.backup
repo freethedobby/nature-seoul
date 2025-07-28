@@ -357,7 +357,7 @@ const kycSchema = z.object({
     }
   ),
   hasPreviousTreatment: z.enum(["yes", "no"], {
-    required_error: "기존 시술 여부를 선택해주세요",
+    required_error: "반영구 이력 여부를 선택해주세요",
   }),
   eyebrowPhotoLeft: z.instanceof(File).optional(), // 좌측 사진
   eyebrowPhotoFront: z.instanceof(File).optional(), // 정면 사진

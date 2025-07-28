@@ -825,7 +825,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                 {/* Previous Treatment */}
                 <div className="space-y-2">
                   <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
-                    기존 시술 여부 *
+                    반영구 이력 *
                   </Label>
                   <RadioGroup
                     onValueChange={(value) =>
