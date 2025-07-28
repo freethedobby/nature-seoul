@@ -44,6 +44,11 @@ import {
 import { db } from "@/lib/firebase";
 import CountdownTimer from "@/components/CountdownTimer";
 import { createNotification } from "@/lib/notifications";
+import {
+  provinces,
+  districts as districtData,
+  dongs as dongData,
+} from "@/lib/address-data";
 
 // KYC 데이터 타입 정의
 interface KYCData {
@@ -58,6 +63,9 @@ interface KYCData {
   skinType: string;
   skinTypeOther?: string;
   hasPreviousTreatment: string;
+  designDescription?: string; // 원하는 눈썹 디자인
+  additionalNotes?: string; // 기타 사항
+  marketingConsent?: boolean; // 마케팅 동의
   eyebrowPhotoLeft?: string;
   eyebrowPhotoFront?: string;
   eyebrowPhotoRight?: string;
@@ -67,159 +75,59 @@ interface KYCData {
   };
 }
 
-// 주소 변환 함수들
-const getProvinceLabel = (value: string): string => {
-  const provinces = [
-    { value: "seoul", label: "서울특별시" },
-    { value: "busan", label: "부산광역시" },
-    { value: "daegu", label: "대구광역시" },
-    { value: "incheon", label: "인천광역시" },
-    { value: "gwangju", label: "광주광역시" },
-    { value: "daejeon", label: "대전광역시" },
-    { value: "ulsan", label: "울산광역시" },
-    { value: "sejong", label: "세종특별자치시" },
-    { value: "gyeonggi", label: "경기도" },
-    { value: "gangwon", label: "강원도" },
-    { value: "chungbuk", label: "충청북도" },
-    { value: "chungnam", label: "충청남도" },
-    { value: "jeonbuk", label: "전라북도" },
-    { value: "jeonnam", label: "전라남도" },
-    { value: "gyeongbuk", label: "경상북도" },
-    { value: "gyeongnam", label: "경상남도" },
-    { value: "jeju", label: "제주특별자치도" },
-  ];
-  return provinces.find((p) => p.value === value)?.label || value;
-};
-
-const getDistrictLabel = (
-  provinceValue: string,
-  districtValue: string
+// 주소 변환 함수들 (강화된 버전)
+const getAddressLabel = (
+  type: "province" | "district" | "dong",
+  value: string,
+  parentValue?: string
 ): string => {
-  const districts: { [key: string]: { value: string; label: string }[] } = {
-    seoul: [
-      { value: "gangnam", label: "강남구" },
-      { value: "gangdong", label: "강동구" },
-      { value: "gangbuk", label: "강북구" },
-      { value: "gangseo", label: "강서구" },
-      { value: "gwanak", label: "관악구" },
-      { value: "gwangjin", label: "광진구" },
-      { value: "guro", label: "구로구" },
-      { value: "geumcheon", label: "금천구" },
-      { value: "nowon", label: "노원구" },
-      { value: "dobong", label: "도봉구" },
-      { value: "dongdaemun", label: "동대문구" },
-      { value: "dongjak", label: "동작구" },
-      { value: "mapo", label: "마포구" },
-      { value: "seodaemun", label: "서대문구" },
-      { value: "seocho", label: "서초구" },
-      { value: "seongbuk", label: "성북구" },
-      { value: "songpa", label: "송파구" },
-      { value: "yangcheon", label: "양천구" },
-      { value: "yeongdeungpo", label: "영등포구" },
-      { value: "yongsan", label: "용산구" },
-      { value: "eunpyeong", label: "은평구" },
-      { value: "jongno", label: "종로구" },
-      { value: "junggu", label: "중구" },
-      { value: "jungnang", label: "중랑구" },
-    ],
-    gyeonggi: [
-      { value: "suwon", label: "수원시" },
-      { value: "seongnam", label: "성남시" },
-      { value: "bucheon", label: "부천시" },
-      { value: "anyang", label: "안양시" },
-      { value: "ansan", label: "안산시" },
-      { value: "pyeongtaek", label: "평택시" },
-      { value: "siheung", label: "시흥시" },
-      { value: "gwangmyeong", label: "광명시" },
-      { value: "gwangju_gyeonggi", label: "광주시" },
-      { value: "yongin", label: "용인시" },
-      { value: "paju", label: "파주시" },
-      { value: "icheon", label: "이천시" },
-      { value: "anseong", label: "안성시" },
-      { value: "gimpo", label: "김포시" },
-      { value: "hwaseong", label: "화성시" },
-      { value: "yeoju", label: "여주시" },
-      { value: "pocheon", label: "포천시" },
-      { value: "dongducheon", label: "동두천시" },
-      { value: "goyang", label: "고양시" },
-      { value: "namyangju", label: "남양주시" },
-      { value: "osan", label: "오산시" },
-      { value: "hanam", label: "하남시" },
-      { value: "uijeongbu", label: "의정부시" },
-      { value: "yangju", label: "양주시" },
-      { value: "gunpo", label: "군포시" },
-      { value: "uiwang", label: "의왕시" },
-      { value: "gwachon", label: "과천시" },
-      { value: "guri", label: "구리시" },
-      { value: "yeoncheon", label: "연천군" },
-      { value: "gapyeong", label: "가평군" },
-      { value: "yangpyeong", label: "양평군" },
-    ],
-    incheon: [
-      { value: "junggu_incheon", label: "중구" },
-      { value: "donggu", label: "동구" },
-      { value: "michuhol", label: "미추홀구" },
-      { value: "yeonsu", label: "연수구" },
-      { value: "namdong", label: "남동구" },
-      { value: "bupyeong", label: "부평구" },
-      { value: "gyeyang", label: "계양구" },
-      { value: "seo_incheon", label: "서구" },
-      { value: "ganghwa", label: "강화군" },
-      { value: "ongjin", label: "옹진군" },
-    ],
-  };
+  if (!value) return "";
 
-  const provinceDistricts = districts[provinceValue];
-  if (!provinceDistricts) return districtValue;
+  try {
+    switch (type) {
+      case "province":
+        const province = provinces.find((p) => p.value === value);
+        return province?.label || value;
 
-  return (
-    provinceDistricts.find((d) => d.value === districtValue)?.label ||
-    districtValue
-  );
-};
+      case "district":
+        // 새로운 주소 데이터에서 먼저 찾기
+        if (parentValue) {
+          const districtList = districtData[parentValue];
+          if (districtList) {
+            const district = districtList.find((d) => d.value === value);
+            if (district) return district.label;
+          }
+        }
 
-const getDongLabel = (districtValue: string, dongValue: string): string => {
-  const dongs: { [key: string]: { value: string; label: string }[] } = {
-    gangnam: [
-      { value: "apgujeong", label: "압구정동" },
-      { value: "cheongdam", label: "청담동" },
-      { value: "daechi", label: "대치동" },
-      { value: "dogok", label: "도곡동" },
-      { value: "gaepo", label: "개포동" },
-      { value: "irwon", label: "일원동" },
-      { value: "jamsil", label: "잠실동" },
-      { value: "jamwon", label: "잠원동" },
-      { value: "nonhyeon", label: "논현동" },
-      { value: "samseong", label: "삼성동" },
-      { value: "seocho", label: "서초동" },
-      { value: "sinsa", label: "신사동" },
-      { value: "songpa", label: "송파동" },
-      { value: "yangjae", label: "양재동" },
-    ],
-    seocho: [
-      { value: "banpo", label: "반포동" },
-      { value: "bangbae", label: "방배동" },
-      { value: "seocho", label: "서초동" },
-      { value: "yangjae", label: "양재동" },
-      { value: "yeouido", label: "여의도동" },
-    ],
-    suwon: [
-      { value: "gwonseon", label: "권선구" },
-      { value: "yeongtong", label: "영통구" },
-      { value: "jangan", label: "장안구" },
-      { value: "paldal", label: "팔달구" },
-    ],
-    seongnam: [
-      { value: "bundang", label: "분당구" },
-      { value: "jungwon", label: "중원구" },
-      { value: "sujeong", label: "수정구" },
-    ],
-  };
+        // 일반적인 변환 시도
+        if (value.includes("seongdong")) return "성동구";
+        if (value.includes("gangnam")) return "강남구";
+        if (value.includes("seoul")) return "서울특별시";
 
-  const districtDongs = dongs[districtValue];
-  if (!districtDongs) return dongValue;
+        return value;
 
-  return districtDongs.find((d) => d.value === dongValue)?.label || dongValue;
+      case "dong":
+        if (parentValue) {
+          const dongList = dongData[parentValue];
+          if (dongList) {
+            const dong = dongList.find((d) => d.value === value);
+            if (dong) return dong.label;
+          }
+        }
+
+        // 일반적인 동 변환 시도
+        if (value.includes("seongsu")) return "성수동";
+        if (value.includes("hangang")) return "한강로동";
+
+        return value;
+
+      default:
+        return value;
+    }
+  } catch (error) {
+    console.error("Address conversion error:", error);
+    return value;
+  }
 };
 
 export default function DashboardPage() {
@@ -328,6 +236,9 @@ export default function DashboardPage() {
               skinType: data.skinType || "",
               skinTypeOther: data.skinTypeOther || "",
               hasPreviousTreatment: data.hasPreviousTreatment ? "yes" : "no",
+              designDescription: data.designDescription || "",
+              additionalNotes: data.additionalNotes || "",
+              marketingConsent: data.marketingConsent || false,
               eyebrowPhotoLeft: data.photoURLs?.left || "",
               eyebrowPhotoFront: data.photoURLs?.front || "",
               eyebrowPhotoRight: data.photoURLs?.right || "",
@@ -968,45 +879,43 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           <CardTitle className="text-lg">주소 정보</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="text-gray-700 text-sm font-medium">시도</label>
-              <p className="text-gray-900">
-                {getProvinceLabel(kycData.province)}
-              </p>
-            </div>
-            <div>
-              <label className="text-gray-700 text-sm font-medium">
-                시군구
-              </label>
-              <p className="text-gray-900">
-                {getDistrictLabel(kycData.province, kycData.district)}
-              </p>
-            </div>
-            <div>
-              <label className="text-gray-700 text-sm font-medium">
-                읍면동
-              </label>
-              <p className="text-gray-900">
-                {getDongLabel(kycData.district, kycData.dong)}
-              </p>
-            </div>
-            {kycData.detailedAddress && (
-              <div>
-                <label className="text-gray-700 text-sm font-medium">
-                  상세주소
-                </label>
-                <p className="text-gray-900">{kycData.detailedAddress}</p>
-              </div>
-            )}
+          <div>
+            <label className="text-gray-700 text-sm font-medium">주소</label>
+            <p className="text-gray-900">
+              {[
+                kycData.province
+                  ? getAddressLabel("province", kycData.province)
+                  : "",
+                kycData.district
+                  ? getAddressLabel(
+                      "district",
+                      kycData.district,
+                      kycData.province
+                    )
+                  : "",
+                kycData.dong
+                  ? getAddressLabel("dong", kycData.dong, kycData.district)
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ") || "-"}
+            </p>
           </div>
+          {kycData.detailedAddress && (
+            <div>
+              <label className="text-gray-700 text-sm font-medium">
+                상세주소
+              </label>
+              <p className="text-gray-900">{kycData.detailedAddress}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* 피부 정보 */}
+      {/* 시술 정보 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">피부 정보</CardTitle>
+          <CardTitle className="text-lg">시술 정보</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1025,12 +934,52 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
             </div>
             <div>
               <label className="text-gray-700 text-sm font-medium">
-                기존 시술경험
+                반영구 이력
               </label>
               <p className="text-gray-900">
                 {getPreviousTreatmentText(kycData.hasPreviousTreatment)}
               </p>
             </div>
+          </div>
+
+          {/* 원하는 눈썹 디자인 */}
+          {kycData.designDescription && (
+            <div>
+              <label className="text-gray-800 mb-2 block text-sm font-semibold">
+                원하는 눈썹 디자인
+              </label>
+              <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
+                {kycData.designDescription}
+              </div>
+            </div>
+          )}
+
+          {/* 기타 사항 */}
+          {kycData.additionalNotes && (
+            <div>
+              <label className="text-gray-800 mb-2 block text-sm font-semibold">
+                기타 사항
+              </label>
+              <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
+                {kycData.additionalNotes}
+              </div>
+            </div>
+          )}
+
+          {/* 마케팅 동의 */}
+          <div>
+            <label className="text-gray-700 text-sm font-medium">
+              마케팅 동의
+            </label>
+            <p className="text-gray-900">
+              {kycData.marketingConsent ? (
+                <span className="text-green-600 font-medium">
+                  동의 (5만원 할인)
+                </span>
+              ) : (
+                <span className="text-gray-500">미동의</span>
+              )}
+            </p>
           </div>
         </CardContent>
       </Card>
