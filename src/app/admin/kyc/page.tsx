@@ -1099,28 +1099,27 @@ export default function AdminKYCPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                             <Button
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-green-600 hover:bg-green-700 min-w-0 flex-1 sm:flex-none"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleApprove(user.id);
                               }}
                             >
-                              <CheckCircle className="mr-1 h-4 w-4" />
                               승인
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
+                              className="min-w-0 flex-1 sm:flex-none"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedUserId(user.id);
                                 setIsRejectDialogOpen(true);
                               }}
                             >
-                              <XCircle className="mr-1 h-4 w-4" />
                               반려
                             </Button>
                           </div>
@@ -1248,22 +1247,22 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.designDescription}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.additionalNotes}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 <div className="flex justify-between">
@@ -1616,22 +1615,22 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.designDescription}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.additionalNotes}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 <div className="flex justify-between">
@@ -1987,22 +1986,22 @@ export default function AdminKYCPage() {
                                 </div>
                                 {user.designDescription && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       원하는 눈썹 디자인
                                     </span>
-                                    <span className="bg-blue-50 border-blue-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.designDescription}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 {user.additionalNotes && (
                                   <div className="flex flex-col">
-                                    <span className="text-gray-700 mb-2 text-sm font-semibold">
+                                    <span className="text-gray-800 mb-2 text-sm font-semibold">
                                       기타 사항
                                     </span>
-                                    <span className="bg-amber-50 border-amber-200 text-gray-900 rounded-md border p-3 text-sm">
+                                    <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                                       {user.additionalNotes}
-                                    </span>
+                                    </div>
                                   </div>
                                 )}
                                 <div className="flex justify-between">
