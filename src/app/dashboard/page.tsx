@@ -948,32 +948,28 @@ function KYCDataViewer({ kycData }: { kycData: KYCData }) {
           </div>
 
           {/* 원하는 눈썹 디자인 */}
-          <div>
-            <label className="text-gray-800 mb-2 block text-sm font-semibold">
-              원하는 눈썹 디자인
-            </label>
-            {kycData.designDescription ? (
+          {kycData.designDescription && kycData.designDescription.trim() && (
+            <div>
+              <label className="text-gray-800 mb-2 block text-sm font-semibold">
+                원하는 눈썹 디자인
+              </label>
               <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                 {kycData.designDescription}
               </div>
-            ) : (
-              <p className="text-gray-500 text-sm">입력된 내용이 없습니다.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 기타 사항 */}
-          <div>
-            <label className="text-gray-800 mb-2 block text-sm font-semibold">
-              기타 사항
-            </label>
-            {kycData.additionalNotes ? (
+          {kycData.additionalNotes && kycData.additionalNotes.trim() && (
+            <div>
+              <label className="text-gray-800 mb-2 block text-sm font-semibold">
+                기타 사항
+              </label>
               <div className="bg-gray-100 border-gray-400 text-gray-900 rounded-r-md border-l-4 p-3 text-sm">
                 {kycData.additionalNotes}
               </div>
-            ) : (
-              <p className="text-gray-500 text-sm">입력된 내용이 없습니다.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 마케팅 동의 */}
           <div>
