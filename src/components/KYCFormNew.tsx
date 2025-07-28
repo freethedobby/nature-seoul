@@ -73,6 +73,9 @@ const kycSchema = z.object({
   }),
   designDescription: z.string().optional(), // 원하는 눈썹 디자인 설명
   additionalNotes: z.string().optional(), // 기타 사항
+  marketingConsent: z.enum(["agree", "disagree"], {
+    required_error: "마케팅 초상권 사진 동의 여부를 선택해주세요",
+  }), // 마케팅 초상권 사진 동의
   eyebrowPhotoLeft: z.instanceof(File).optional(), // 좌측 사진
   eyebrowPhotoFront: z.instanceof(File).optional(), // 정면 사진
   eyebrowPhotoRight: z.instanceof(File).optional(), // 우측 사진
@@ -441,6 +444,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
         hasPreviousTreatment: data.hasPreviousTreatment === "yes",
         designDescription: data.designDescription || "",
         additionalNotes: data.additionalNotes || "",
+        marketingConsent: data.marketingConsent === "agree",
         createdAt: serverTimestamp(),
         submittedAt: serverTimestamp(),
         isGuest: isGuest,
@@ -1144,6 +1148,69 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     onChange={handleFileChange("right")}
                     className="hidden"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Marketing Consent */}
+            <div className="space-y-4">
+              <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
+                <h3 className="text-blue-900 mb-3 flex items-center text-lg font-semibold">
+                  <span className="bg-blue-600 mr-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold text-white">
+                    ₩
+                  </span>
+                  마케팅 초상권 사진 동의 - 5만원 할인
+                </h3>
+                <div className="text-blue-800 space-y-3 text-sm leading-relaxed">
+                  <p>
+                    촬영된 사진의 저작권은 본 시술자에게 있으며, 고객님의 초상은
+                    마케팅 목적으로 사용될 수 있습니다.
+                  </p>
+                  <p>이에 동의하시는 분만 촬영 및 사용이 진행됩니다.</p>
+                  <p className="font-medium">
+                    사진 사용에 동의하신 이후에는 게시된 컨텐츠의 철회가
+                    어려우며, 철회 요청으로 인한 모든 마케팅 손실 및 할인 금액에
+                    대해서는 고객님께 책임이 있습니다.
+                  </p>
+                </div>
+
+                <div className="mt-4">
+                  <Label className="text-blue-900 mb-2 block text-sm font-semibold uppercase tracking-wide">
+                    동의 여부 선택 *
+                  </Label>
+                  <RadioGroup
+                    onValueChange={(value) =>
+                      setValue(
+                        "marketingConsent",
+                        value as "agree" | "disagree"
+                      )
+                    }
+                    className="flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0"
+                  >
+                    <div className="border-blue-200 hover:bg-blue-50 flex items-center space-x-2 rounded-lg border bg-white p-3 transition-colors">
+                      <RadioGroupItem value="agree" id="agree" />
+                      <Label
+                        htmlFor="agree"
+                        className="text-blue-900 cursor-pointer text-sm font-medium"
+                      >
+                        동의합니다 (5만원 할인 적용)
+                      </Label>
+                    </div>
+                    <div className="border-gray-200 hover:bg-gray-50 flex items-center space-x-2 rounded-lg border bg-white p-3 transition-colors">
+                      <RadioGroupItem value="disagree" id="disagree" />
+                      <Label
+                        htmlFor="disagree"
+                        className="text-gray-700 cursor-pointer text-sm font-medium"
+                      >
+                        동의하지 않습니다
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {errors.marketingConsent && (
+                    <p className="text-red-500 bg-red-50 border-red-200 mt-2 rounded border p-2 text-sm">
+                      {errors.marketingConsent.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
