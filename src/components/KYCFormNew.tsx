@@ -9,7 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle, AlertCircle, ImagePlus, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  ImagePlus,
+  X,
+  HelpCircle,
+} from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   serverTimestamp,
@@ -56,7 +69,7 @@ const kycSchema = z.object({
   ),
   skinTypeOther: z.string().optional(), // 기타 선택 시 상세 내용
   hasPreviousTreatment: z.enum(["yes", "no"], {
-    required_error: "기존 시술 여부를 선택해주세요",
+    required_error: "반영구 이력 여부를 선택해주세요",
   }),
   eyebrowPhotoLeft: z.instanceof(File).optional(), // 좌측 사진
   eyebrowPhotoFront: z.instanceof(File).optional(), // 정면 사진
@@ -824,9 +837,30 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
 
                 {/* Previous Treatment */}
                 <div className="space-y-2">
-                  <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
-                    반영구 이력 *
-                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                      반영구 이력 *
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-sm">
+                            잔흔이 거의 없으시거나 처음 시술을 받으시는 분만
+                            예약해 주세요. 현재 잔흔 제거 중이신 고객님께서는
+                            모든 제거가 완료된 후에 신청해 주시기 바랍니다.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <RadioGroup
                     onValueChange={(value) =>
                       setValue("hasPreviousTreatment", value as "yes" | "no")
