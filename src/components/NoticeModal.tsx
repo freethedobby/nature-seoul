@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
   DollarSign,
   Clock,
   X,
+  Check,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -31,6 +33,59 @@ export default function NoticeModal({
   onConfirm,
   showViewAgain = false,
 }: NoticeModalProps) {
+  const [currentTab, setCurrentTab] = useState("important");
+  const [viewedTabs, setViewedTabs] = useState<Set<string>>(
+    new Set(["important"])
+  );
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+
+  const tabs = ["important", "pricing", "location", "restrictions", "faq"];
+
+  useEffect(() => {
+    if (isOpen) {
+      // showViewAgain이 false면 첫 승인 상태
+      setIsFirstTimeUser(!showViewAgain);
+      setCurrentTab("important");
+      setViewedTabs(new Set(["important"]));
+    }
+  }, [isOpen, showViewAgain]);
+
+  const handleTabChange = (tabValue: string) => {
+    if (!isFirstTimeUser) {
+      // 기존 사용자는 자유롭게 탭 이동 가능
+      setCurrentTab(tabValue);
+      return;
+    }
+
+    // 첫 승인 사용자의 경우 순차적으로만 이동 가능
+    const currentIndex = tabs.indexOf(currentTab);
+    const targetIndex = tabs.indexOf(tabValue);
+
+    if (targetIndex <= currentIndex + 1) {
+      // 현재 탭 또는 다음 탭으로만 이동 가능
+      setCurrentTab(tabValue);
+      setViewedTabs((prev) => new Set([...prev, tabValue]));
+    }
+  };
+
+  const isTabAccessible = (tabValue: string) => {
+    if (!isFirstTimeUser) return true;
+
+    const tabIndex = tabs.indexOf(tabValue);
+    const currentIndex = tabs.indexOf(currentTab);
+    return (
+      tabIndex <=
+      Math.max(
+        currentIndex + 1,
+        [...viewedTabs]
+          .map((tab) => tabs.indexOf(tab))
+          .reduce((a, b) => Math.max(a, b), 0)
+      )
+    );
+  };
+
+  const allTabsViewed = viewedTabs.size === tabs.length;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -40,22 +95,89 @@ export default function NoticeModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="important" className="w-full">
+        <Tabs
+          value={currentTab}
+          onValueChange={handleTabChange}
+          className="w-full"
+        >
           <TabsList className="bg-gray-50 grid w-full grid-cols-5">
-            <TabsTrigger value="important" className="text-xs font-medium">
-              중요안내
+            <TabsTrigger
+              value="important"
+              className={`relative text-xs font-medium ${
+                !isTabAccessible("important")
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+              disabled={!isTabAccessible("important")}
+            >
+              <div className="flex items-center gap-1">
+                {viewedTabs.has("important") && isFirstTimeUser && (
+                  <Check className="text-green-600 h-3 w-3" />
+                )}
+                중요안내
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="pricing" className="text-xs font-medium">
-              가격안내
+            <TabsTrigger
+              value="pricing"
+              className={`relative text-xs font-medium ${
+                !isTabAccessible("pricing")
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+              disabled={!isTabAccessible("pricing")}
+            >
+              <div className="flex items-center gap-1">
+                {viewedTabs.has("pricing") && isFirstTimeUser && (
+                  <Check className="text-green-600 h-3 w-3" />
+                )}
+                가격안내
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="location" className="text-xs font-medium">
-              위치/주차
+            <TabsTrigger
+              value="location"
+              className={`relative text-xs font-medium ${
+                !isTabAccessible("location")
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+              disabled={!isTabAccessible("location")}
+            >
+              <div className="flex items-center gap-1">
+                {viewedTabs.has("location") && isFirstTimeUser && (
+                  <Check className="text-green-600 h-3 w-3" />
+                )}
+                위치/주차
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="restrictions" className="text-xs font-medium">
-              예약제한
+            <TabsTrigger
+              value="restrictions"
+              className={`relative text-xs font-medium ${
+                !isTabAccessible("restrictions")
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+              disabled={!isTabAccessible("restrictions")}
+            >
+              <div className="flex items-center gap-1">
+                {viewedTabs.has("restrictions") && isFirstTimeUser && (
+                  <Check className="text-green-600 h-3 w-3" />
+                )}
+                예약제한
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="faq" className="text-xs font-medium">
-              FAQ
+            <TabsTrigger
+              value="faq"
+              className={`relative text-xs font-medium ${
+                !isTabAccessible("faq") ? "cursor-not-allowed opacity-50" : ""
+              }`}
+              disabled={!isTabAccessible("faq")}
+            >
+              <div className="flex items-center gap-1">
+                {viewedTabs.has("faq") && isFirstTimeUser && (
+                  <Check className="text-green-600 h-3 w-3" />
+                )}
+                FAQ
+              </div>
             </TabsTrigger>
           </TabsList>
 
@@ -87,6 +209,18 @@ export default function NoticeModal({
                   </div>
                 </div>
               </div>
+
+              {/* 첫 승인 사용자를 위한 네비게이션 */}
+              {isFirstTimeUser && (
+                <div className="mt-4 flex justify-end border-t pt-4">
+                  <Button
+                    onClick={() => handleTabChange("pricing")}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm text-white"
+                  >
+                    다음: 가격안내 →
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -308,7 +442,14 @@ export default function NoticeModal({
         </Tabs>
 
         {/* 버튼 영역 */}
-        <div className="flex justify-center pt-6">
+        <div className="flex flex-col items-center pt-6">
+          {isFirstTimeUser && !allTabsViewed && (
+            <p className="text-gray-600 mb-4 text-center text-sm">
+              모든 공지사항을 확인한 후 예약을 진행할 수 있습니다. (
+              {viewedTabs.size}/{tabs.length} 완료)
+            </p>
+          )}
+
           {showViewAgain ? (
             <Button
               onClick={onClose}
@@ -319,9 +460,16 @@ export default function NoticeModal({
           ) : (
             <Button
               onClick={onConfirm}
-              className="bg-gray-900 hover:bg-black rounded-lg px-6 py-2 font-medium text-white"
+              disabled={isFirstTimeUser && !allTabsViewed}
+              className={`rounded-lg px-6 py-2 font-medium text-white ${
+                isFirstTimeUser && !allTabsViewed
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-900 hover:bg-black"
+              }`}
             >
-              공지사항을 확인했습니다
+              {isFirstTimeUser && !allTabsViewed
+                ? `공지사항 확인 중... (${viewedTabs.size}/${tabs.length})`
+                : "공지사항을 확인했습니다"}
             </Button>
           )}
         </div>
