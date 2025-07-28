@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -100,6 +100,9 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
     right: File | null;
   }>({ left: null, front: null, right: null });
   const [isDragging, setIsDragging] = useState(false);
+  const [showPreviousTreatmentTooltip, setShowPreviousTreatmentTooltip] =
+    useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -115,6 +118,25 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
   // Watch form values for debugging
   const watchedValues = watch();
   console.log("Form values:", watchedValues);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        setShowPreviousTreatmentTooltip(false);
+      }
+    }
+
+    if (showPreviousTreatmentTooltip) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showPreviousTreatmentTooltip]);
   console.log("Form errors:", errors);
 
   // Handle file change for specific photo type
@@ -841,25 +863,29 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                     <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
                       반영구 이력 *
                     </Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            <HelpCircle className="h-4 w-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p className="text-sm">
+                    <div className="relative" ref={tooltipRef}>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() =>
+                          setShowPreviousTreatmentTooltip(
+                            !showPreviousTreatmentTooltip
+                          )
+                        }
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                      {showPreviousTreatmentTooltip && (
+                        <div className="w-64 bg-gray-900 shadow-lg absolute top-6 left-0 z-10 rounded-lg p-3 text-sm text-white">
+                          <p>
                             잔흔이 거의 없으시거나 처음 시술을 받으시는 분만
                             예약해 주세요. 현재 잔흔 제거 중이신 고객님께서는
                             모든 제거가 완료된 후에 신청해 주시기 바랍니다.
                           </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                          <div className="bg-gray-900 absolute -top-1 left-2 h-2 w-2 rotate-45 transform"></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <RadioGroup
                     onValueChange={(value) =>
