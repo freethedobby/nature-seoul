@@ -71,6 +71,8 @@ const kycSchema = z.object({
   hasPreviousTreatment: z.enum(["yes", "no"], {
     required_error: "반영구 이력 여부를 선택해주세요",
   }),
+  designDescription: z.string().optional(), // 원하는 눈썹 디자인 설명
+  additionalNotes: z.string().optional(), // 기타 사항
   eyebrowPhotoLeft: z.instanceof(File).optional(), // 좌측 사진
   eyebrowPhotoFront: z.instanceof(File).optional(), // 정면 사진
   eyebrowPhotoRight: z.instanceof(File).optional(), // 우측 사진
@@ -437,6 +439,8 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
           : "firebase-storage",
         kycStatus: "pending",
         hasPreviousTreatment: data.hasPreviousTreatment === "yes",
+        designDescription: data.designDescription || "",
+        additionalNotes: data.additionalNotes || "",
         createdAt: serverTimestamp(),
         submittedAt: serverTimestamp(),
         isGuest: isGuest,
@@ -911,6 +915,36 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                       {errors.hasPreviousTreatment.message}
                     </p>
                   )}
+                </div>
+
+                {/* Design Description */}
+                <div className="space-y-2">
+                  <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                    원하시는 눈썹 디자인 설명
+                  </Label>
+                  <p className="text-gray-600 text-xs">
+                    디자인, 컬러 등 원하시는 스타일을 자세히 적어주세요
+                  </p>
+                  <textarea
+                    {...register("designDescription")}
+                    placeholder="예: 자연스러운 갈색 톤, 곡선형 아치, 진한 색상 등..."
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 min-h-[100px] w-full resize-none rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm"
+                  />
+                </div>
+
+                {/* Additional Notes */}
+                <div className="space-y-2">
+                  <Label className="text-gray-800 text-sm font-semibold uppercase tracking-wide">
+                    기타
+                  </Label>
+                  <p className="text-gray-600 text-xs">
+                    궁금하신 점이나 하시고 싶은 말씀이 있다면 적어주세요
+                  </p>
+                  <textarea
+                    {...register("additionalNotes")}
+                    placeholder="예: 알레르기, 특이사항, 질문사항 등..."
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-200 min-h-[100px] w-full resize-none rounded-lg border bg-white px-3 py-2 text-xs transition-colors duration-200 focus:outline-none focus:ring-2 sm:text-sm"
+                  />
                 </div>
               </div>
             </div>
