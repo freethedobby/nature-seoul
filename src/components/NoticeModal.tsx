@@ -51,37 +51,29 @@ export default function NoticeModal({
   }, [isOpen, showViewAgain]);
 
   const handleTabChange = (tabValue: string) => {
+    // 첫 승인 사용자는 탭 클릭으로 이동할 수 없음 (확인 버튼으로만 이동)
+    // 기존 사용자만 자유롭게 탭 이동 가능
     if (!isFirstTimeUser) {
-      // 기존 사용자는 자유롭게 탭 이동 가능
       setCurrentTab(tabValue);
-      return;
     }
+    // 첫 승인 사용자의 경우 tabValue는 무시됨 (disabled 탭들이므로)
+  };
 
-    // 첫 승인 사용자의 경우 순차적으로만 이동 가능
+  const goToNextTab = () => {
     const currentIndex = tabs.indexOf(currentTab);
-    const targetIndex = tabs.indexOf(tabValue);
-
-    if (targetIndex <= currentIndex + 1) {
-      // 현재 탭 또는 다음 탭으로만 이동 가능
-      setCurrentTab(tabValue);
-      setViewedTabs((prev) => new Set([...prev, tabValue]));
+    if (currentIndex < tabs.length - 1) {
+      const nextTab = tabs[currentIndex + 1];
+      setCurrentTab(nextTab);
+      setViewedTabs((prev) => new Set([...prev, nextTab]));
     }
   };
 
   const isTabAccessible = (tabValue: string) => {
     if (!isFirstTimeUser) return true;
 
-    const tabIndex = tabs.indexOf(tabValue);
-    const currentIndex = tabs.indexOf(currentTab);
-    return (
-      tabIndex <=
-      Math.max(
-        currentIndex + 1,
-        [...viewedTabs]
-          .map((tab) => tabs.indexOf(tab))
-          .reduce((a, b) => Math.max(a, b), 0)
-      )
-    );
+    // 첫 승인 사용자는 모든 탭 클릭 비활성화
+    console.log("Checking tab:", tabValue);
+    return false;
   };
 
   const allTabsViewed = viewedTabs.size === tabs.length;
@@ -107,12 +99,23 @@ export default function NoticeModal({
                 !isTabAccessible("important")
                   ? "cursor-not-allowed opacity-50"
                   : ""
+              } ${
+                currentTab === "important" && isFirstTimeUser
+                  ? "bg-blue-100"
+                  : ""
               }`}
               disabled={!isTabAccessible("important")}
             >
               <div className="flex items-center gap-1">
-                {viewedTabs.has("important") && isFirstTimeUser && (
-                  <Check className="text-green-600 h-3 w-3" />
+                {viewedTabs.has("important") &&
+                  isFirstTimeUser &&
+                  currentTab !== "important" && (
+                    <Check className="text-green-600 h-3 w-3" />
+                  )}
+                {currentTab === "important" && isFirstTimeUser && (
+                  <span className="bg-blue-600 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white">
+                    1
+                  </span>
                 )}
                 중요안내
               </div>
@@ -123,12 +126,21 @@ export default function NoticeModal({
                 !isTabAccessible("pricing")
                   ? "cursor-not-allowed opacity-50"
                   : ""
+              } ${
+                currentTab === "pricing" && isFirstTimeUser ? "bg-blue-100" : ""
               }`}
               disabled={!isTabAccessible("pricing")}
             >
               <div className="flex items-center gap-1">
-                {viewedTabs.has("pricing") && isFirstTimeUser && (
-                  <Check className="text-green-600 h-3 w-3" />
+                {viewedTabs.has("pricing") &&
+                  isFirstTimeUser &&
+                  currentTab !== "pricing" && (
+                    <Check className="text-green-600 h-3 w-3" />
+                  )}
+                {currentTab === "pricing" && isFirstTimeUser && (
+                  <span className="bg-blue-600 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white">
+                    2
+                  </span>
                 )}
                 가격안내
               </div>
@@ -139,12 +151,23 @@ export default function NoticeModal({
                 !isTabAccessible("location")
                   ? "cursor-not-allowed opacity-50"
                   : ""
+              } ${
+                currentTab === "location" && isFirstTimeUser
+                  ? "bg-blue-100"
+                  : ""
               }`}
               disabled={!isTabAccessible("location")}
             >
               <div className="flex items-center gap-1">
-                {viewedTabs.has("location") && isFirstTimeUser && (
-                  <Check className="text-green-600 h-3 w-3" />
+                {viewedTabs.has("location") &&
+                  isFirstTimeUser &&
+                  currentTab !== "location" && (
+                    <Check className="text-green-600 h-3 w-3" />
+                  )}
+                {currentTab === "location" && isFirstTimeUser && (
+                  <span className="bg-blue-600 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white">
+                    3
+                  </span>
                 )}
                 위치/주차
               </div>
@@ -155,12 +178,23 @@ export default function NoticeModal({
                 !isTabAccessible("restrictions")
                   ? "cursor-not-allowed opacity-50"
                   : ""
+              } ${
+                currentTab === "restrictions" && isFirstTimeUser
+                  ? "bg-blue-100"
+                  : ""
               }`}
               disabled={!isTabAccessible("restrictions")}
             >
               <div className="flex items-center gap-1">
-                {viewedTabs.has("restrictions") && isFirstTimeUser && (
-                  <Check className="text-green-600 h-3 w-3" />
+                {viewedTabs.has("restrictions") &&
+                  isFirstTimeUser &&
+                  currentTab !== "restrictions" && (
+                    <Check className="text-green-600 h-3 w-3" />
+                  )}
+                {currentTab === "restrictions" && isFirstTimeUser && (
+                  <span className="bg-blue-600 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white">
+                    4
+                  </span>
                 )}
                 예약제한
               </div>
@@ -169,12 +203,21 @@ export default function NoticeModal({
               value="faq"
               className={`relative text-xs font-medium ${
                 !isTabAccessible("faq") ? "cursor-not-allowed opacity-50" : ""
+              } ${
+                currentTab === "faq" && isFirstTimeUser ? "bg-blue-100" : ""
               }`}
               disabled={!isTabAccessible("faq")}
             >
               <div className="flex items-center gap-1">
-                {viewedTabs.has("faq") && isFirstTimeUser && (
-                  <Check className="text-green-600 h-3 w-3" />
+                {viewedTabs.has("faq") &&
+                  isFirstTimeUser &&
+                  currentTab !== "faq" && (
+                    <Check className="text-green-600 h-3 w-3" />
+                  )}
+                {currentTab === "faq" && isFirstTimeUser && (
+                  <span className="bg-blue-600 flex h-4 w-4 items-center justify-center rounded-full text-xs text-white">
+                    5
+                  </span>
                 )}
                 FAQ
               </div>
@@ -212,12 +255,12 @@ export default function NoticeModal({
 
               {/* 첫 승인 사용자를 위한 네비게이션 */}
               {isFirstTimeUser && (
-                <div className="mt-4 flex justify-end border-t pt-4">
+                <div className="mt-4 flex justify-center border-t pt-4">
                   <Button
-                    onClick={() => handleTabChange("pricing")}
-                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm text-white"
+                    onClick={goToNextTab}
+                    className="bg-blue-600 hover:bg-blue-700 text-base px-8 py-3 font-medium text-white"
                   >
-                    다음: 가격안내 →
+                    확인
                   </Button>
                 </div>
               )}
@@ -289,6 +332,18 @@ export default function NoticeModal({
                   </div>
                 </div>
               </div>
+
+              {/* 첫 승인 사용자를 위한 네비게이션 */}
+              {isFirstTimeUser && (
+                <div className="mt-4 flex justify-center border-t pt-4">
+                  <Button
+                    onClick={goToNextTab}
+                    className="bg-blue-600 hover:bg-blue-700 text-base px-8 py-3 font-medium text-white"
+                  >
+                    확인
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -330,6 +385,18 @@ export default function NoticeModal({
                   </div>
                 </div>
               </div>
+
+              {/* 첫 승인 사용자를 위한 네비게이션 */}
+              {isFirstTimeUser && (
+                <div className="mt-4 flex justify-center border-t pt-4">
+                  <Button
+                    onClick={goToNextTab}
+                    className="bg-blue-600 hover:bg-blue-700 text-base px-8 py-3 font-medium text-white"
+                  >
+                    확인
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -369,6 +436,18 @@ export default function NoticeModal({
                   <li>완벽주의자 또는 심하게 예민하신 고객님</li>
                 </ol>
               </div>
+
+              {/* 첫 승인 사용자를 위한 네비게이션 */}
+              {isFirstTimeUser && (
+                <div className="mt-4 flex justify-center border-t pt-4">
+                  <Button
+                    onClick={goToNextTab}
+                    className="bg-blue-600 hover:bg-blue-700 text-base px-8 py-3 font-medium text-white"
+                  >
+                    확인
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -437,6 +516,21 @@ export default function NoticeModal({
                   </p>
                 </div>
               </div>
+
+              {/* 첫 승인 사용자를 위한 네비게이션 */}
+              {isFirstTimeUser && (
+                <div className="mt-4 flex justify-center border-t pt-4">
+                  <Button
+                    onClick={() => {
+                      // 마지막 탭이므로 완료 처리
+                      setViewedTabs(new Set(tabs)); // 모든 탭을 확인한 것으로 설정
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-base px-8 py-3 font-medium text-white"
+                  >
+                    완료
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
