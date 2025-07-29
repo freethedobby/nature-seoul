@@ -770,15 +770,24 @@ export default function UserReservePage() {
                     </div>
                   )}
 
-                  {/* 취소 버튼 */}
+                  {/* 취소 버튼 또는 안내 메시지 */}
                   <div className="mt-4">
-                    <button
-                      className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 rounded-lg border px-4 py-2 text-sm font-semibold transition-all duration-200"
-                      onClick={handleCancel}
-                      disabled={canceling}
-                    >
-                      {canceling ? "취소 중..." : "예약 취소"}
-                    </button>
+                    {reservation?.status === "approved" ? (
+                      <div className="bg-green-50 border-green-200 rounded-lg border p-3">
+                        <p className="text-green-700 text-sm">
+                          ✅ 예약이 확정되었습니다. 예약 변경이나 취소가 필요한
+                          경우 관리자에게 문의해주세요.
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 rounded-lg border px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        onClick={handleCancel}
+                        disabled={canceling}
+                      >
+                        {canceling ? "취소 중..." : "예약 취소"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

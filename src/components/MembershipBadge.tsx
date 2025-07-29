@@ -25,7 +25,7 @@ const MEMBERSHIP_INFO = {
   },
   private: {
     icon: "✅",
-    label: "인증완료 회원",
+    label: "예약가능 회원",
     description: "정식 인증을 마친 고객님입니다. 예약 기능이 활성화돼요.",
     variant: "outline" as const,
   },

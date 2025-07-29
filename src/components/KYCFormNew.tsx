@@ -1260,11 +1260,10 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
               <p className="text-gray-900 text-lg font-medium">
                 신청서가 제출되었습니다
               </p>
-              <p className="text-gray-600">검토 후 연락드리겠습니다.</p>
               <div className="bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
                 <p className="mb-1 font-medium">안내사항</p>
                 <p>
-                  검토 후 승인 여부와 승인 불가 사유는 2일 이내에 사이트 내
+                  검토 후 승인 여부와 승인 불가 사유는 24시간 이내에 사이트 내
                   &ldquo;내 정보&rdquo;에서 확인하실 수 있도록 업데이트 됩니다.
                   확인 부탁드립니다.
                 </p>
