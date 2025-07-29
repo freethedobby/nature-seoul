@@ -953,39 +953,62 @@ export default function SlotManagement() {
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
       <div className="container mx-auto max-w-7xl">
-        <div className="mb-4 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/admin")}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                뒤로
-              </Button>
-              <h1 className="text-gray-900 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
-                예약 슬롯 관리
-              </h1>
-              <div className="text-gray-500 mt-1 text-xs sm:text-sm">
-                설정범위:{" "}
-                {`${monthRangeSettings.startYear.toString().slice(-2)}/${
-                  monthRangeSettings.startMonth
-                }~${monthRangeSettings.endYear.toString().slice(-2)}/${
-                  monthRangeSettings.endMonth
-                }`}
-              </div>
-              <div className="text-gray-500 mt-1 text-xs sm:text-sm">
-                예약 오픈:{" "}
-                {reservationOpenSettings.startDate &&
-                reservationOpenSettings.endDate
-                  ? `${reservationOpenSettings.startDate} ${reservationOpenSettings.startTime} ~ ${reservationOpenSettings.endDate} ${reservationOpenSettings.endTime}`
-                  : "설정되지 않음"}
-              </div>
-            </div>
+        {/* 깔끔한 헤더 */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/admin")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              뒤로
+            </Button>
+            <h1 className="text-gray-900 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
+              예약 슬롯 관리
+            </h1>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="flex gap-2">
+
+          {/* 뷰 모드 토글 */}
+          <div className="bg-gray-100 flex gap-1 rounded-lg p-1">
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="flex items-center gap-2 rounded-md"
+            >
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">리스트</span>
+            </Button>
+            <Button
+              variant={viewMode === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("calendar")}
+              className="flex items-center gap-2 rounded-md"
+            >
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">캘린더</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* 설정 카드들 */}
+        <div className="mb-6 grid gap-4 md:grid-cols-2">
+          {/* 공개범위 설정 카드 */}
+          <div className="border-gray-200 shadow-sm hover:shadow-md rounded-xl border bg-white p-4 transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-gray-900 text-sm font-semibold">
+                  공개범위 설정
+                </h3>
+                <p className="text-gray-500 mt-1 text-xs">
+                  {`${monthRangeSettings.startYear.toString().slice(-2)}/${
+                    monthRangeSettings.startMonth
+                  } ~ ${monthRangeSettings.endYear.toString().slice(-2)}/${
+                    monthRangeSettings.endMonth
+                  }`}
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -993,11 +1016,27 @@ export default function SlotManagement() {
                   setTempMonthRangeSettings(monthRangeSettings);
                   setShowMonthRangeDialog(true);
                 }}
-                className="flex items-center gap-2 text-xs sm:text-sm"
+                className="text-xs"
               >
-                <span className="hidden sm:inline">공개범위 설정</span>
-                <span className="sm:hidden">공개범위</span>
+                편집
               </Button>
+            </div>
+          </div>
+
+          {/* 예약 오픈 기간 설정 카드 */}
+          <div className="border-gray-200 shadow-sm hover:shadow-md rounded-xl border bg-white p-4 transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-gray-900 text-sm font-semibold">
+                  예약 오픈 기간
+                </h3>
+                <p className="text-gray-500 mt-1 text-xs">
+                  {reservationOpenSettings.startDate &&
+                  reservationOpenSettings.endDate
+                    ? `${reservationOpenSettings.startDate} ${reservationOpenSettings.startTime} ~ ${reservationOpenSettings.endDate} ${reservationOpenSettings.endTime}`
+                    : "설정되지 않음"}
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -1005,32 +1044,9 @@ export default function SlotManagement() {
                   setTempReservationOpenSettings(reservationOpenSettings);
                   setShowReservationOpenDialog(true);
                 }}
-                className="flex items-center gap-2 text-xs sm:text-sm"
+                className="text-xs"
               >
-                <span className="hidden sm:inline">예약 오픈 기간 설정</span>
-                <span className="sm:hidden">예약 오픈</span>
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === "list" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="flex items-center gap-2 text-xs sm:text-sm"
-              >
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline">리스트 뷰</span>
-                <span className="sm:hidden">리스트</span>
-              </Button>
-              <Button
-                variant={viewMode === "calendar" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("calendar")}
-                className="flex items-center gap-2 text-xs sm:text-sm"
-              >
-                <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">캘린더 뷰</span>
-                <span className="sm:hidden">캘린더</span>
+                편집
               </Button>
             </div>
           </div>
