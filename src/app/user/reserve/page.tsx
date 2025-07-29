@@ -257,20 +257,7 @@ export default function UserReservePage() {
 
   slots.forEach((slot) => {
     // 사용 가능한 슬롯만 카운팅 (예약된 슬롯은 사용자에게 숨김)
-    if (slot.status !== "available") {
-      // 디버깅: 8월 4일 슬롯 상태 확인
-      const slotDate = slot.start;
-      if (slotDate.getMonth() === 7 && slotDate.getDate() === 4) {
-        // 8월은 7 (0-indexed)
-        console.log("8월 4일 슬롯 상태:", {
-          id: slot.id,
-          status: slot.status,
-          start: slot.start,
-          end: slot.end,
-        });
-      }
-      return;
-    }
+    if (slot.status !== "available") return;
 
     const d = slot.start;
 
@@ -715,29 +702,14 @@ export default function UserReservePage() {
     : null;
   const slotsForSelectedDay = selectedDate
     ? slots
-        .filter((slot) => {
-          // 디버깅: 선택된 날짜의 모든 슬롯 상태 확인
-          if (
-            slot.start.getDate() === selectedDate.getDate() &&
-            slot.start.getMonth() === selectedDate.getMonth() &&
-            slot.start.getFullYear() === selectedDate.getFullYear()
-          ) {
-            console.log(`선택된 날짜 (${selectedDate.toDateString()}) 슬롯:`, {
-              id: slot.id,
-              status: slot.status,
-              start: slot.start,
-              end: slot.end,
-            });
-          }
-
-          // 사용 가능한 슬롯만 표시 (예약된 슬롯은 사용자에게 숨김)
-          return (
+        .filter(
+          (slot) =>
+            // 사용 가능한 슬롯만 표시 (예약된 슬롯은 사용자에게 숨김)
             slot.status === "available" &&
             slot.start.getDate() === selectedDate.getDate() &&
             slot.start.getMonth() === selectedDate.getMonth() &&
             slot.start.getFullYear() === selectedDate.getFullYear()
-          );
-        })
+        )
         .sort((a, b) => a.start.getTime() - b.start.getTime()) // 시간순 정렬
     : [];
 
