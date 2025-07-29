@@ -591,7 +591,7 @@ export default function DashboardPage() {
                 {!isKycOpen && timeUntilOpen ? (
                   <div className="space-y-3">
                     <p className="text-gray-600 text-sm">
-                      KYC 신청이 곧 시작됩니다.
+                      고객등록 신청이 곧 시작됩니다.
                     </p>
                     <div className="bg-blue-50 border-blue-200 rounded-lg border p-3">
                       <p className="text-blue-900 text-sm font-medium">
@@ -599,16 +599,18 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <Button variant="default" className="w-full" disabled>
-                      KYC 신청 대기중
+                      고객등록 신청 대기중
                     </Button>
                   </div>
-                ) : !isKycOpen && !timeUntilOpen ? (
+                ) : !isKycOpen &&
+                  !timeUntilOpen &&
+                  user.kycStatus !== "approved" ? (
                   <div className="space-y-3">
                     <p className="text-gray-600 text-sm">
-                      KYC 신청 기간이 마감되었습니다.
+                      고객등록 신청 기간이 마감되었습니다.
                     </p>
                     <Button variant="default" className="w-full" disabled>
-                      KYC 신청 마감
+                      고객등록 신청 마감
                     </Button>
                   </div>
                 ) : (
@@ -617,7 +619,7 @@ export default function DashboardPage() {
                     {timeUntilClose && (
                       <div className="bg-green-50 border-green-200 rounded-lg border p-3">
                         <p className="text-green-800 text-xs">
-                          KYC 신청 오픈 중 - 마감까지:{" "}
+                          고객등록 신청 오픈 중 - 마감까지:{" "}
                           {formatTime(timeUntilClose)}
                         </p>
                       </div>

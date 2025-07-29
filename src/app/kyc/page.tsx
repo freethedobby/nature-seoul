@@ -50,6 +50,7 @@ export default function KYCPage() {
   const [isKycOpen, setIsKycOpen] = useState(false);
   const [timeUntilOpen, setTimeUntilOpen] = useState<number | null>(null);
   const [timeUntilClose, setTimeUntilClose] = useState<number | null>(null);
+  const [userKycStatus, setUserKycStatus] = useState<string>("");
 
   // 시간 포맷팅 함수
   const formatTime = (milliseconds: number) => {
@@ -139,6 +140,25 @@ export default function KYCPage() {
 
     return () => clearInterval(interval);
   }, [kycOpenSettings]);
+
+  // 사용자 KYC 상태 확인
+  useEffect(() => {
+    const fetchUserKycStatus = async () => {
+      if (user?.uid) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserKycStatus(userData.kycStatus || "");
+          }
+        } catch (error) {
+          console.error("Error fetching user KYC status:", error);
+        }
+      }
+    };
+
+    fetchUserKycStatus();
+  }, [user]);
 
   useEffect(() => {
     const fetchKycData = async () => {
@@ -377,19 +397,21 @@ export default function KYCPage() {
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
           {/* KYC 오픈 상태 체크 */}
-          {!isKycOpen ? (
+          {!isKycOpen && userKycStatus !== "approved" ? (
             <div className="space-y-6 text-center">
               <Card className="p-8">
                 <CardHeader>
                   <CardTitle className="text-gray-900 text-xl">
-                    {timeUntilOpen ? "KYC 신청 오픈 예정" : "KYC 신청 마감"}
+                    {timeUntilOpen
+                      ? "고객등록 신청 오픈 예정"
+                      : "고객등록 신청 마감"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {timeUntilOpen ? (
                     <>
                       <p className="text-gray-600">
-                        KYC 신청이 곧 시작됩니다. 오픈까지 남은 시간:
+                        고객등록 신청이 곧 시작됩니다. 오픈까지 남은 시간:
                       </p>
                       <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
                         <div className="text-blue-900 text-2xl font-bold">
@@ -404,7 +426,7 @@ export default function KYCPage() {
                   ) : (
                     <>
                       <p className="text-gray-600">
-                        KYC 신청 기간이 마감되었습니다.
+                        고객등록 신청 기간이 마감되었습니다.
                       </p>
                       <div className="bg-gray-50 border-gray-200 rounded-lg border p-4">
                         <p className="text-gray-700">
@@ -419,37 +441,39 @@ export default function KYCPage() {
               </Card>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* KYC 오픈 중 - 마감까지 남은 시간 표시 */}
-              {timeUntilClose && (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-green-800 font-medium">
-                          KYC 신청 오픈 중
-                        </p>
-                        <p className="text-green-600 text-sm">
-                          마감까지: {formatTime(timeUntilClose)}
-                        </p>
+            (isKycOpen || userKycStatus === "approved") && (
+              <div className="space-y-6">
+                {/* KYC 오픈 중 - 마감까지 남은 시간 표시 */}
+                {timeUntilClose && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-800 font-medium">
+                            고객등록 신청 오픈 중
+                          </p>
+                          <p className="text-green-600 text-sm">
+                            마감까지: {formatTime(timeUntilClose)}
+                          </p>
+                        </div>
+                        <div className="text-green-600">
+                          <CheckCircle className="h-6 w-6" />
+                        </div>
                       </div>
-                      <div className="text-green-600">
-                        <CheckCircle className="h-6 w-6" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
 
-              <KYCFormNew
-                onSuccess={() => {
-                  // 성공 후 내정보로 이동
-                  setTimeout(() => {
-                    router.push("/dashboard");
-                  }, 2000);
-                }}
-              />
-            </div>
+                <KYCFormNew
+                  onSuccess={() => {
+                    // 성공 후 내정보로 이동
+                    setTimeout(() => {
+                      router.push("/dashboard");
+                    }, 2000);
+                  }}
+                />
+              </div>
+            )
           )}
         </div>
       </main>
