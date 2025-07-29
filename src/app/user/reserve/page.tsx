@@ -600,7 +600,7 @@ export default function UserReservePage() {
         <div className="mb-6 flex items-center gap-2">
           <Link href="/dashboard">
             <button className="hover:bg-gray-50 text-gray-700 shadow-sm border-gray-200 rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-all duration-200">
-              대시보드로
+              내정보로
             </button>
           </Link>
           <h1 className="text-gray-900 mb-0 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">

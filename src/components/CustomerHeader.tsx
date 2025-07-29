@@ -59,7 +59,7 @@ export default function CustomerHeader() {
                     className="flex items-center space-x-2"
                   >
                     <User className="h-4 w-4" />
-                    <span>대시보드</span>
+                    <span>내정보</span>
                   </Button>
 
                   {user.kycStatus === "approved" && (
