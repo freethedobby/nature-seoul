@@ -619,8 +619,7 @@ export default function DashboardPage() {
                     {timeUntilClose && (
                       <div className="bg-green-50 border-green-200 rounded-lg border p-3">
                         <p className="text-green-800 text-xs">
-                          고객등록 신청 오픈 중 - 마감까지:{" "}
-                          {formatTime(timeUntilClose)}
+                          고객등록 신청 마감까지: {formatTime(timeUntilClose)}
                         </p>
                       </div>
                     )}

@@ -443,7 +443,7 @@ export default function KYCPage() {
           ) : (
             (isKycOpen || userKycStatus === "approved") && (
               <div className="space-y-6">
-                {/* KYC 오픈 중 - 마감까지 남은 시간 표시 */}
+                {/* 고객등록 신청 마감까지 남은 시간 표시 */}
                 {timeUntilClose && (
                   <Card className="bg-green-50 border-green-200">
                     <CardContent className="p-4">
