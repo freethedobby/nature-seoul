@@ -287,6 +287,23 @@ export default function SlotManagement() {
   // Add state for user data (for KYC information display)
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
 
+  // 예약 오픈 기간 설정
+  const [reservationOpenSettings, setReservationOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+  const [showReservationOpenDialog, setShowReservationOpenDialog] =
+    useState(false);
+  const [tempReservationOpenSettings, setTempReservationOpenSettings] =
+    useState({
+      startDate: "",
+      startTime: "",
+      endDate: "",
+      endTime: "",
+    });
+
   // Click-away handler for popover
   useEffect(() => {
     if (!popoverOpenSlotId) return;
@@ -412,6 +429,30 @@ export default function SlotManagement() {
     };
 
     loadMonthRangeSettings();
+
+    // Load reservation open period settings
+    const loadReservationOpenSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(
+          doc(db, "settings", "reservationOpen")
+        );
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          const newSettings = {
+            startDate: settings.startDate || "",
+            startTime: settings.startTime || "",
+            endDate: settings.endDate || "",
+            endTime: settings.endTime || "",
+          };
+          setReservationOpenSettings(newSettings);
+          setTempReservationOpenSettings(newSettings);
+        }
+      } catch (error) {
+        console.error("Error loading reservation open settings:", error);
+      }
+    };
+
+    loadReservationOpenSettings();
 
     return () => {
       unsubSlots();
@@ -797,6 +838,27 @@ export default function SlotManagement() {
     }
   };
 
+  // 예약 오픈 기간 저장 함수
+  const handleSaveReservationOpenSettings = async () => {
+    try {
+      await setDoc(doc(db, "settings", "reservationOpen"), {
+        startDate: tempReservationOpenSettings.startDate,
+        startTime: tempReservationOpenSettings.startTime,
+        endDate: tempReservationOpenSettings.endDate,
+        endTime: tempReservationOpenSettings.endTime,
+        updatedAt: Timestamp.now(),
+        updatedBy: user?.email,
+      });
+
+      setReservationOpenSettings(tempReservationOpenSettings);
+      setShowReservationOpenDialog(false);
+      alert("예약 오픈 기간이 저장되었습니다.");
+    } catch (error) {
+      console.error("Error saving reservation open settings:", error);
+      alert("설정 저장에 실패했습니다.");
+    }
+  };
+
   // Calendar event handlers
   const handleSingleClickSlot = (slot: SlotData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event from bubbling up to calendar
@@ -913,6 +975,13 @@ export default function SlotManagement() {
                   monthRangeSettings.endMonth
                 }`}
               </div>
+              <div className="text-gray-500 mt-1 text-xs sm:text-sm">
+                예약 오픈:{" "}
+                {reservationOpenSettings.startDate &&
+                reservationOpenSettings.endDate
+                  ? `${reservationOpenSettings.startDate} ${reservationOpenSettings.startTime} ~ ${reservationOpenSettings.endDate} ${reservationOpenSettings.endTime}`
+                  : "설정되지 않음"}
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
@@ -926,6 +995,17 @@ export default function SlotManagement() {
               className="flex items-center gap-2"
             >
               공개범위 설정
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTempReservationOpenSettings(reservationOpenSettings);
+                setShowReservationOpenDialog(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              예약 오픈 기간 설정
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "outline"}
@@ -2644,6 +2724,100 @@ export default function SlotManagement() {
               취소
             </Button>
             <Button onClick={handleSaveMonthRangeSettings}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 예약 오픈 기간 설정 다이얼로그 */}
+      <Dialog
+        open={showReservationOpenDialog}
+        onOpenChange={setShowReservationOpenDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>예약 오픈 기간 설정</DialogTitle>
+            <div className="text-gray-600 text-sm">
+              예약을 받을 수 있는 기간을 설정합니다.
+            </div>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">시작일시</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={tempReservationOpenSettings.startDate}
+                  onChange={(e) =>
+                    setTempReservationOpenSettings((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                />
+                <input
+                  type="time"
+                  value={tempReservationOpenSettings.startTime}
+                  onChange={(e) =>
+                    setTempReservationOpenSettings((prev) => ({
+                      ...prev,
+                      startTime: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">종료일시</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={tempReservationOpenSettings.endDate}
+                  onChange={(e) =>
+                    setTempReservationOpenSettings((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                />
+                <input
+                  type="time"
+                  value={tempReservationOpenSettings.endTime}
+                  onChange={(e) =>
+                    setTempReservationOpenSettings((prev) => ({
+                      ...prev,
+                      endTime: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+            {tempReservationOpenSettings.startDate &&
+              tempReservationOpenSettings.startTime &&
+              tempReservationOpenSettings.endDate &&
+              tempReservationOpenSettings.endTime && (
+                <div className="bg-blue-50 text-blue-800 rounded-md p-3 text-sm">
+                  <p className="font-medium">미리보기:</p>
+                  <p>
+                    예약은 {tempReservationOpenSettings.startDate}{" "}
+                    {tempReservationOpenSettings.startTime}부터{" "}
+                    {tempReservationOpenSettings.endDate}{" "}
+                    {tempReservationOpenSettings.endTime}까지 가능합니다.
+                  </p>
+                </div>
+              )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReservationOpenDialog(false)}
+            >
+              취소
+            </Button>
+            <Button onClick={handleSaveReservationOpenSettings}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

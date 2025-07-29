@@ -76,8 +76,43 @@ export default function UserReservePage() {
   });
   const [showMonthRangeMessage, setShowMonthRangeMessage] = useState(false);
   const [monthRangeMessage, setMonthRangeMessage] = useState("");
+
+  // 예약 오픈 기간 설정
+  const [reservationOpenSettings, setReservationOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+  const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const [timeUntilReservationOpen, setTimeUntilReservationOpen] = useState<
+    number | null
+  >(null);
+  const [timeUntilReservationClose, setTimeUntilReservationClose] = useState<
+    number | null
+  >(null);
+
   const popupRef = useRef<HTMLDivElement | null>(null);
   const confirmRef = useRef<HTMLDivElement | null>(null);
+
+  // 시간 포맷팅 함수
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return `${days}일 ${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (hours > 0) {
+      return `${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (minutes > 0) {
+      return `${minutes}분 ${seconds}초`;
+    } else {
+      return `${seconds}초`;
+    }
+  };
 
   // Check KYC authorization
   useEffect(() => {
@@ -138,6 +173,81 @@ export default function UserReservePage() {
 
     loadMonthRangeSettings();
   }, []);
+
+  // 예약 오픈 기간 로드 및 타이머 관리
+  useEffect(() => {
+    const loadReservationOpenSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(
+          doc(db, "settings", "reservationOpen")
+        );
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          const newSettings = {
+            startDate: settings.startDate || "",
+            startTime: settings.startTime || "",
+            endDate: settings.endDate || "",
+            endTime: settings.endTime || "",
+          };
+          setReservationOpenSettings(newSettings);
+        }
+      } catch (error) {
+        console.error("Error loading reservation open settings:", error);
+      }
+    };
+
+    loadReservationOpenSettings();
+  }, []);
+
+  // 예약 오픈 상태 체크 및 타이머 업데이트
+  useEffect(() => {
+    if (
+      !reservationOpenSettings.startDate ||
+      !reservationOpenSettings.endDate
+    ) {
+      // 설정이 없으면 항상 오픈 상태로 설정
+      setIsReservationOpen(true);
+      setTimeUntilReservationOpen(null);
+      setTimeUntilReservationClose(null);
+      return;
+    }
+
+    const checkReservationOpenStatus = () => {
+      const now = new Date();
+      const startDateTime = new Date(
+        `${reservationOpenSettings.startDate}T${reservationOpenSettings.startTime}`
+      );
+      const endDateTime = new Date(
+        `${reservationOpenSettings.endDate}T${reservationOpenSettings.endTime}`
+      );
+
+      const currentTime = now.getTime();
+      const startTime = startDateTime.getTime();
+      const endTime = endDateTime.getTime();
+
+      if (currentTime < startTime) {
+        // 아직 시작 전
+        setIsReservationOpen(false);
+        setTimeUntilReservationOpen(startTime - currentTime);
+        setTimeUntilReservationClose(null);
+      } else if (currentTime >= startTime && currentTime <= endTime) {
+        // 오픈 중
+        setIsReservationOpen(true);
+        setTimeUntilReservationOpen(null);
+        setTimeUntilReservationClose(endTime - currentTime);
+      } else {
+        // 마감됨
+        setIsReservationOpen(false);
+        setTimeUntilReservationOpen(null);
+        setTimeUntilReservationClose(null);
+      }
+    };
+
+    checkReservationOpenStatus();
+    const interval = setInterval(checkReservationOpenStatus, 1000);
+
+    return () => clearInterval(interval);
+  }, [reservationOpenSettings]);
 
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
   // Only show future dates for users (current date and later)
@@ -600,9 +710,114 @@ export default function UserReservePage() {
         .sort((a, b) => a.start.getTime() - b.start.getTime()) // 시간순 정렬
     : [];
 
+  // 예약 오픈 상태 체크 - 마감된 경우
+  if (!isReservationOpen && !timeUntilReservationOpen) {
+    return (
+      <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
+        <div className="container mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-6 flex items-center gap-2">
+            <Link href="/dashboard">
+              <button className="hover:bg-gray-50 text-gray-700 shadow-sm border-gray-200 rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-all duration-200">
+                내정보
+              </button>
+            </Link>
+            <h1 className="text-gray-900 mb-0 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
+              예약하기
+            </h1>
+          </div>
+
+          {/* 예약 마감 메시지 */}
+          <div className="flex min-h-[60vh] items-center justify-center">
+            <div className="border-gray-200 shadow-sm max-w-md rounded-2xl border bg-white p-8 text-center">
+              <div className="mb-4">
+                <AlertCircle className="text-gray-400 mx-auto h-16 w-16" />
+              </div>
+              <h2 className="text-gray-900 mb-3 text-xl font-semibold">
+                예약 신청 마감
+              </h2>
+              <p className="text-gray-600 mb-4">
+                예약 신청 기간이 마감되었습니다.
+              </p>
+              {reservationOpenSettings.startDate &&
+                reservationOpenSettings.endDate && (
+                  <div className="bg-gray-50 border-gray-200 text-gray-700 rounded-lg border p-3 text-sm">
+                    신청 기간: {reservationOpenSettings.startDate}{" "}
+                    {reservationOpenSettings.startTime} ~{" "}
+                    {reservationOpenSettings.endDate}{" "}
+                    {reservationOpenSettings.endTime}
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 예약 오픈 대기 상태
+  if (!isReservationOpen && timeUntilReservationOpen) {
+    return (
+      <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
+        <div className="container mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-6 flex items-center gap-2">
+            <Link href="/dashboard">
+              <button className="hover:bg-gray-50 text-gray-700 shadow-sm border-gray-200 rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-all duration-200">
+                내정보
+              </button>
+            </Link>
+            <h1 className="text-gray-900 mb-0 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
+              예약하기
+            </h1>
+          </div>
+
+          {/* 예약 오픈 대기 메시지 */}
+          <div className="flex min-h-[60vh] items-center justify-center">
+            <div className="border-gray-200 shadow-sm max-w-md rounded-2xl border bg-white p-8 text-center">
+              <div className="mb-4">
+                <Clock className="text-blue-500 mx-auto h-16 w-16" />
+              </div>
+              <h2 className="text-gray-900 mb-3 text-xl font-semibold">
+                예약 신청 오픈 예정
+              </h2>
+              <p className="text-gray-600 mb-4">예약 신청이 곧 시작됩니다.</p>
+              <div className="bg-blue-50 border-blue-200 mb-4 rounded-lg border p-4">
+                <p className="text-blue-900 text-lg font-bold">
+                  {formatTime(timeUntilReservationOpen)}
+                </p>
+                <p className="text-blue-700 mt-1 text-sm">남은 시간</p>
+              </div>
+              {reservationOpenSettings.startDate &&
+                reservationOpenSettings.startTime && (
+                  <div className="bg-gray-50 border-gray-200 text-gray-700 rounded-lg border p-3 text-sm">
+                    오픈 시간: {reservationOpenSettings.startDate}{" "}
+                    {reservationOpenSettings.startTime}
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
       <div className="container mx-auto max-w-7xl">
+        {/* 예약 오픈 중 - 마감 시간 표시 */}
+        {timeUntilReservationClose && (
+          <div className="bg-green-50 border-green-200 mb-4 rounded-lg border p-3">
+            <div className="flex items-center justify-center text-center">
+              <Check className="text-green-600 mr-2 h-4 w-4" />
+              <span className="text-green-800 text-sm font-medium">
+                예약 신청 오픈 중 - 마감까지:{" "}
+                {formatTime(timeUntilReservationClose)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6 flex items-center gap-2">
           <Link href="/dashboard">
