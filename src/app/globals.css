@@ -382,6 +382,24 @@ body .rdp-day_button[aria-selected="true"] {
   z-index: 2;
 }
 
+/* Show a small red dot for days that are fully booked */
+.rdp-day.fullyBooked {
+  position: relative;
+}
+.rdp-day.fullyBooked > .rdp-day_button::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #dc2626;
+  display: inline-block;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Past dates styling - gray shading */
 .rdp-day.past-dates .rdp-day_button {
   color: #9ca3af !important;

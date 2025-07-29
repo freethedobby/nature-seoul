@@ -1146,9 +1146,8 @@ export default function UserReservePage() {
               modifiersClassNames={{
                 selected: "bg-blue-500 text-white rounded-lg",
                 today: "bg-blue-100 text-blue-700 rounded-lg",
-                hasSlots:
-                  "bg-green-100 text-green-700 rounded-lg font-semibold",
-                fullyBooked: "bg-red-100 text-red-700 rounded-lg font-semibold",
+                hasSlots: "has-slots",
+                fullyBooked: "fullyBooked",
               }}
               className="mx-auto w-full max-w-xs sm:max-w-md"
               styles={{
