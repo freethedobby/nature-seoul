@@ -146,6 +146,34 @@ export default function DashboardPage() {
 
   const [kycData, setKycData] = useState<KYCData | null>(null);
   const [showKycData, setShowKycData] = useState(false);
+  const [kycOpenSettings, setKycOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+  const [isKycOpen, setIsKycOpen] = useState(false);
+  const [timeUntilOpen, setTimeUntilOpen] = useState<number | null>(null);
+  const [timeUntilClose, setTimeUntilClose] = useState<number | null>(null);
+
+  // 시간 포맷팅 함수
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return `${days}일 ${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (hours > 0) {
+      return `${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (minutes > 0) {
+      return `${minutes}분 ${seconds}초`;
+    } else {
+      return `${seconds}초`;
+    }
+  };
 
   console.log("user object in DashboardPage:", user);
 
@@ -163,6 +191,70 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  // KYC 오픈 기간 로드 및 타이머 관리
+  useEffect(() => {
+    const loadKycOpenSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "kycOpen"));
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          const newSettings = {
+            startDate: settings.startDate || "",
+            startTime: settings.startTime || "",
+            endDate: settings.endDate || "",
+            endTime: settings.endTime || "",
+          };
+          setKycOpenSettings(newSettings);
+        }
+      } catch (error) {
+        console.error("Error loading KYC open settings:", error);
+      }
+    };
+
+    loadKycOpenSettings();
+  }, []);
+
+  // KYC 오픈 상태 체크 및 타이머 업데이트
+  useEffect(() => {
+    if (!kycOpenSettings.startDate || !kycOpenSettings.endDate) return;
+
+    const checkKycOpenStatus = () => {
+      const now = new Date();
+      const startDateTime = new Date(
+        `${kycOpenSettings.startDate}T${kycOpenSettings.startTime}`
+      );
+      const endDateTime = new Date(
+        `${kycOpenSettings.endDate}T${kycOpenSettings.endTime}`
+      );
+
+      const currentTime = now.getTime();
+      const startTime = startDateTime.getTime();
+      const endTime = endDateTime.getTime();
+
+      if (currentTime < startTime) {
+        // 아직 시작 전
+        setIsKycOpen(false);
+        setTimeUntilOpen(startTime - currentTime);
+        setTimeUntilClose(null);
+      } else if (currentTime >= startTime && currentTime <= endTime) {
+        // 오픈 중
+        setIsKycOpen(true);
+        setTimeUntilOpen(null);
+        setTimeUntilClose(endTime - currentTime);
+      } else {
+        // 마감됨
+        setIsKycOpen(false);
+        setTimeUntilOpen(null);
+        setTimeUntilClose(null);
+      }
+    };
+
+    checkKycOpenStatus();
+    const interval = setInterval(checkKycOpenStatus, 1000);
+
+    return () => clearInterval(interval);
+  }, [kycOpenSettings]);
 
   // Fetch user's reservation
   useEffect(() => {
@@ -494,138 +586,122 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="text-lg font-semibold">고객등록 신청</h3>
                 </div>
-                <p className="text-gray-600 mb-4 text-sm">
-                  {isLocked
-                    ? "고객등록 신청을 완료하면 예약이 가능합니다."
-                    : "고객등록 신청이 완료되었습니다."}
-                </p>
-                {isLocked ? (
-                  <Link href="/kyc">
-                    <Button
-                      variant="default"
-                      className="w-full"
-                      disabled={user.kycStatus === "pending"}
-                    >
-                      {user.kycStatus === "pending"
-                        ? "확인중"
-                        : "고객등록 신청하기"}
+
+                {/* KYC 오픈 상태에 따른 다른 UI 표시 */}
+                {!isKycOpen && timeUntilOpen ? (
+                  <div className="space-y-3">
+                    <p className="text-gray-600 text-sm">
+                      KYC 신청이 곧 시작됩니다.
+                    </p>
+                    <div className="bg-blue-50 border-blue-200 rounded-lg border p-3">
+                      <p className="text-blue-900 text-sm font-medium">
+                        오픈까지: {formatTime(timeUntilOpen)}
+                      </p>
+                    </div>
+                    <Button variant="default" className="w-full" disabled>
+                      KYC 신청 대기중
                     </Button>
-                  </Link>
+                  </div>
+                ) : !isKycOpen && !timeUntilOpen ? (
+                  <div className="space-y-3">
+                    <p className="text-gray-600 text-sm">
+                      KYC 신청 기간이 마감되었습니다.
+                    </p>
+                    <Button variant="default" className="w-full" disabled>
+                      KYC 신청 마감
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* '신청 완료' 버튼은 kycData가 없을 때만 노출 */}
-                    {!kycData && (
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        disabled={true}
-                      >
-                        신청 완료
-                      </Button>
+                    {/* KYC 오픈 중 */}
+                    {timeUntilClose && (
+                      <div className="bg-green-50 border-green-200 rounded-lg border p-3">
+                        <p className="text-green-800 text-xs">
+                          KYC 신청 오픈 중 - 마감까지:{" "}
+                          {formatTime(timeUntilClose)}
+                        </p>
+                      </div>
                     )}
-                    {(() => {
-                      console.log("대시보드 - 상담신청 섹션 렌더링:", {
-                        kycData: !!kycData,
-                        kycDataValue: kycData,
-                        isLocked,
-                        userKycStatus: user.kycStatus,
-                      });
-                      return (
-                        kycData && (
+
+                    <p className="text-gray-600 text-sm">
+                      {isLocked
+                        ? "고객등록 신청을 완료하면 예약이 가능합니다."
+                        : "고객등록 신청이 완료되었습니다."}
+                    </p>
+
+                    {isLocked ? (
+                      <Link href="/kyc">
+                        <Button
+                          variant="default"
+                          className="w-full"
+                          disabled={user.kycStatus === "pending"}
+                        >
+                          {user.kycStatus === "pending"
+                            ? "확인중"
+                            : "고객등록 신청하기"}
+                        </Button>
+                      </Link>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* '신청 완료' 버튼은 kycData가 없을 때만 노출 */}
+                        {!kycData && (
                           <Button
                             variant="outline"
-                            size="sm"
+                            className="w-full"
+                            disabled={true}
+                          >
+                            신청 완료
+                          </Button>
+                        )}
+                        {(() => {
+                          console.log("대시보드 - 상담신청 섹션 렌더링:", {
+                            kycData: !!kycData,
+                            showKycData: showKycData,
+                          });
+                          return null;
+                        })()}
+                        {kycData && (
+                          <Button
+                            variant="outline"
+                            className="w-full"
                             onClick={() => {
-                              console.log("신청 내용 보기 버튼 클릭됨");
-                              setShowKycData(true);
-                              // KYC 데이터를 다시 가져오기
-                              if (user?.uid) {
-                                const fetchKycData = async () => {
+                              // 신청내용보기 클릭 시 데이터 강제 새로고침
+                              const fetchKycData = async () => {
+                                if (user?.email) {
                                   try {
                                     console.log(
-                                      "대시보드 - KYC 데이터 조회 시작:",
-                                      user.uid
+                                      "대시보드 - KYC 데이터 새로고침 시작:",
+                                      user.email
                                     );
-                                    const userDoc = await getDoc(
-                                      doc(db, "users", user.uid)
+                                    const kycDoc = await getDoc(
+                                      doc(db, "kyc", user.email)
                                     );
-                                    console.log(
-                                      "대시보드 - 사용자 문서 존재 여부:",
-                                      userDoc.exists()
-                                    );
-                                    if (userDoc.exists()) {
-                                      const data = userDoc.data();
+                                    if (kycDoc.exists()) {
+                                      const data = kycDoc.data() as KYCData;
                                       console.log(
-                                        "대시보드 - 사용자 데이터:",
+                                        "대시보드 - 새로고침된 KYC 데이터:",
                                         data
                                       );
-
-                                      // KYC 데이터 형식에 맞게 변환
-                                      const kycData: KYCData = {
-                                        name: data.name || "",
-                                        gender: data.gender || "",
-                                        birthYear: data.birthYear || "",
-                                        contact: data.contact || "",
-                                        province: data.province || "",
-                                        district: data.district || "",
-                                        dong: data.dong || "",
-                                        detailedAddress:
-                                          data.detailedAddress || "",
-                                        skinType: data.skinType || "",
-                                        skinTypeOther: data.skinTypeOther || "",
-                                        hasPreviousTreatment:
-                                          data.hasPreviousTreatment
-                                            ? "yes"
-                                            : "no",
-                                        designDescription:
-                                          data.designDescription || "",
-                                        additionalNotes:
-                                          data.additionalNotes || "",
-                                        marketingConsent:
-                                          data.marketingConsent || false,
-                                        eyebrowPhotoLeft:
-                                          data.photoURLs?.left || "",
-                                        eyebrowPhotoFront:
-                                          data.photoURLs?.front || "",
-                                        eyebrowPhotoRight:
-                                          data.photoURLs?.right || "",
-                                        status: data.kycStatus || "",
-                                        submittedAt: data.submittedAt,
-                                      };
-
-                                      console.log(
-                                        "대시보드 - 변환된 KYC 데이터:",
-                                        kycData
-                                      );
-                                      console.log("대시보드 - 새로운 필드들:", {
-                                        designDescription:
-                                          data.designDescription,
-                                        additionalNotes: data.additionalNotes,
-                                        marketingConsent: data.marketingConsent,
-                                      });
-                                      setKycData(kycData);
-                                      console.log(
-                                        "대시보드 - kycData 상태 설정 완료"
-                                      );
+                                      setKycData(data);
                                     }
                                   } catch (error) {
                                     console.error(
-                                      "KYC 데이터 조회 실패:",
+                                      "대시보드 - KYC 데이터 새로고침 실패:",
                                       error
                                     );
                                   }
-                                };
-                                fetchKycData();
-                              }
+                                }
+                              };
+                              fetchKycData();
+                              setShowKycData(true);
                             }}
-                            className="text-gray-700 border-gray-300 hover:bg-gray-50 w-full"
                           >
                             <Eye className="mr-2 h-4 w-4" />
-                            신청 내용 보기
+                            신청내용보기
                           </Button>
-                        )
-                      );
-                    })()}
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -41,12 +41,104 @@ export default function KYCPage() {
   const [kycData, setKycData] = useState<KYCData | null>(null);
   const [loadingKyc, setLoadingKyc] = useState(true);
   const [showKycData, setShowKycData] = useState(false);
+  const [kycOpenSettings, setKycOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+  const [isKycOpen, setIsKycOpen] = useState(false);
+  const [timeUntilOpen, setTimeUntilOpen] = useState<number | null>(null);
+  const [timeUntilClose, setTimeUntilClose] = useState<number | null>(null);
+
+  // 시간 포맷팅 함수
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return `${days}일 ${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (hours > 0) {
+      return `${hours}시간 ${minutes}분 ${seconds}초`;
+    } else if (minutes > 0) {
+      return `${minutes}분 ${seconds}초`;
+    } else {
+      return `${seconds}초`;
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  // KYC 오픈 기간 로드 및 타이머 관리
+  useEffect(() => {
+    const loadKycOpenSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "kycOpen"));
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          const newSettings = {
+            startDate: settings.startDate || "",
+            startTime: settings.startTime || "",
+            endDate: settings.endDate || "",
+            endTime: settings.endTime || "",
+          };
+          setKycOpenSettings(newSettings);
+        }
+      } catch (error) {
+        console.error("Error loading KYC open settings:", error);
+      }
+    };
+
+    loadKycOpenSettings();
+  }, []);
+
+  // KYC 오픈 상태 체크 및 타이머 업데이트
+  useEffect(() => {
+    if (!kycOpenSettings.startDate || !kycOpenSettings.endDate) return;
+
+    const checkKycOpenStatus = () => {
+      const now = new Date();
+      const startDateTime = new Date(
+        `${kycOpenSettings.startDate}T${kycOpenSettings.startTime}`
+      );
+      const endDateTime = new Date(
+        `${kycOpenSettings.endDate}T${kycOpenSettings.endTime}`
+      );
+
+      const currentTime = now.getTime();
+      const startTime = startDateTime.getTime();
+      const endTime = endDateTime.getTime();
+
+      if (currentTime < startTime) {
+        // 아직 시작 전
+        setIsKycOpen(false);
+        setTimeUntilOpen(startTime - currentTime);
+        setTimeUntilClose(null);
+      } else if (currentTime >= startTime && currentTime <= endTime) {
+        // 오픈 중
+        setIsKycOpen(true);
+        setTimeUntilOpen(null);
+        setTimeUntilClose(endTime - currentTime);
+      } else {
+        // 마감됨
+        setIsKycOpen(false);
+        setTimeUntilOpen(null);
+        setTimeUntilClose(null);
+      }
+    };
+
+    checkKycOpenStatus();
+    const interval = setInterval(checkKycOpenStatus, 1000);
+
+    return () => clearInterval(interval);
+  }, [kycOpenSettings]);
 
   useEffect(() => {
     const fetchKycData = async () => {
@@ -284,25 +376,81 @@ export default function KYCPage() {
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
-          {/* <div className="mb-8 text-center">
-            <h2 className="text-gray-900 mb-2 text-2xl font-light">
-              맞춤 상담 신청
-            </h2>
-            <p className="text-gray-6">
-              고객님의 눈썹 상태를 정확히 파악하여
-              <br />
-              최적의 시술 방법을 제안해드리겠습니다.
-            </p>
-          </div> */}
+          {/* KYC 오픈 상태 체크 */}
+          {!isKycOpen ? (
+            <div className="space-y-6 text-center">
+              <Card className="p-8">
+                <CardHeader>
+                  <CardTitle className="text-gray-900 text-xl">
+                    {timeUntilOpen ? "KYC 신청 오픈 예정" : "KYC 신청 마감"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {timeUntilOpen ? (
+                    <>
+                      <p className="text-gray-600">
+                        KYC 신청이 곧 시작됩니다. 오픈까지 남은 시간:
+                      </p>
+                      <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
+                        <div className="text-blue-900 text-2xl font-bold">
+                          {formatTime(timeUntilOpen)}
+                        </div>
+                      </div>
+                      <p className="text-gray-500 text-sm">
+                        오픈 시간: {kycOpenSettings.startDate}{" "}
+                        {kycOpenSettings.startTime}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-600">
+                        KYC 신청 기간이 마감되었습니다.
+                      </p>
+                      <div className="bg-gray-50 border-gray-200 rounded-lg border p-4">
+                        <p className="text-gray-700">
+                          신청 기간: {kycOpenSettings.startDate}{" "}
+                          {kycOpenSettings.startTime} ~{" "}
+                          {kycOpenSettings.endDate} {kycOpenSettings.endTime}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* KYC 오픈 중 - 마감까지 남은 시간 표시 */}
+              {timeUntilClose && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-800 font-medium">
+                          KYC 신청 오픈 중
+                        </p>
+                        <p className="text-green-600 text-sm">
+                          마감까지: {formatTime(timeUntilClose)}
+                        </p>
+                      </div>
+                      <div className="text-green-600">
+                        <CheckCircle className="h-6 w-6" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-          <KYCFormNew
-            onSuccess={() => {
-              // 성공 후 대시보드로 이동
-              setTimeout(() => {
-                router.push("/dashboard");
-              }, 2000);
-            }}
-          />
+              <KYCFormNew
+                onSuccess={() => {
+                  // 성공 후 내정보로 이동
+                  setTimeout(() => {
+                    router.push("/dashboard");
+                  }, 2000);
+                }}
+              />
+            </div>
+          )}
         </div>
       </main>
       <FirebaseDebug />

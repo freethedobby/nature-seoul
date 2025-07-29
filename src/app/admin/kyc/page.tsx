@@ -41,6 +41,7 @@ import {
   getDoc,
   addDoc,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
@@ -235,6 +236,21 @@ export default function AdminKYCPage() {
     useState(false);
   const [reservationDeleteReason, setReservationDeleteReason] = useState("");
 
+  // KYC 오픈 기간 설정
+  const [kycOpenSettings, setKycOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+  const [showKycOpenDialog, setShowKycOpenDialog] = useState(false);
+  const [tempKycOpenSettings, setTempKycOpenSettings] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+
   const [mainTab, setMainTab] = useState<"kyc" | "reservations">("kyc");
   const [kycTab, setKycTab] = useState<"pending" | "approved" | "rejected">(
     "pending"
@@ -302,6 +318,30 @@ export default function AdminKYCPage() {
 
     checkAdminStatus();
   }, [user, loading, router]);
+
+  // Load KYC open period settings
+  useEffect(() => {
+    const loadKycOpenSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "kycOpen"));
+        if (settingsDoc.exists()) {
+          const settings = settingsDoc.data();
+          const newSettings = {
+            startDate: settings.startDate || "",
+            startTime: settings.startTime || "",
+            endDate: settings.endDate || "",
+            endTime: settings.endTime || "",
+          };
+          setKycOpenSettings(newSettings);
+          setTempKycOpenSettings(newSettings);
+        }
+      } catch (error) {
+        console.error("Error loading KYC open settings:", error);
+      }
+    };
+
+    loadKycOpenSettings();
+  }, []);
 
   useEffect(() => {
     if (!user || !isAuthorized) return;
@@ -675,6 +715,27 @@ export default function AdminKYCPage() {
     }
   };
 
+  // KYC 오픈 기간 저장 함수
+  const handleSaveKycOpenSettings = async () => {
+    try {
+      await setDoc(doc(db, "settings", "kycOpen"), {
+        startDate: tempKycOpenSettings.startDate,
+        startTime: tempKycOpenSettings.startTime,
+        endDate: tempKycOpenSettings.endDate,
+        endTime: tempKycOpenSettings.endTime,
+        updatedAt: serverTimestamp(),
+        updatedBy: user?.email,
+      });
+
+      setKycOpenSettings(tempKycOpenSettings);
+      setShowKycOpenDialog(false);
+      alert("KYC 오픈 기간이 저장되었습니다.");
+    } catch (error) {
+      console.error("Error saving KYC open settings:", error);
+      alert("설정 저장에 실패했습니다.");
+    }
+  };
+
   // Reservation approval handler
   const handleReservationApprove = async (reservationId: string) => {
     try {
@@ -1004,6 +1065,24 @@ export default function AdminKYCPage() {
                 고객관리
               </h1>
             </div>
+            <div className="text-gray-500 mt-1 text-xs sm:text-sm">
+              KYC 오픈 기간:{" "}
+              {kycOpenSettings.startDate && kycOpenSettings.endDate
+                ? `${kycOpenSettings.startDate} ${kycOpenSettings.startTime} ~ ${kycOpenSettings.endDate} ${kycOpenSettings.endTime}`
+                : "설정되지 않음"}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTempKycOpenSettings(kycOpenSettings);
+                setShowKycOpenDialog(true);
+              }}
+            >
+              KYC 오픈 기간 설정
+            </Button>
           </div>
         </div>
 
@@ -3863,6 +3942,97 @@ export default function AdminKYCPage() {
               >
                 시술 완료 처리
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* KYC 오픈 기간 설정 다이얼로그 */}
+        <Dialog open={showKycOpenDialog} onOpenChange={setShowKycOpenDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>KYC 오픈 기간 설정</DialogTitle>
+              <DialogDescription>
+                KYC 신청을 받을 수 있는 기간을 설정합니다.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">시작일시</label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={tempKycOpenSettings.startDate}
+                    onChange={(e) =>
+                      setTempKycOpenSettings((prev) => ({
+                        ...prev,
+                        startDate: e.target.value,
+                      }))
+                    }
+                    className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                  />
+                  <input
+                    type="time"
+                    value={tempKycOpenSettings.startTime}
+                    onChange={(e) =>
+                      setTempKycOpenSettings((prev) => ({
+                        ...prev,
+                        startTime: e.target.value,
+                      }))
+                    }
+                    className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">종료일시</label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={tempKycOpenSettings.endDate}
+                    onChange={(e) =>
+                      setTempKycOpenSettings((prev) => ({
+                        ...prev,
+                        endDate: e.target.value,
+                      }))
+                    }
+                    className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                  />
+                  <input
+                    type="time"
+                    value={tempKycOpenSettings.endTime}
+                    onChange={(e) =>
+                      setTempKycOpenSettings((prev) => ({
+                        ...prev,
+                        endTime: e.target.value,
+                      }))
+                    }
+                    className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+              </div>
+              {tempKycOpenSettings.startDate &&
+                tempKycOpenSettings.startTime &&
+                tempKycOpenSettings.endDate &&
+                tempKycOpenSettings.endTime && (
+                  <div className="bg-blue-50 text-blue-800 rounded-md p-3 text-sm">
+                    <p className="font-medium">미리보기:</p>
+                    <p>
+                      KYC 신청은 {tempKycOpenSettings.startDate}{" "}
+                      {tempKycOpenSettings.startTime}부터{" "}
+                      {tempKycOpenSettings.endDate}{" "}
+                      {tempKycOpenSettings.endTime}까지 가능합니다.
+                    </p>
+                  </div>
+                )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowKycOpenDialog(false)}
+              >
+                취소
+              </Button>
+              <Button onClick={handleSaveKycOpenSettings}>저장</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
