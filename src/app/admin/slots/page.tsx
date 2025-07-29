@@ -227,15 +227,19 @@ export default function SlotManagement() {
   const slotTouchRef = useRef<{ [key: string]: number }>({});
   const calendarTouchRef = useRef<{ [key: string]: number }>({});
 
-  // Month range settings
+  // Month range settings - 절대적인 년-월 방식
   const [monthRangeSettings, setMonthRangeSettings] = useState({
-    startMonth: 0, // 현재 월 기준 상대적 월 수
-    endMonth: 6, // 현재 월로부터 6개월 후
+    startYear: new Date().getFullYear(),
+    startMonth: new Date().getMonth() + 1, // 1-12 (January = 1)
+    endYear: new Date().getFullYear(),
+    endMonth: new Date().getMonth() + 1,
   });
   const [showMonthRangeDialog, setShowMonthRangeDialog] = useState(false);
   const [tempMonthRangeSettings, setTempMonthRangeSettings] = useState({
-    startMonth: 0,
-    endMonth: 6,
+    startYear: new Date().getFullYear(),
+    startMonth: new Date().getMonth() + 1,
+    endYear: new Date().getFullYear(),
+    endMonth: new Date().getMonth() + 1,
   });
 
   // Add new state for range selection:
@@ -385,13 +389,21 @@ export default function SlotManagement() {
         const settingsDoc = await getDoc(doc(db, "settings", "monthRange"));
         if (settingsDoc.exists()) {
           const settings = settingsDoc.data();
+          const currentDate = new Date();
+          const currentYear = currentDate.getFullYear();
+          const currentMonth = currentDate.getMonth() + 1;
+
           setMonthRangeSettings({
-            startMonth: settings.startMonth || 0,
-            endMonth: settings.endMonth || 6,
+            startYear: settings.startYear || currentYear,
+            startMonth: settings.startMonth || currentMonth,
+            endYear: settings.endYear || currentYear,
+            endMonth: settings.endMonth || currentMonth,
           });
           setTempMonthRangeSettings({
-            startMonth: settings.startMonth || 0,
-            endMonth: settings.endMonth || 6,
+            startYear: settings.startYear || currentYear,
+            startMonth: settings.startMonth || currentMonth,
+            endYear: settings.endYear || currentYear,
+            endMonth: settings.endMonth || currentMonth,
           });
         }
       } catch (error) {
@@ -768,7 +780,9 @@ export default function SlotManagement() {
   const handleSaveMonthRangeSettings = async () => {
     try {
       await setDoc(doc(db, "settings", "monthRange"), {
+        startYear: tempMonthRangeSettings.startYear,
         startMonth: tempMonthRangeSettings.startMonth,
+        endYear: tempMonthRangeSettings.endYear,
         endMonth: tempMonthRangeSettings.endMonth,
         updatedAt: Timestamp.now(),
         updatedBy: user?.email,
@@ -893,26 +907,11 @@ export default function SlotManagement() {
               </h1>
               <div className="text-gray-500 mt-1 text-xs sm:text-sm">
                 설정범위:{" "}
-                {(() => {
-                  const startDate = new Date();
-                  startDate.setMonth(
-                    startDate.getMonth() + monthRangeSettings.startMonth
-                  );
-                  const endDate = new Date();
-                  endDate.setMonth(
-                    endDate.getMonth() + monthRangeSettings.endMonth
-                  );
-
-                  const startYear = startDate
-                    .getFullYear()
-                    .toString()
-                    .slice(-2);
-                  const startMonth = (startDate.getMonth() + 1).toString();
-                  const endYear = endDate.getFullYear().toString().slice(-2);
-                  const endMonth = (endDate.getMonth() + 1).toString();
-
-                  return `${startYear}/${startMonth}~${endYear}/${endMonth}`;
-                })()}
+                {`${monthRangeSettings.startYear.toString().slice(-2)}/${
+                  monthRangeSettings.startMonth
+                }~${monthRangeSettings.endYear.toString().slice(-2)}/${
+                  monthRangeSettings.endMonth
+                }`}
               </div>
             </div>
           </div>
@@ -2496,61 +2495,144 @@ export default function SlotManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">시작</label>
-              <select
-                value={tempMonthRangeSettings.startMonth}
-                onChange={(e) =>
-                  setTempMonthRangeSettings((prev) => ({
-                    ...prev,
-                    startMonth: parseInt(e.target.value),
-                  }))
-                }
-                className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
-              >
-                {Array.from({ length: 13 }, (_, i) => i - 6).map((offset) => (
-                  <option key={offset} value={offset}>
-                    {offset === 0
-                      ? "현재 월"
-                      : offset > 0
-                      ? `${offset}개월 후`
-                      : `${Math.abs(offset)}개월 전`}
-                  </option>
-                ))}
-              </select>
+              <label className="text-sm font-medium">시작 월</label>
+              <div className="flex gap-2">
+                <select
+                  value={tempMonthRangeSettings.startYear}
+                  onChange={(e) =>
+                    setTempMonthRangeSettings((prev) => ({
+                      ...prev,
+                      startYear: parseInt(e.target.value),
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                >
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    return Array.from(
+                      { length: 3 },
+                      (_, i) => currentYear + i - 1
+                    ).map((year) => (
+                      <option key={year} value={year}>
+                        {year}년
+                      </option>
+                    ));
+                  })()}
+                </select>
+                <select
+                  value={tempMonthRangeSettings.startMonth}
+                  onChange={(e) =>
+                    setTempMonthRangeSettings((prev) => ({
+                      ...prev,
+                      startMonth: parseInt(e.target.value),
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                >
+                  {(() => {
+                    const currentDate = new Date();
+                    const currentYear = currentDate.getFullYear();
+                    const currentMonth = currentDate.getMonth() + 1;
+                    const months = [];
+
+                    // 현재 월 기준 ±6개월 범위 생성
+                    for (let i = -6; i <= 18; i++) {
+                      const targetDate = new Date(
+                        currentYear,
+                        currentMonth - 1 + i,
+                        1
+                      );
+                      const year = targetDate.getFullYear();
+                      const month = targetDate.getMonth() + 1;
+
+                      // 선택된 연도와 매치되는 월만 표시
+                      if (year === tempMonthRangeSettings.startYear) {
+                        months.push({ value: month, label: `${month}월` });
+                      }
+                    }
+
+                    return months.map(({ value, label }) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ));
+                  })()}
+                </select>
+              </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">종료</label>
-              <select
-                value={tempMonthRangeSettings.endMonth}
-                onChange={(e) =>
-                  setTempMonthRangeSettings((prev) => ({
-                    ...prev,
-                    endMonth: parseInt(e.target.value),
-                  }))
-                }
-                className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
-              >
-                {Array.from({ length: 25 }, (_, i) => i).map((offset) => (
-                  <option key={offset} value={offset}>
-                    {offset === 0 ? "현재 월" : `${offset}개월 후`}
-                  </option>
-                ))}
-              </select>
+              <label className="text-sm font-medium">종료 월</label>
+              <div className="flex gap-2">
+                <select
+                  value={tempMonthRangeSettings.endYear}
+                  onChange={(e) =>
+                    setTempMonthRangeSettings((prev) => ({
+                      ...prev,
+                      endYear: parseInt(e.target.value),
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                >
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    return Array.from(
+                      { length: 3 },
+                      (_, i) => currentYear + i - 1
+                    ).map((year) => (
+                      <option key={year} value={year}>
+                        {year}년
+                      </option>
+                    ));
+                  })()}
+                </select>
+                <select
+                  value={tempMonthRangeSettings.endMonth}
+                  onChange={(e) =>
+                    setTempMonthRangeSettings((prev) => ({
+                      ...prev,
+                      endMonth: parseInt(e.target.value),
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                >
+                  {(() => {
+                    const currentDate = new Date();
+                    const currentYear = currentDate.getFullYear();
+                    const currentMonth = currentDate.getMonth() + 1;
+                    const months = [];
+
+                    // 현재 월 기준 ±6개월 범위 생성
+                    for (let i = -6; i <= 18; i++) {
+                      const targetDate = new Date(
+                        currentYear,
+                        currentMonth - 1 + i,
+                        1
+                      );
+                      const year = targetDate.getFullYear();
+                      const month = targetDate.getMonth() + 1;
+
+                      // 선택된 연도와 매치되는 월만 표시
+                      if (year === tempMonthRangeSettings.endYear) {
+                        months.push({ value: month, label: `${month}월` });
+                      }
+                    }
+
+                    return months.map(({ value, label }) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ));
+                  })()}
+                </select>
+              </div>
             </div>
             <div className="bg-blue-50 text-blue-800 rounded-md p-3 text-sm">
               <p className="font-medium">미리보기:</p>
               <p>
-                사용자는{" "}
-                {tempMonthRangeSettings.startMonth === 0
-                  ? "현재 월"
-                  : tempMonthRangeSettings.startMonth > 0
-                  ? `${tempMonthRangeSettings.startMonth}개월 후`
-                  : `${Math.abs(tempMonthRangeSettings.startMonth)}개월 전`}
-                부터{" "}
-                {tempMonthRangeSettings.endMonth === 0
-                  ? "현재 월"
-                  : `${tempMonthRangeSettings.endMonth}개월 후`}
-                까지 예약할 수 있습니다.
+                사용자는 {tempMonthRangeSettings.startYear}년{" "}
+                {tempMonthRangeSettings.startMonth}월부터{" "}
+                {tempMonthRangeSettings.endYear}년{" "}
+                {tempMonthRangeSettings.endMonth}월까지 예약할 수 있습니다.
               </p>
             </div>
           </div>

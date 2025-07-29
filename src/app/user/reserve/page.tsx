@@ -69,8 +69,10 @@ export default function UserReservePage() {
   const [canceling, setCanceling] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [monthRangeSettings, setMonthRangeSettings] = useState({
-    startMonth: 0,
-    endMonth: 6,
+    startYear: new Date().getFullYear(),
+    startMonth: new Date().getMonth() + 1,
+    endYear: new Date().getFullYear(),
+    endMonth: new Date().getMonth() + 1,
   });
   const [showMonthRangeMessage, setShowMonthRangeMessage] = useState(false);
   const [monthRangeMessage, setMonthRangeMessage] = useState("");
@@ -94,32 +96,37 @@ export default function UserReservePage() {
         const settingsDoc = await getDoc(doc(db, "settings", "monthRange"));
         if (settingsDoc.exists()) {
           const settings = settingsDoc.data();
+          const currentDate = new Date();
+          const defaultYear = currentDate.getFullYear();
+          const defaultMonth = currentDate.getMonth() + 1;
+
           const newSettings = {
-            startMonth: settings.startMonth || 0,
-            endMonth: settings.endMonth || 6,
+            startYear: settings.startYear || defaultYear,
+            startMonth: settings.startMonth || defaultMonth,
+            endYear: settings.endYear || defaultYear,
+            endMonth: settings.endMonth || defaultMonth,
           };
           setMonthRangeSettings(newSettings);
 
           // 현재 월이 허용 범위 밖이면 허용 범위의 첫 번째 월로 이동
           const today = new Date();
-          const currentMonthDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
+          const minMonth = new Date(
+            newSettings.startYear,
+            newSettings.startMonth - 1,
             1
           );
 
-          const minMonth = new Date();
-          minMonth.setMonth(minMonth.getMonth() + newSettings.startMonth);
-          minMonth.setDate(1);
-          minMonth.setHours(0, 0, 0, 0);
-
-          const maxMonth = new Date();
-          maxMonth.setMonth(maxMonth.getMonth() + newSettings.endMonth);
-          maxMonth.setDate(1);
-          maxMonth.setHours(0, 0, 0, 0);
-
           // 현재 월이 허용 범위에 없으면 허용 범위의 시작월로 이동
-          if (currentMonthDate < minMonth || currentMonthDate > maxMonth) {
+          const currentYearMonth =
+            today.getFullYear() * 100 + (today.getMonth() + 1);
+          const minYearMonth =
+            newSettings.startYear * 100 + newSettings.startMonth;
+          const maxYearMonth = newSettings.endYear * 100 + newSettings.endMonth;
+
+          if (
+            currentYearMonth < minYearMonth ||
+            currentYearMonth > maxYearMonth
+          ) {
             setCurrentMonth(minMonth);
           }
         }
@@ -571,7 +578,7 @@ export default function UserReservePage() {
             예약을 하려면 KYC 승인이 필요합니다.
           </p>
           <Link href="/dashboard">
-            <Button variant="outline">대시보드로 돌아가기</Button>
+            <Button variant="outline">내정보로 돌아가기</Button>
           </Link>
         </div>
       </div>
@@ -600,7 +607,7 @@ export default function UserReservePage() {
         <div className="mb-6 flex items-center gap-2">
           <Link href="/dashboard">
             <button className="hover:bg-gray-50 text-gray-700 shadow-sm border-gray-200 rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-all duration-200">
-              내정보로
+              내정보
             </button>
           </Link>
           <h1 className="text-gray-900 mb-0 font-sans text-2xl font-extrabold tracking-tight sm:text-3xl">
@@ -770,24 +777,15 @@ export default function UserReservePage() {
                     </div>
                   )}
 
-                  {/* 취소 버튼 또는 안내 메시지 */}
+                  {/* 취소 버튼 */}
                   <div className="mt-4">
-                    {reservation?.status === "approved" ? (
-                      <div className="bg-green-50 border-green-200 rounded-lg border p-3">
-                        <p className="text-green-700 text-sm">
-                          ✅ 예약이 확정되었습니다. 예약 변경이나 취소가 필요한
-                          경우 관리자에게 문의해주세요.
-                        </p>
-                      </div>
-                    ) : (
-                      <button
-                        className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 rounded-lg border px-4 py-2 text-sm font-semibold transition-all duration-200"
-                        onClick={handleCancel}
-                        disabled={canceling}
-                      >
-                        {canceling ? "취소 중..." : "예약 취소"}
-                      </button>
-                    )}
+                    <button
+                      className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 rounded-lg border px-4 py-2 text-sm font-semibold transition-all duration-200"
+                      onClick={handleCancel}
+                      disabled={canceling}
+                    >
+                      {canceling ? "취소 중..." : "예약 취소"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -837,18 +835,18 @@ export default function UserReservePage() {
                   today.setDate(1); // 월의 첫날로 설정
                   today.setHours(0, 0, 0, 0);
 
-                  const minMonth = new Date();
-                  minMonth.setMonth(
-                    minMonth.getMonth() + monthRangeSettings.startMonth
+                  const minMonth = new Date(
+                    monthRangeSettings.startYear,
+                    monthRangeSettings.startMonth - 1, // JavaScript month is 0-indexed
+                    1
                   );
-                  minMonth.setDate(1); // 월의 첫날로 설정
                   minMonth.setHours(0, 0, 0, 0);
 
-                  const maxMonth = new Date();
-                  maxMonth.setMonth(
-                    maxMonth.getMonth() + monthRangeSettings.endMonth
+                  const maxMonth = new Date(
+                    monthRangeSettings.endYear,
+                    monthRangeSettings.endMonth - 1, // JavaScript month is 0-indexed
+                    1
                   );
-                  maxMonth.setDate(1); // 월의 첫날로 설정
                   maxMonth.setHours(0, 0, 0, 0);
 
                   // 설정된 월 범위 내에서만 이동 가능
