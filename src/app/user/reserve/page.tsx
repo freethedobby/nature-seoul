@@ -249,14 +249,16 @@ export default function UserReservePage() {
     return () => clearInterval(interval);
   }, [reservationOpenSettings]);
 
-  // Map: yyyy-mm-dd string -> count of available slots (use local date)
+  // Map: yyyy-mm-dd string -> count of available slots only
   // Only show future dates for users (current date and later)
   const slotCountByDate: Record<string, number> = {};
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Start of today
 
   slots.forEach((slot) => {
-    // 모든 슬롯을 포함 (available + booked) - 캔슬된 예약도 표시하기 위해
+    // 사용 가능한 슬롯만 카운팅 (예약된 슬롯은 사용자에게 숨김)
+    if (slot.status !== "available") return;
+
     const d = slot.start;
 
     // Only include slots from today onwards for users
@@ -702,7 +704,8 @@ export default function UserReservePage() {
     ? slots
         .filter(
           (slot) =>
-            // 모든 슬롯을 포함 (available + booked) - 캔슬된 예약도 표시하기 위해
+            // 사용 가능한 슬롯만 표시 (예약된 슬롯은 사용자에게 숨김)
+            slot.status === "available" &&
             slot.start.getDate() === selectedDate.getDate() &&
             slot.start.getMonth() === selectedDate.getMonth() &&
             slot.start.getFullYear() === selectedDate.getFullYear()
@@ -1115,12 +1118,37 @@ export default function UserReservePage() {
               weekStartsOn={0}
               disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
               modifiers={{
-                hasSlots: Object.keys(slotCountByDate).map((d) => new Date(d)),
+                hasSlots: Object.keys(slotCountByDate)
+                  .filter((d) => slotCountByDate[d] > 0)
+                  .map((d) => new Date(d)),
+                fullyBooked: (() => {
+                  // 전체 슬롯이 있지만 예약 가능한 슬롯이 0개인 날짜들
+                  const allSlotDates: Record<string, number> = {};
+                  slots.forEach((slot) => {
+                    const d = slot.start;
+                    if (d < today) return;
+                    const key =
+                      d.getFullYear() +
+                      "-" +
+                      String(d.getMonth() + 1).padStart(2, "0") +
+                      "-" +
+                      String(d.getDate()).padStart(2, "0");
+                    allSlotDates[key] = (allSlotDates[key] || 0) + 1;
+                  });
+
+                  return Object.keys(allSlotDates)
+                    .filter(
+                      (d) => !slotCountByDate[d] || slotCountByDate[d] === 0
+                    )
+                    .map((d) => new Date(d));
+                })(),
               }}
               modifiersClassNames={{
-                selected: "bg-green-500 text-white rounded-lg",
+                selected: "bg-blue-500 text-white rounded-lg",
                 today: "bg-blue-100 text-blue-700 rounded-lg",
-                hasSlots: "has-slots",
+                hasSlots:
+                  "bg-green-100 text-green-700 rounded-lg font-semibold",
+                fullyBooked: "bg-red-100 text-red-700 rounded-lg font-semibold",
               }}
               className="mx-auto w-full max-w-xs sm:max-w-md"
               styles={{
@@ -1178,7 +1206,31 @@ export default function UserReservePage() {
             <div className="py-8 text-center">
               <AlertCircle className="text-gray-400 mx-auto mb-4 h-12 w-12" />
               <p className="text-gray-500 text-lg">
-                이 날에는 예약 가능한 슬롯이 없습니다.
+                {(() => {
+                  const selectedDateKey =
+                    selectedDate.getFullYear() +
+                    "-" +
+                    String(selectedDate.getMonth() + 1).padStart(2, "0") +
+                    "-" +
+                    String(selectedDate.getDate()).padStart(2, "0");
+
+                  // 전체 슬롯이 있는지 확인
+                  const hasAnySlots = slots.some((slot) => {
+                    const slotDateKey =
+                      slot.start.getFullYear() +
+                      "-" +
+                      String(slot.start.getMonth() + 1).padStart(2, "0") +
+                      "-" +
+                      String(slot.start.getDate()).padStart(2, "0");
+                    return slotDateKey === selectedDateKey;
+                  });
+
+                  if (hasAnySlots) {
+                    return "해당 날짜는 예약이 마감되었습니다.";
+                  } else {
+                    return "이 날에는 예약 가능한 슬롯이 없습니다.";
+                  }
+                })()}
               </p>
             </div>
           )}
