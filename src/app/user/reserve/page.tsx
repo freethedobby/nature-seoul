@@ -930,10 +930,10 @@ export default function UserReservePage() {
                               입금 계좌 정보
                             </div>
                             <div className="text-gray-800 font-mono text-sm">
-                              123-456-789012
+                              100107985905
                             </div>
                             <div className="text-gray-500 text-xs">
-                              예금주: 네이처서울
+                              예금주: 윤자연 (케이뱅크)
                             </div>
                           </div>
                           <div className="bg-blue-50 border-blue-200 mt-3 rounded-md border p-3">
