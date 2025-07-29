@@ -984,47 +984,55 @@ export default function SlotManagement() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setTempMonthRangeSettings(monthRangeSettings);
-                setShowMonthRangeDialog(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              공개범위 설정
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setTempReservationOpenSettings(reservationOpenSettings);
-                setShowReservationOpenDialog(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              예약 오픈 기간 설정
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="flex items-center gap-2"
-            >
-              <List className="h-4 w-4" />
-              리스트 뷰
-            </Button>
-            <Button
-              variant={viewMode === "calendar" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("calendar")}
-              className="flex items-center gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              캘린더 뷰
-            </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTempMonthRangeSettings(monthRangeSettings);
+                  setShowMonthRangeDialog(true);
+                }}
+                className="flex items-center gap-2 text-xs sm:text-sm"
+              >
+                <span className="hidden sm:inline">공개범위 설정</span>
+                <span className="sm:hidden">공개범위</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTempReservationOpenSettings(reservationOpenSettings);
+                  setShowReservationOpenDialog(true);
+                }}
+                className="flex items-center gap-2 text-xs sm:text-sm"
+              >
+                <span className="hidden sm:inline">예약 오픈 기간 설정</span>
+                <span className="sm:hidden">예약 오픈</span>
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "list" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="flex items-center gap-2 text-xs sm:text-sm"
+              >
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">리스트 뷰</span>
+                <span className="sm:hidden">리스트</span>
+              </Button>
+              <Button
+                variant={viewMode === "calendar" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("calendar")}
+                className="flex items-center gap-2 text-xs sm:text-sm"
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">캘린더 뷰</span>
+                <span className="sm:hidden">캘린더</span>
+              </Button>
+            </div>
           </div>
         </div>
         {/* View Mode Content */}
