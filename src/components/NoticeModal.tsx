@@ -249,6 +249,22 @@ export default function NoticeModal({
                         제거 필수
                       </p>
                     </div>
+
+                    {/* 환불 및 노쇼 정책 */}
+                    <div className="bg-red-50 border-red-200 space-y-2 rounded-lg border p-4">
+                      <div className="mb-2 flex items-center space-x-2">
+                        <AlertTriangle className="text-red-500 h-4 w-4" />
+                        <p className="text-red-800 text-sm font-semibold">
+                          환불 및 노쇼 정책
+                        </p>
+                      </div>
+                      <p className="text-red-700 text-sm font-medium">
+                        • 작업을 받은 이후 환불 불가
+                      </p>
+                      <p className="text-red-700 text-sm font-medium">
+                        • 당일 노쇼 시 예약금 전액 소멸
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
