@@ -516,17 +516,7 @@ export default function NoticeModal({
 
               {/* 첫 승인 사용자를 위한 네비게이션 */}
               {isFirstTimeUser && (
-                <div className="mt-4 flex justify-center border-t pt-4">
-                  <Button
-                    onClick={() => {
-                      // 마지막 탭이므로 완료 처리
-                      setViewedTabs(new Set(tabs)); // 모든 탭을 확인한 것으로 설정
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-base px-8 py-3 font-medium text-white"
-                  >
-                    완료
-                  </Button>
-                </div>
+                <div className="mt-4 flex justify-center border-t pt-4"></div>
               )}
             </div>
           </TabsContent>
