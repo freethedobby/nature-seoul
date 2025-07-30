@@ -979,17 +979,118 @@ export default function Masterboard() {
 
                       {/* Comments Count */}
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="text-gray-400 h-4 w-4" />
-                          <span className="font-medium">
-                            {getUserCommentsCount(user.id)}
-                          </span>
-                          {getUserCommentsCount(user.id) > 0 && (
-                            <span className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs">
-                              NEW
-                            </span>
-                          )}
-                        </div>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex h-auto items-center gap-2 p-2"
+                            >
+                              <MessageSquare className="text-gray-400 h-4 w-4" />
+                              <span className="font-medium">
+                                {getUserCommentsCount(user.id)}
+                              </span>
+                              {getUserCommentsCount(user.id) > 0 && (
+                                <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
+                                  NEW
+                                </span>
+                              )}
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>
+                                {user.name} - 관리자 댓글
+                              </DialogTitle>
+                              <DialogDescription>
+                                사용자에 대한 관리자 댓글을 확인하고 추가할 수
+                                있습니다
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              {/* Comments List */}
+                              <div className="max-h-60 space-y-3 overflow-y-auto">
+                                {getUserComments(user.id).length === 0 ? (
+                                  <p className="text-gray-500 text-center text-sm">
+                                    아직 댓글이 없습니다.
+                                  </p>
+                                ) : (
+                                  getUserComments(user.id).map((comment) => (
+                                    <div
+                                      key={comment.id}
+                                      className="border-gray-200 rounded border p-3"
+                                    >
+                                      <div className="mb-2 flex items-center justify-between">
+                                        <span className="text-gray-600 text-sm">
+                                          {comment.adminEmail}
+                                        </span>
+                                        <span className="text-gray-500 text-xs">
+                                          {(() => {
+                                            const date =
+                                              (
+                                                comment.createdAt as {
+                                                  toDate?: () => Date;
+                                                }
+                                              )?.toDate?.() ||
+                                              new Date(
+                                                comment.createdAt as
+                                                  | string
+                                                  | number
+                                                  | Date
+                                              );
+                                            return date.toLocaleString("ko-KR");
+                                          })()}
+                                        </span>
+                                      </div>
+                                      <p className="text-gray-700 whitespace-pre-wrap text-sm">
+                                        {comment.comment}
+                                      </p>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+
+                              {/* Add Comment */}
+                              <div className="space-y-2">
+                                <label className="text-gray-700 block text-sm font-medium">
+                                  새 댓글 추가
+                                </label>
+                                <Textarea
+                                  placeholder="댓글을 입력하세요..."
+                                  value={
+                                    editingUser?.id === user.id
+                                      ? newComment
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    setNewComment(e.target.value);
+                                    setEditingUser(user);
+                                  }}
+                                  className="min-h-20"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingUser(null);
+                                      setNewComment("");
+                                    }}
+                                  >
+                                    취소
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleAddComment(user.id)}
+                                    disabled={!newComment.trim()}
+                                  >
+                                    댓글 추가
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </TableCell>
 
                       {/* Admin Comments */}
