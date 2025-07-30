@@ -6,6 +6,7 @@ import "react-day-picker/dist/style.css";
 import { ko } from "date-fns/locale";
 import { db } from "@/lib/firebase";
 import { createNotification } from "@/lib/notifications";
+import { event } from "@/lib/gtag";
 import {
   collection,
   doc,
@@ -524,6 +525,14 @@ export default function UserReservePage() {
         ...reservationData,
       };
       setReservation(newReservation);
+
+      // Google Analytics 이벤트 트래킹
+      event({
+        action: "reservation_submit",
+        category: "engagement",
+        label: "Reservation Complete",
+        value: 1,
+      });
 
       setShowReserveBtn(null);
     } catch (error) {

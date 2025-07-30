@@ -33,6 +33,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { event } from "@/lib/gtag";
 import Image from "next/image";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import AddressSelector from "@/components/AddressSelector";
@@ -472,6 +473,14 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
       reset();
       setPreviewImages({ left: null, front: null, right: null });
       setSelectedFiles({ left: null, front: null, right: null });
+
+      // Google Analytics 이벤트 트래킹
+      event({
+        action: "kyc_form_submit",
+        category: "engagement",
+        label: "KYC 신청 완료",
+        value: 1,
+      });
 
       // Create notifications
       try {
