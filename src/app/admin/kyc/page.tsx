@@ -1934,6 +1934,24 @@ export default function AdminKYCPage() {
                                 </span>
                               )}
                             </div>
+                            {/* 반려 이유 표시 */}
+                            {user.rejectReason && (
+                              <div className="mt-3">
+                                <div className="text-red-600 bg-red-50 border-red-200 rounded-lg border p-3 text-sm">
+                                  <div className="flex items-start gap-2">
+                                    <XCircle className="text-red-500 mt-0.5 h-4 w-4 flex-shrink-0" />
+                                    <div>
+                                      <div className="text-red-700 mb-1 text-xs font-medium">
+                                        반려 사유
+                                      </div>
+                                      <div className="text-red-600">
+                                        {user.rejectReason}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <Badge
                             variant="outline"
