@@ -622,8 +622,8 @@ export default function Masterboard() {
                                 {user.name} - 관리자 댓글
                               </DialogTitle>
                               <DialogDescription>
-                                사용자에 대한 관리자 댓글을 확인하고 추가할 수
-                                있습니다
+                                선택한 사용자에 대한 관리자 댓글 목록을 확인하고
+                                새로운 댓글을 추가할 수 있는 관리 도구입니다
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
@@ -743,7 +743,8 @@ export default function Masterboard() {
                             <DialogHeader>
                               <DialogTitle>사용자 정보 편집</DialogTitle>
                               <DialogDescription>
-                                {user.name}의 정보를 수정합니다
+                                사용자의 개인정보, KYC 상태, 예약 상태 등을
+                                수정할 수 있는 편집 도구입니다
                               </DialogDescription>
                             </DialogHeader>
                             {editingUser && editingUser.id === user.id && (
@@ -1005,8 +1006,8 @@ export default function Masterboard() {
                                 {user.name} - 관리자 댓글
                               </DialogTitle>
                               <DialogDescription>
-                                사용자에 대한 관리자 댓글을 확인하고 추가할 수
-                                있습니다
+                                선택한 사용자에 대한 관리자 댓글 목록을 확인하고
+                                새로운 댓글을 추가할 수 있는 관리 도구입니다
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
@@ -1112,7 +1113,8 @@ export default function Masterboard() {
                               <DialogHeader>
                                 <DialogTitle>사용자 정보 편집</DialogTitle>
                                 <DialogDescription>
-                                  {user.name}의 정보를 수정합니다
+                                  사용자의 개인정보, KYC 상태, 예약 상태 등을
+                                  수정할 수 있는 편집 도구입니다
                                 </DialogDescription>
                               </DialogHeader>
                               {editingUser && editingUser.id === user.id && (
