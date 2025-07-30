@@ -34,7 +34,6 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  Plus,
   Search,
   Filter,
   MessageSquare,
@@ -389,18 +388,6 @@ export default function Masterboard() {
     }
   };
 
-  // Handle comment deletion
-  const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
-
-    try {
-      await deleteDoc(doc(db, "adminComments", commentId));
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      alert("댓글 삭제 중 오류가 발생했습니다.");
-    }
-  };
-
   // Handle user deletion
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (
@@ -615,13 +602,114 @@ export default function Masterboard() {
                         {getStatusBadge(user.kycStatus, "kyc")}
                         {getStatusBadge(user.reservationStatus, "reservation")}
                         {getStatusBadge(user.eyebrowProcedure, "procedure")}
-                        {/* Comments Count Badge */}
-                        {getUserCommentsCount(user.id) > 0 && (
-                          <div className="bg-blue-100 text-blue-800 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium">
-                            <MessageSquare className="h-3 w-3" />
-                            {getUserCommentsCount(user.id)}
-                          </div>
-                        )}
+                        {/* Comments Count Badge - Clickable */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors ${
+                                getUserCommentsCount(user.id) > 0
+                                  ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              }`}
+                            >
+                              <MessageSquare className="h-3 w-3" />
+                              {getUserCommentsCount(user.id)}
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>
+                                {user.name} - 관리자 댓글
+                              </DialogTitle>
+                              <DialogDescription>
+                                사용자에 대한 관리자 댓글을 확인하고 추가할 수
+                                있습니다
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              {/* Comments List */}
+                              <div className="max-h-60 space-y-3 overflow-y-auto">
+                                {getUserComments(user.id).length === 0 ? (
+                                  <p className="text-gray-500 text-center text-sm">
+                                    아직 댓글이 없습니다.
+                                  </p>
+                                ) : (
+                                  getUserComments(user.id).map((comment) => (
+                                    <div
+                                      key={comment.id}
+                                      className="border-gray-200 rounded border p-3"
+                                    >
+                                      <div className="mb-2 flex items-center justify-between">
+                                        <span className="text-gray-600 text-sm">
+                                          {comment.adminEmail}
+                                        </span>
+                                        <span className="text-gray-500 text-xs">
+                                          {(() => {
+                                            const date =
+                                              (
+                                                comment.createdAt as {
+                                                  toDate?: () => Date;
+                                                }
+                                              )?.toDate?.() ||
+                                              new Date(
+                                                comment.createdAt as
+                                                  | string
+                                                  | number
+                                                  | Date
+                                              );
+                                            return date.toLocaleString("ko-KR");
+                                          })()}
+                                        </span>
+                                      </div>
+                                      <p className="text-gray-700 whitespace-pre-wrap text-sm">
+                                        {comment.comment}
+                                      </p>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+
+                              {/* Add Comment */}
+                              <div className="space-y-2">
+                                <label className="text-gray-700 block text-sm font-medium">
+                                  새 댓글 추가
+                                </label>
+                                <Textarea
+                                  placeholder="댓글을 입력하세요..."
+                                  value={
+                                    editingUser?.id === user.id
+                                      ? newComment
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    setNewComment(e.target.value);
+                                    setEditingUser(user);
+                                  }}
+                                  className="min-h-20"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingUser(null);
+                                      setNewComment("");
+                                    }}
+                                  >
+                                    취소
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleAddComment(user.id)}
+                                    disabled={!newComment.trim()}
+                                  >
+                                    댓글 추가
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
 
                       {/* Latest Reservation */}
@@ -639,91 +727,6 @@ export default function Masterboard() {
 
                       {/* Action Buttons */}
                       <div className="flex justify-between gap-2 pt-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                            >
-                              <MessageSquare className="mr-1 h-3 w-3" />
-                              댓글
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>
-                                {user.name} - 관리자 댓글
-                              </DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              {/* Comments display - same as desktop */}
-                              <div className="space-y-2">
-                                {getUserComments(user.id).map((comment) => (
-                                  <div
-                                    key={comment.id}
-                                    className="bg-gray-50 rounded-lg p-3"
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <p className="text-sm font-medium">
-                                          {comment.adminEmail}
-                                        </p>
-                                        <p className="text-gray-600 mt-1 text-sm">
-                                          {comment.comment}
-                                        </p>
-                                        <p className="text-gray-500 mt-2 text-xs">
-                                          {(
-                                            comment.createdAt as {
-                                              toDate?: () => Date;
-                                            }
-                                          )
-                                            ?.toDate?.()
-                                            ?.toLocaleString("ko-KR") ||
-                                            new Date(
-                                              comment.createdAt as
-                                                | string
-                                                | number
-                                                | Date
-                                            ).toLocaleString("ko-KR")}
-                                        </p>
-                                      </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleDeleteComment(comment.id)
-                                        }
-                                        className="text-red-600 hover:text-red-700"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="space-y-2">
-                                <Textarea
-                                  placeholder="새 댓글을 입력하세요..."
-                                  value={newComment}
-                                  onChange={(e) =>
-                                    setNewComment(e.target.value)
-                                  }
-                                  rows={3}
-                                />
-                                <Button
-                                  onClick={() => handleAddComment(user.id)}
-                                  disabled={!newComment.trim() || isSubmitting}
-                                  className="w-full"
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  댓글 추가
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
