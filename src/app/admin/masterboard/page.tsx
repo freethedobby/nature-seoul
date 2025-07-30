@@ -639,11 +639,11 @@ export default function Masterboard() {
                                       key={comment.id}
                                       className="border-gray-200 rounded border p-3"
                                     >
-                                      <div className="mb-2 flex items-center justify-between">
-                                        <span className="text-gray-600 text-sm">
+                                      <div className="mb-3 space-y-1">
+                                        <div className="text-gray-600 text-sm font-medium">
                                           {comment.adminEmail}
-                                        </span>
-                                        <span className="text-gray-500 text-xs">
+                                        </div>
+                                        <div className="text-gray-500 text-xs">
                                           {(() => {
                                             const date =
                                               (
@@ -659,7 +659,7 @@ export default function Masterboard() {
                                               );
                                             return date.toLocaleString("ko-KR");
                                           })()}
-                                        </span>
+                                        </div>
                                       </div>
                                       <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                         {comment.comment}
@@ -1022,11 +1022,11 @@ export default function Masterboard() {
                                       key={comment.id}
                                       className="border-gray-200 rounded border p-3"
                                     >
-                                      <div className="mb-2 flex items-center justify-between">
-                                        <span className="text-gray-600 text-sm">
+                                      <div className="mb-3 space-y-1">
+                                        <div className="text-gray-600 text-sm font-medium">
                                           {comment.adminEmail}
-                                        </span>
-                                        <span className="text-gray-500 text-xs">
+                                        </div>
+                                        <div className="text-gray-500 text-xs">
                                           {(() => {
                                             const date =
                                               (
@@ -1042,7 +1042,7 @@ export default function Masterboard() {
                                               );
                                             return date.toLocaleString("ko-KR");
                                           })()}
-                                        </span>
+                                        </div>
                                       </div>
                                       <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                         {comment.comment}
