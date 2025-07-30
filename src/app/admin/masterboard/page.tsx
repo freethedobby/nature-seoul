@@ -141,12 +141,37 @@ export default function Masterboard() {
       const userData: UserData[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+        // Debug: Log available contact fields for troubleshooting
+        if (
+          data.name &&
+          !data.contact &&
+          !data.phone &&
+          !data.phoneNumber &&
+          !data.mobile
+        ) {
+          console.log("⚠️ User without contact info:", doc.id, {
+            name: data.name,
+            email: data.email,
+            availableFields: Object.keys(data),
+          });
+        }
+
         userData.push({
           id: doc.id,
           name: data.name || "N/A",
           email: data.email || "N/A",
-          contact: data.contact || data.phone || "N/A", // contact 우선, 없으면 phone 사용
-          phone: data.phone || data.contact || "N/A", // 기존 호환성 유지
+          contact:
+            data.contact ||
+            data.phone ||
+            data.phoneNumber ||
+            data.mobile ||
+            "N/A", // 모든 가능한 연락처 필드 확인
+          phone:
+            data.phone ||
+            data.contact ||
+            data.phoneNumber ||
+            data.mobile ||
+            "N/A", // 기존 호환성 유지
           kycStatus: data.kycStatus || "pending",
           reservationStatus: data.reservationStatus || "none",
           latestReservation: data.latestReservation,
@@ -183,8 +208,10 @@ export default function Masterboard() {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.contact.includes(searchTerm) ||
-      user.phone.includes(searchTerm);
+      (user.contact &&
+        user.contact !== "N/A" &&
+        user.contact.includes(searchTerm)) ||
+      (user.phone && user.phone !== "N/A" && user.phone.includes(searchTerm));
 
     const matchesFilter =
       filterStatus === "all" ||
