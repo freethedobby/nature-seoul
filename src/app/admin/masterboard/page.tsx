@@ -61,7 +61,8 @@ interface UserData {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  contact: string; // KYC에서는 contact 필드를 사용
+  phone: string; // 기존 호환성 유지
   kycStatus: "pending" | "approved" | "rejected";
   reservationStatus: "none" | "scheduled" | "completed" | "cancelled";
   latestReservation?: {
@@ -144,7 +145,8 @@ export default function Masterboard() {
           id: doc.id,
           name: data.name || "N/A",
           email: data.email || "N/A",
-          phone: data.phone || "N/A",
+          contact: data.contact || data.phone || "N/A", // contact 우선, 없으면 phone 사용
+          phone: data.phone || data.contact || "N/A", // 기존 호환성 유지
           kycStatus: data.kycStatus || "pending",
           reservationStatus: data.reservationStatus || "none",
           latestReservation: data.latestReservation,
@@ -181,6 +183,7 @@ export default function Masterboard() {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.contact.includes(searchTerm) ||
       user.phone.includes(searchTerm);
 
     const matchesFilter =
@@ -206,6 +209,10 @@ export default function Masterboard() {
         return dateB.getTime() - dateA.getTime();
       });
   };
+
+  // Get user comments count
+  const getUserCommentsCount = (userId: string) =>
+    comments.filter((comment) => comment.userId === userId).length;
 
   // Handle user update
   const handleUpdateUser = async (
@@ -570,7 +577,7 @@ export default function Masterboard() {
                             </div>
                             <div className="text-gray-600 flex items-center gap-2 text-sm">
                               <Phone className="h-3 w-3" />
-                              {user.phone}
+                              {user.contact || user.phone}
                             </div>
                           </div>
                         </div>
@@ -581,6 +588,13 @@ export default function Masterboard() {
                         {getStatusBadge(user.kycStatus, "kyc")}
                         {getStatusBadge(user.reservationStatus, "reservation")}
                         {getStatusBadge(user.eyebrowProcedure, "procedure")}
+                        {/* Comments Count Badge */}
+                        {getUserCommentsCount(user.id) > 0 && (
+                          <div className="bg-blue-100 text-blue-800 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium">
+                            <MessageSquare className="h-3 w-3" />
+                            {getUserCommentsCount(user.id)}
+                          </div>
+                        )}
                       </div>
 
                       {/* Latest Reservation */}
@@ -883,6 +897,7 @@ export default function Masterboard() {
                     <TableHead>KYC 상태</TableHead>
                     <TableHead>예약 상태</TableHead>
                     <TableHead>시술 진행</TableHead>
+                    <TableHead>댓글</TableHead>
                     <TableHead>관리자 댓글</TableHead>
                     <TableHead>작업</TableHead>
                   </TableRow>
@@ -903,7 +918,7 @@ export default function Masterboard() {
                           </div>
                           <div className="text-gray-600 flex items-center gap-2 text-sm">
                             <Phone className="h-3 w-3" />
-                            {user.phone}
+                            {user.contact || user.phone}
                           </div>
                         </div>
                       </TableCell>
@@ -933,6 +948,21 @@ export default function Masterboard() {
                       {/* Eyebrow Procedure */}
                       <TableCell>
                         {getStatusBadge(user.eyebrowProcedure, "procedure")}
+                      </TableCell>
+
+                      {/* Comments Count */}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="text-gray-400 h-4 w-4" />
+                          <span className="font-medium">
+                            {getUserCommentsCount(user.id)}
+                          </span>
+                          {getUserCommentsCount(user.id) > 0 && (
+                            <span className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs">
+                              NEW
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Admin Comments */}
