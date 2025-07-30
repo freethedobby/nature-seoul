@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Eye } from "lucide-react";
+import { isTestMode } from "@/lib/utils";
 
 // KYC 데이터 타입 정의
 interface KYCData {
@@ -396,8 +397,8 @@ export default function KYCPage() {
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
-          {/* KYC 오픈 상태 체크 */}
-          {!isKycOpen && userKycStatus !== "approved" ? (
+          {/* KYC 오픈 상태 체크 - 테스트 모드에서는 항상 접근 가능 */}
+          {!isKycOpen && userKycStatus !== "approved" && !isTestMode() ? (
             <div className="space-y-6 text-center">
               <Card className="p-8">
                 <CardHeader>
@@ -441,10 +442,26 @@ export default function KYCPage() {
               </Card>
             </div>
           ) : (
-            (isKycOpen || userKycStatus === "approved") && (
+            (isKycOpen || userKycStatus === "approved" || isTestMode()) && (
               <div className="space-y-6">
+                {/* 테스트 모드 표시 */}
+                {isTestMode() && (
+                  <Card className="bg-yellow-50 border-yellow-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="text-yellow-600">
+                          <Eye className="h-5 w-5" />
+                        </div>
+                        <p className="text-yellow-800 font-medium">
+                          개발 모드 - 모든 시간 제한이 비활성화되었습니다
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* 고객등록 신청 마감까지 남은 시간 표시 */}
-                {timeUntilClose && (
+                {timeUntilClose && !isTestMode() && (
                   <Card className="bg-green-50 border-green-200">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">

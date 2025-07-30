@@ -7,6 +7,7 @@ import { ko } from "date-fns/locale";
 import { db } from "@/lib/firebase";
 import { createNotification } from "@/lib/notifications";
 import { event } from "@/lib/gtag";
+import { isTestMode } from "@/lib/utils";
 import {
   collection,
   doc,
@@ -23,7 +24,14 @@ import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "@/components/CountdownTimer";
-import { Calendar, Clock, CreditCard, AlertCircle, Check } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  CreditCard,
+  AlertCircle,
+  Check,
+  Eye,
+} from "lucide-react";
 
 interface SlotData {
   id: string;
@@ -687,8 +695,8 @@ export default function UserReservePage() {
     );
   }
 
-  // Show unauthorized message
-  if (!user || user.kycStatus !== "approved") {
+  // Show unauthorized message - 테스트 모드에서는 우회
+  if (!user || (user.kycStatus !== "approved" && !isTestMode())) {
     return (
       <div className="bg-gradient-to-br from-gray-50 flex min-h-screen items-center justify-center to-white">
         <div className="text-center">
@@ -722,8 +730,8 @@ export default function UserReservePage() {
         .sort((a, b) => a.start.getTime() - b.start.getTime()) // 시간순 정렬
     : [];
 
-  // 예약 오픈 상태 체크 - 마감된 경우
-  if (!isReservationOpen && !timeUntilReservationOpen) {
+  // 예약 오픈 상태 체크 - 마감된 경우 (테스트 모드에서는 우회)
+  if (!isReservationOpen && !timeUntilReservationOpen && !isTestMode()) {
     return (
       <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
         <div className="container mx-auto max-w-7xl">
@@ -767,8 +775,8 @@ export default function UserReservePage() {
     );
   }
 
-  // 예약 오픈 대기 상태
-  if (!isReservationOpen && timeUntilReservationOpen) {
+  // 예약 오픈 대기 상태 (테스트 모드에서는 우회)
+  if (!isReservationOpen && timeUntilReservationOpen && !isTestMode()) {
     return (
       <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
         <div className="container mx-auto max-w-7xl">
@@ -817,8 +825,20 @@ export default function UserReservePage() {
   return (
     <div className="bg-gradient-to-br from-gray-50 min-h-screen to-white p-2 sm:p-4">
       <div className="container mx-auto max-w-7xl">
+        {/* 테스트 모드 표시 */}
+        {isTestMode() && (
+          <div className="bg-yellow-50 border-yellow-200 mb-4 rounded-lg border p-3">
+            <div className="flex items-center justify-center text-center">
+              <Eye className="text-yellow-600 mr-2 h-4 w-4" />
+              <span className="text-yellow-800 text-sm font-medium">
+                🔧 개발 모드 - 모든 제한이 비활성화되었습니다
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* 예약 오픈 중 - 마감 시간 표시 */}
-        {timeUntilReservationClose && (
+        {timeUntilReservationClose && !isTestMode() && (
           <div className="bg-green-50 border-green-200 mb-4 rounded-lg border p-3">
             <div className="flex items-center justify-center text-center">
               <Check className="text-green-600 mr-2 h-4 w-4" />

@@ -274,7 +274,6 @@ export default function NoticeModal({
                 <h3 className="text-gray-900 mb-1 text-lg font-semibold">
                   가격 안내
                 </h3>
-                <p className="text-gray-500 text-sm">(VAT 10% 별도)</p>
               </div>
 
               <div className="space-y-6">
@@ -286,7 +285,7 @@ export default function NoticeModal({
                     </h4>
                   </div>
                   <p className="text-gray-900 mb-2 text-2xl font-bold">
-                    90만원
+                    99만원
                   </p>
                   <p className="text-gray-600 text-sm">
                     모량 20% 이하, 또는 잔흔이 있는 경우 추가비용 20만원

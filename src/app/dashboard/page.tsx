@@ -44,6 +44,7 @@ import {
 import { db } from "@/lib/firebase";
 import CountdownTimer from "@/components/CountdownTimer";
 import { createNotification } from "@/lib/notifications";
+import { isTestMode } from "@/lib/utils";
 import {
   provinces,
   districts as districtData,
@@ -587,8 +588,8 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-semibold">고객등록 신청</h3>
                 </div>
 
-                {/* KYC 오픈 상태에 따른 다른 UI 표시 */}
-                {!isKycOpen && timeUntilOpen ? (
+                {/* KYC 오픈 상태에 따른 다른 UI 표시 - 테스트 모드에서는 항상 접근 가능 */}
+                {!isKycOpen && timeUntilOpen && !isTestMode() ? (
                   <div className="space-y-3">
                     <p className="text-gray-600 text-sm">
                       고객등록 신청이 곧 시작됩니다.
@@ -604,7 +605,8 @@ export default function DashboardPage() {
                   </div>
                 ) : !isKycOpen &&
                   !timeUntilOpen &&
-                  user.kycStatus !== "approved" ? (
+                  user.kycStatus !== "approved" &&
+                  !isTestMode() ? (
                   <div className="space-y-3">
                     <p className="text-gray-600 text-sm">
                       고객등록 신청 기간이 마감되었습니다.
@@ -615,8 +617,17 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* 테스트 모드 표시 */}
+                    {isTestMode() && (
+                      <div className="bg-yellow-50 border-yellow-200 rounded-lg border p-3">
+                        <p className="text-yellow-800 text-xs font-medium">
+                          🔧 개발 모드 - 시간 제한 비활성화
+                        </p>
+                      </div>
+                    )}
+
                     {/* KYC 오픈 중 */}
-                    {timeUntilClose && (
+                    {timeUntilClose && !isTestMode() && (
                       <div className="bg-green-50 border-green-200 rounded-lg border p-3">
                         <p className="text-green-800 text-xs">
                           마감까지: {formatTime(timeUntilClose)}
