@@ -411,9 +411,7 @@ export default function NoticeModal({
               </div>
 
               <div className="space-y-4">
-                <p className="text-gray-600 text-sm font-medium">
-                  아래와 같은 경우 답변X:
-                </p>
+                <p className="text-gray-600 text-sm font-medium"></p>
                 <ol className="text-gray-700 list-inside list-decimal space-y-3 text-sm">
                   <li>취소, 노쇼, 10분 이상 지각 고객님</li>
                   <li>

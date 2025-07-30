@@ -51,7 +51,7 @@ const kycSchema = z.object({
     .string()
     .min(1, "이름을 입력해주세요")
     .max(30, "이름은 30자 이하여야 합니다"),
-  gender: z.enum(["male", "female", "other"], {
+  gender: z.enum(["male", "female"], {
     required_error: "성별을 선택해주세요",
   }),
   birthYear: z.string().min(1, "출생년도를 선택해주세요"),
@@ -613,7 +613,7 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                   </Label>
                   <RadioGroup
                     onValueChange={(value) =>
-                      setValue("gender", value as "male" | "female" | "other")
+                      setValue("gender", value as "male" | "female")
                     }
                     className="flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0"
                   >
@@ -627,12 +627,6 @@ export default function KYCFormNew({ onSuccess }: KYCFormProps) {
                       <RadioGroupItem value="female" id="female" />
                       <Label htmlFor="female" className="text-xs sm:text-sm">
                         여성
-                      </Label>
-                    </div>
-                    <div className="border-gray-200 flex items-center space-x-2 rounded-lg border bg-white p-2">
-                      <RadioGroupItem value="other" id="other" />
-                      <Label htmlFor="other" className="text-xs sm:text-sm">
-                        기타
                       </Label>
                     </div>
                   </RadioGroup>
