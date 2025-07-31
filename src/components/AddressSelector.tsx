@@ -196,7 +196,7 @@ export default function AddressSelector({
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-h-[80vh] max-w-4xl overflow-hidden">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <MapPin className="h-5 w-5" />
@@ -204,9 +204,9 @@ export default function AddressSelector({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex h-full flex-col">
+          <div className="flex flex-col space-y-4">
             {/* Breadcrumb */}
-            <div className="bg-gray-50 mb-4 flex items-center space-x-2 rounded-lg p-3">
+            <div className="bg-gray-50 flex items-center space-x-2 rounded-lg p-3">
               <span className="text-gray-600 text-sm">시/도</span>
               {currentStep !== "province" && (
                 <>
@@ -224,7 +224,7 @@ export default function AddressSelector({
 
             {/* Selected Address Display */}
             {selectedProvince && (
-              <div className="bg-green-100 border-green-300 mb-4 rounded-lg border p-3">
+              <div className="bg-green-100 border-green-300 rounded-lg border p-3">
                 <div className="flex items-center space-x-2">
                   <MapPin className="text-green-600 h-4 w-4" />
                   <span className="text-green-800 text-sm font-medium">
@@ -242,7 +242,7 @@ export default function AddressSelector({
             )}
 
             {/* Navigation Buttons */}
-            <div className="mb-4 flex justify-between">
+            <div className="flex justify-between">
               <div className="flex space-x-2">
                 {currentStep !== "province" && (
                   <Button
@@ -273,10 +273,8 @@ export default function AddressSelector({
               </Button>
             </div>
 
-            {/* Content - Fixed height with scroll */}
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="pb-4">{renderStepContent()}</div>
-            </div>
+            {/* Content - Scrollable */}
+            <div className="pb-4">{renderStepContent()}</div>
           </div>
         </DialogContent>
       </Dialog>
