@@ -398,7 +398,10 @@ export default function KYCPage() {
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
           {/* KYC 오픈 상태 체크 - 테스트 모드에서는 항상 접근 가능 */}
-          {!isKycOpen && userKycStatus !== "approved" && !isTestMode() ? (
+          {!isKycOpen &&
+          userKycStatus !== "approved" &&
+          userKycStatus !== "scar" &&
+          !isTestMode() ? (
             <div className="space-y-6 text-center">
               <Card className="p-8">
                 <CardHeader>
@@ -442,7 +445,10 @@ export default function KYCPage() {
               </Card>
             </div>
           ) : (
-            (isKycOpen || userKycStatus === "approved" || isTestMode()) && (
+            (isKycOpen ||
+              userKycStatus === "approved" ||
+              userKycStatus === "scar" ||
+              isTestMode()) && (
               <div className="space-y-6">
                 {/* 테스트 모드 표시 */}
                 {isTestMode() && (
@@ -481,14 +487,40 @@ export default function KYCPage() {
                   </Card>
                 )}
 
-                <KYCFormNew
-                  onSuccess={() => {
-                    // 성공 후 내정보로 이동
-                    setTimeout(() => {
-                      router.push("/dashboard");
-                    }, 2000);
-                  }}
-                />
+                {/* 잔흔 상태 사용자에게 메시지 표시 */}
+                {userKycStatus === "scar" ? (
+                  <Card className="bg-orange-50 border-orange-200">
+                    <CardContent className="p-6">
+                      <div className="space-y-4 text-center">
+                        <div className="text-orange-600">
+                          <CheckCircle className="mx-auto h-12 w-12" />
+                        </div>
+                        <div>
+                          <h3 className="text-orange-800 text-lg font-semibold">
+                            잔흔 제거 필요
+                          </h3>
+                          <p className="text-orange-700 mt-2">
+                            KYC 검토 결과, 기존 잔흔 제거 후 재신청이
+                            필요합니다.
+                          </p>
+                          <p className="text-orange-600 mt-2 text-sm">
+                            잔흔 제거 완료 후 고객센터로 연락주시면 재신청
+                            안내해 드리겠습니다.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <KYCFormNew
+                    onSuccess={() => {
+                      // 성공 후 내정보로 이동
+                      setTimeout(() => {
+                        router.push("/dashboard");
+                      }, 2000);
+                    }}
+                  />
+                )}
               </div>
             )
           )}

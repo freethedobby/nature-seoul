@@ -87,6 +87,7 @@ interface UserData {
   name: string;
   gender?: string;
   birthYear?: string;
+  birthDate?: string;
   contact: string;
   province?: string;
   district?: string;
@@ -95,8 +96,9 @@ interface UserData {
   skinType?: string;
   skinTypeOther?: string;
   designDescription?: string;
+  eyebrowDesign?: string;
   additionalNotes?: string;
-  marketingConsent?: boolean;
+  marketingConsent?: string;
   photoURLs?: {
     left: string;
     front: string;
@@ -110,6 +112,8 @@ interface UserData {
   createdAt: Date;
   approvedAt?: Date;
   rejectedAt?: Date;
+  scarAt?: Timestamp;
+  scarReason?: string;
   eyebrowProcedure?: "not_started" | "in_progress" | "completed";
   procedureNote?: string;
   procedureCompletedAt?: Date;
@@ -216,12 +220,26 @@ export default function AdminKYCPage() {
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<UserData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
+  const [scarUsers, setScarUsers] = useState<UserData[]>([]);
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+
+  // 승인 확인 다이얼로그
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [selectedApproveUserId, setSelectedApproveUserId] = useState<
+    string | null
+  >(null);
+
+  // 잔흔 확인 다이얼로그
+  const [isScarDialogOpen, setIsScarDialogOpen] = useState(false);
+  const [selectedScarUserId, setSelectedScarUserId] = useState<string | null>(
+    null
+  );
+  const [scarReason, setScarReason] = useState("");
   const [isReservationDetailDialogOpen, setIsReservationDetailDialogOpen] =
     useState(false);
   const [selectedReservationDetail, setSelectedReservationDetail] =
@@ -252,9 +270,9 @@ export default function AdminKYCPage() {
   });
 
   const [mainTab, setMainTab] = useState<"kyc" | "reservations">("kyc");
-  const [kycTab, setKycTab] = useState<"pending" | "approved" | "rejected">(
-    "pending"
-  );
+  const [kycTab, setKycTab] = useState<
+    "pending" | "approved" | "rejected" | "scar"
+  >("pending");
   const [reservationTab, setReservationTab] = useState<
     "upcoming" | "procedure"
   >("upcoming");
@@ -471,6 +489,26 @@ export default function AdminKYCPage() {
       setRejectedUsers(users);
     });
 
+    // Subscribe to scar users
+    const scarQuery = query(
+      collection(db, "users"),
+      where("kycStatus", "==", "scar")
+    );
+
+    const unsubScar = onSnapshot(
+      scarQuery,
+      (snapshot) => {
+        const users = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as UserData[];
+        setScarUsers(users);
+      },
+      (error) => {
+        console.error("Error fetching scar users:", error);
+      }
+    );
+
     // Subscribe to reservations (excluding cancelled ones)
     const reservationsQuery = query(
       collection(db, "reservations"),
@@ -579,21 +617,24 @@ export default function AdminKYCPage() {
       unsubPending();
       unsubApproved();
       unsubRejected();
+      unsubScar();
       unsubReservations();
     };
   }, [user, isAuthorized]);
 
-  const handleApprove = async (userId: string) => {
+  const handleApprove = async () => {
+    if (!selectedApproveUserId) return;
+
     try {
       // Get user data before updating
-      const user = pendingUsers.find((u) => u.id === userId);
+      const user = pendingUsers.find((u) => u.id === selectedApproveUserId);
       if (!user) {
         console.error("User not found");
         return;
       }
 
       // Update user status
-      await updateDoc(doc(db, "users", userId), {
+      await updateDoc(doc(db, "users", selectedApproveUserId), {
         kycStatus: "approved",
         approvedAt: Timestamp.now(),
       });
@@ -619,6 +660,10 @@ export default function AdminKYCPage() {
         console.error("Error sending KYC approval email:", emailError);
         // Don't fail the approval if email fails
       }
+
+      // Close dialog and reset state
+      setIsApproveDialogOpen(false);
+      setSelectedApproveUserId(null);
     } catch (error) {
       console.error("Error approving user:", error);
     }
@@ -712,6 +757,81 @@ export default function AdminKYCPage() {
       setSelectedUserId(null);
     } catch (error) {
       console.error("Error rejecting user:", error);
+    }
+  };
+
+  const handleScar = async () => {
+    if (!selectedScarUserId || !scarReason.trim()) return;
+
+    try {
+      // Get user data before updating
+      const user = pendingUsers.find((u) => u.id === selectedScarUserId);
+      if (!user) {
+        console.error("User not found");
+        return;
+      }
+
+      // Update user status
+      await updateDoc(doc(db, "users", selectedScarUserId), {
+        kycStatus: "scar",
+        scarAt: Timestamp.now(),
+        scarReason: scarReason.trim(),
+      });
+
+      // Create notification for the user
+      try {
+        const notification = {
+          title: "KYC 검토 결과 안내",
+          message: `잔흔 제거 후 재신청이 필요합니다.\n\n사유: ${scarReason.trim()}\n\n자세한 내용은 고객센터로 문의해 주세요.`,
+        };
+
+        const notificationUserId = user.userId || selectedScarUserId;
+
+        await createNotification({
+          userId: notificationUserId,
+          type: "admin_kyc_new",
+          title: notification.title,
+          message: notification.message,
+          data: {
+            scarAt: new Date(),
+            scarReason: scarReason.trim(),
+          },
+        });
+        console.log(
+          "✅ KYC scar notification created for user:",
+          notificationUserId
+        );
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
+
+      // Send email notification
+      try {
+        await fetch("/api/email/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: user.email,
+            userName: user.name,
+            statusType: "kyc",
+            newStatus: "scar",
+            subject: "[네이처서울] KYC 검토 결과 안내",
+            html: "", // Will be generated by the API
+          }),
+        });
+        console.log("KYC scar email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Error sending KYC scar email:", emailError);
+      }
+
+      // Close dialog and reset state
+      setIsScarDialogOpen(false);
+      setSelectedScarUserId(null);
+      setScarReason("");
+    } catch (error) {
+      console.error("Error setting scar status:", error);
     }
   };
 
@@ -1108,7 +1228,7 @@ export default function AdminKYCPage() {
             <Tabs
               value={kycTab}
               onValueChange={(value) =>
-                setKycTab(value as "pending" | "approved" | "rejected")
+                setKycTab(value as "pending" | "approved" | "rejected" | "scar")
               }
               className="space-y-4"
             >
@@ -1133,6 +1253,9 @@ export default function AdminKYCPage() {
                 >
                   <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>반려됨 ({rejectedUsers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="scar" className="flex items-center gap-2">
+                  <span>잔흔 ({scarUsers.length})</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -1184,10 +1307,22 @@ export default function AdminKYCPage() {
                               className="bg-green-600 hover:bg-green-700 min-w-0 flex-1 sm:flex-none"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleApprove(user.id);
+                                setSelectedApproveUserId(user.id);
+                                setIsApproveDialogOpen(true);
                               }}
                             >
                               승인
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-orange-600 hover:bg-orange-700 min-w-0 flex-1 sm:flex-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedScarUserId(user.id);
+                                setIsScarDialogOpen(true);
+                              }}
+                            >
+                              잔흔
                             </Button>
                             <Button
                               size="sm"
@@ -2258,6 +2393,181 @@ export default function AdminKYCPage() {
                     </Card>
                   ))
                 )}
+              </TabsContent>
+
+              <TabsContent value="scar" className="space-y-4">
+                <div className="space-y-4">
+                  {scarUsers.length === 0 ? (
+                    <p className="text-gray-500">
+                      잔흔 상태 사용자가 없습니다.
+                    </p>
+                  ) : (
+                    scarUsers.map((user) => (
+                      <Card
+                        key={user.id}
+                        className="border-orange-200 bg-orange-50"
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div>
+                                <CardTitle className="text-lg">
+                                  {user.name}
+                                </CardTitle>
+                                <CardDescription>{user.email}</CardDescription>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge className="bg-orange-100 text-orange-800 border-orange-300">
+                                잔흔 제거 필요
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                기본 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이름</span>
+                                  <span className="font-medium">
+                                    {user.name}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">이메일</span>
+                                  <span className="font-medium">
+                                    {user.email}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">연락처</span>
+                                  <span className="font-medium">
+                                    {user.contact}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    생년월일
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.birthDate}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">성별</span>
+                                  <span className="font-medium">
+                                    {user.gender === "male" ? "남성" : "여성"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-gray-900 font-semibold">
+                                상태 정보
+                              </h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">상태</span>
+                                  <span className="text-orange-600 font-medium">
+                                    잔흔 제거 필요
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    처리 시간
+                                  </span>
+                                  <span className="font-medium">
+                                    {user.scarAt
+                                      ? user.scarAt
+                                          .toDate()
+                                          .toLocaleString("ko-KR")
+                                      : "정보 없음"}
+                                  </span>
+                                </div>
+                                {user.scarReason && (
+                                  <div className="col-span-2">
+                                    <span className="text-gray-600 text-sm font-medium">
+                                      잔흔 사유:
+                                    </span>
+                                    <div className="bg-orange-50 border-orange-200 mt-1 rounded-lg border p-3">
+                                      <p className="text-orange-700 whitespace-pre-wrap text-sm">
+                                        {user.scarReason}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Address Information */}
+                          <div className="space-y-2">
+                            <h4 className="text-gray-900 font-semibold">
+                              주소 정보
+                            </h4>
+                            <div className="text-sm">
+                              <span className="font-medium">
+                                {user.province && user.district && user.dong
+                                  ? `${
+                                      provinces.find(
+                                        (p) => p.value === user.province
+                                      )?.label || user.province
+                                    } ${user.district} ${user.dong}`
+                                  : "주소 정보 없음"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Custom Fields */}
+                          {(user.eyebrowDesign || user.additionalNotes) && (
+                            <div className="space-y-4">
+                              {user.eyebrowDesign && (
+                                <div className="bg-blue-50 border-blue-200 rounded-lg border p-4">
+                                  <h4 className="text-blue-800 mb-2 text-sm font-semibold">
+                                    원하는 눈썹 디자인
+                                  </h4>
+                                  <p className="text-blue-700 whitespace-pre-wrap text-sm">
+                                    {user.eyebrowDesign}
+                                  </p>
+                                </div>
+                              )}
+                              {user.additionalNotes && (
+                                <div className="bg-purple-50 border-purple-200 rounded-lg border p-4">
+                                  <h4 className="text-purple-800 mb-2 text-sm font-semibold">
+                                    기타 사항
+                                  </h4>
+                                  <p className="text-purple-700 whitespace-pre-wrap text-sm">
+                                    {user.additionalNotes}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Marketing Consent */}
+                          {user.marketingConsent && (
+                            <div className="bg-green-50 border-green-200 rounded-lg border p-4">
+                              <h4 className="text-green-800 mb-2 text-sm font-semibold">
+                                마케팅 초상권 동의
+                              </h4>
+                              <p className="text-green-700 text-sm">
+                                {user.marketingConsent === "agree"
+                                  ? "동의함 (5만원 할인)"
+                                  : "동의하지 않음"}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -4071,6 +4381,95 @@ export default function AdminKYCPage() {
                 취소
               </Button>
               <Button onClick={handleSaveKycOpenSettings}>저장</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 승인 확인 다이얼로그 */}
+        <Dialog
+          open={isApproveDialogOpen}
+          onOpenChange={setIsApproveDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>KYC 승인 확인</DialogTitle>
+              <DialogDescription>
+                이 사용자의 KYC를 승인하시겠습니까?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600 text-sm">
+                승인 후에는 사용자가 예약을 진행할 수 있게 됩니다.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsApproveDialogOpen(false);
+                  setSelectedApproveUserId(null);
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleApprove}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                승인하기
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 잔흔 확인 다이얼로그 */}
+        <Dialog open={isScarDialogOpen} onOpenChange={setIsScarDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>잔흔 상태 설정</DialogTitle>
+              <DialogDescription>
+                잔흔 제거가 필요한 사유를 입력해 주세요. 이 내용은 사용자에게
+                전달됩니다.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-gray-700 block text-sm font-medium">
+                  잔흔 사유 *
+                </label>
+                <Textarea
+                  placeholder="예: 기존 반영구 잔흔이 남아있어 제거 후 재신청이 필요합니다."
+                  value={scarReason}
+                  onChange={(e) => setScarReason(e.target.value)}
+                  className="mt-1"
+                  rows={4}
+                />
+              </div>
+              <div className="bg-orange-50 border-orange-200 rounded-lg border p-3">
+                <p className="text-orange-700 text-sm">
+                  <strong>안내:</strong> 잔흔 상태로 설정된 사용자는 잔흔 제거
+                  후에만 재신청 할 수 있습니다.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsScarDialogOpen(false);
+                  setSelectedScarUserId(null);
+                  setScarReason("");
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleScar}
+                disabled={!scarReason.trim()}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                잔흔 설정
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

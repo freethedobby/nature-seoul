@@ -12,14 +12,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface MembershipBadgeProps {
-  kycStatus: "pending" | "approved" | "rejected" | "none";
+  kycStatus: "pending" | "approved" | "rejected" | "scar" | "none";
   treatmentDone?: boolean;
 }
 
 const MEMBERSHIP_INFO = {
   traveler: {
     icon: "🔓",
-    label: "미인증 고객",
+    label: "인증필요 회원",
     description: "인증 완료 후 예약이 가능해요.",
     variant: "secondary" as const,
   },
@@ -83,6 +83,11 @@ export function MembershipBadge({
             인증하기
           </Button>
         </Link>
+      )}
+      {kycStatus === "scar" && (
+        <div className="text-orange-600 text-sm font-medium">
+          잔흔 제거 후 재신청 필요
+        </div>
       )}
     </div>
   );

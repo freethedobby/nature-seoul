@@ -452,6 +452,8 @@ export default function DashboardPage() {
                       ? "확인중"
                       : user?.kycStatus === "rejected"
                       ? "거절됨"
+                      : user?.kycStatus === "scar"
+                      ? "잔흔 제거 필요"
                       : "미신청"}
                   </span>
                 </div>
@@ -563,6 +565,8 @@ export default function DashboardPage() {
                       ? "검토 중"
                       : user.kycStatus === "rejected"
                       ? "거절됨"
+                      : user.kycStatus === "scar"
+                      ? "잔흔 제거 필요"
                       : "미신청"}
                   </span>
                 </div>

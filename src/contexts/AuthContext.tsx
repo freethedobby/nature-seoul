@@ -6,7 +6,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
 export interface User extends FirebaseUser {
-  kycStatus?: "pending" | "approved" | "rejected" | "none";
+  kycStatus?: "pending" | "approved" | "rejected" | "scar" | "none";
   treatmentDone?: boolean;
   rejectReason?: string;
   noticeConfirmed?: boolean;
