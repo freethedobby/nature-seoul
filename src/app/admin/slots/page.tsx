@@ -287,6 +287,15 @@ export default function SlotManagement() {
   // Add state for user data (for KYC information display)
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
 
+  // Add state for user assignment dialog
+  const [showUserAssignDialog, setShowUserAssignDialog] = useState(false);
+  const [selectedSlotForAssignment, setSelectedSlotForAssignment] =
+    useState<SlotData | null>(null);
+  const [searchEmail, setSearchEmail] = useState("");
+  const [availableUsers, setAvailableUsers] = useState<UserData[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+
   // 예약 오픈 기간 설정
   const [reservationOpenSettings, setReservationOpenSettings] = useState({
     startDate: "",
@@ -904,6 +913,129 @@ export default function SlotManagement() {
     setClickTimeout(timeout);
   };
 
+  // User assignment functions
+  const handleOpenUserAssignDialog = (slot: SlotData) => {
+    setSelectedSlotForAssignment(slot);
+    setShowUserAssignDialog(true);
+    setSearchEmail("");
+    setAvailableUsers([]);
+    setSelectedUser(null);
+  };
+
+  // Add debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchEmail.trim()) {
+        searchUsers(searchEmail);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchEmail]);
+
+  const searchUsers = async (email: string) => {
+    if (!email.trim()) {
+      setAvailableUsers([]);
+      return;
+    }
+
+    setIsSearchingUsers(true);
+    try {
+      const usersQuery = query(
+        collection(db, "users"),
+        where("email", ">=", email.toLowerCase()),
+        where("email", "<=", email.toLowerCase() + "\uf8ff")
+      );
+
+      const usersSnapshot = await getDocs(usersQuery);
+      const users: UserData[] = [];
+
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Only include approved users (kycStatus === "approved")
+        if (data.kycStatus === "approved") {
+          users.push({
+            id: doc.id,
+            userId: data.userId || doc.id,
+            email: data.email || "",
+            name: data.name || "",
+            gender: data.gender,
+            birthYear: data.birthYear,
+            contact: data.contact || "",
+            district: data.district,
+            detailedAddress: data.detailedAddress,
+            skinType: data.skinType,
+            photoURLs: data.photoURLs,
+            photoURL: data.photoURL,
+            photoType: data.photoType,
+            kycStatus: data.kycStatus || "pending",
+            hasPreviousTreatment: data.hasPreviousTreatment,
+            rejectReason: data.rejectReason,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            approvedAt: data.approvedAt?.toDate?.() || undefined,
+            rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+          });
+        }
+      });
+
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      alert("사용자 검색 중 오류가 발생했습니다.");
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleAssignUserToSlot = async () => {
+    if (!selectedSlotForAssignment || !selectedUser) {
+      alert("슬롯과 사용자를 선택해주세요.");
+      return;
+    }
+
+    try {
+      // Create reservation document
+      const reservationData = {
+        slotId: selectedSlotForAssignment.id,
+        userId: selectedUser.userId,
+        userEmail: selectedUser.email,
+        userName: selectedUser.name,
+        status: "approved", // Admin-assigned reservations are automatically approved
+        createdAt: Timestamp.now(),
+        date: format(new Date(selectedSlotForAssignment.start), "yyyy. M. d."),
+        time: new Date(selectedSlotForAssignment.start).toLocaleTimeString(
+          "ko-KR",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        ),
+      };
+
+      // Add reservation to collection
+      await addDoc(collection(db, "reservations"), reservationData);
+
+      // Update slot status to booked
+      await setDoc(
+        doc(db, "slots", selectedSlotForAssignment.id),
+        { status: "booked" },
+        { merge: true }
+      );
+
+      alert(`${selectedUser.name}님이 해당 슬롯에 배정되었습니다.`);
+
+      // Close dialog and reset state
+      setShowUserAssignDialog(false);
+      setSelectedSlotForAssignment(null);
+      setSearchEmail("");
+      setAvailableUsers([]);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error assigning user to slot:", error);
+      alert("사용자 배정 중 오류가 발생했습니다.");
+    }
+  };
+
   // Map: yyyy-mm-dd string -> count of available slots (use local date)
   const slotCountByDate: Record<string, number> = {};
   slots.forEach((slot) => {
@@ -1294,6 +1426,20 @@ export default function SlotManagement() {
                                 reservation.userName ||
                                 "-"}
                             </span>
+                          )}
+
+                          {/* Assign User button for available slots */}
+                          {slot.status === "available" && (
+                            <button
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenUserAssignDialog(slot);
+                              }}
+                              title="사용자 배정하기"
+                            >
+                              사용자 배정
+                            </button>
                           )}
                         </div>
                       );
@@ -2842,6 +2988,122 @@ export default function SlotManagement() {
               취소
             </Button>
             <Button onClick={handleSaveReservationOpenSettings}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Assignment Dialog */}
+      <Dialog
+        open={showUserAssignDialog}
+        onOpenChange={setShowUserAssignDialog}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>사용자 배정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedSlotForAssignment && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-gray-700 text-sm font-medium">
+                  선택된 슬롯:
+                </p>
+                <p className="text-lg font-bold">
+                  {format(
+                    new Date(selectedSlotForAssignment.start),
+                    "yyyy년 M월 d일 (EEEE)",
+                    { locale: ko }
+                  )}
+                </p>
+                <p className="text-lg">
+                  {new Date(selectedSlotForAssignment.start).toLocaleTimeString(
+                    "ko-KR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="text-gray-700 mb-2 block text-sm font-medium">
+                이메일 검색 (승인된 사용자만)
+              </label>
+              <Input
+                type="email"
+                placeholder="사용자 이메일을 입력하세요"
+                value={searchEmail}
+                onChange={(e) => {
+                  setSearchEmail(e.target.value);
+                  searchUsers(e.target.value);
+                }}
+              />
+            </div>
+
+            {isSearchingUsers && (
+              <div className="py-2 text-center">
+                <div className="text-gray-500 text-sm">검색 중...</div>
+              </div>
+            )}
+
+            {availableUsers.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-gray-700 block text-sm font-medium">
+                  사용자 선택:
+                </label>
+                <div className="max-h-40 space-y-1 overflow-y-auto">
+                  {availableUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                        selectedUser?.id === user.id
+                          ? "bg-blue-50 border-blue-300"
+                          : "border-gray-200 hover:bg-gray-50 bg-white"
+                      }`}
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-gray-600 text-sm">{user.email}</div>
+                      <div className="text-gray-500 text-xs">
+                        연락처: {user.contact || "없음"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {searchEmail &&
+              !isSearchingUsers &&
+              availableUsers.length === 0 && (
+                <div className="py-4 text-center">
+                  <div className="text-gray-500 text-sm">
+                    승인된 사용자를 찾을 수 없습니다.
+                  </div>
+                </div>
+              )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowUserAssignDialog(false);
+                setSearchEmail("");
+                setAvailableUsers([]);
+                setSelectedUser(null);
+              }}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleAssignUserToSlot}
+              disabled={!selectedUser}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              배정하기
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

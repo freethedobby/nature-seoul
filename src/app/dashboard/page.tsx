@@ -28,6 +28,7 @@ import Link from "next/link";
 import { MembershipBadge } from "@/components/MembershipBadge";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
+import LocationDisplay from "@/components/LocationDisplay";
 import TestNotificationButton from "@/components/TestNotificationButton";
 import NoticeModal from "@/components/NoticeModal";
 import { auth } from "@/lib/firebase";
@@ -915,6 +916,9 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </button>
+
+                    {/* Location Display - shows 1 day before procedure */}
+                    <LocationDisplay reservation={reservation} />
                   </div>
                 ) : (
                   <Button
