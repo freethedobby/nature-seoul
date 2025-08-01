@@ -12,11 +12,11 @@ import {
   collection,
   doc,
   updateDoc,
-  addDoc,
   onSnapshot,
   query,
   where,
   getDoc,
+  runTransaction,
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -506,18 +506,37 @@ export default function UserReservePage() {
         paymentDeadline: paymentDeadline,
       };
 
-      // Create reservation and get the document reference
-      const docRef = await addDoc(
-        collection(db, "reservations"),
-        reservationData
-      );
+      // Use transaction to prevent race conditions
+      const result = await runTransaction(db, async (transaction) => {
+        // First, check if slot is still available
+        const slotRef = doc(db, "slots", slot.id);
+        const slotDoc = await transaction.get(slotRef);
 
-      // Update slot status
-      await updateDoc(doc(db, "slots", slot.id), {
-        status: "booked",
+        if (!slotDoc.exists()) {
+          throw new Error("슬롯을 찾을 수 없습니다.");
+        }
+
+        const slotData = slotDoc.data();
+        if (slotData.status !== "available") {
+          throw new Error("이미 예약된 슬롯입니다.");
+        }
+
+        // Note: We rely on the slot status check above as the primary prevention
+        // since transactions can't use queries for additional validation
+
+        // Create reservation document
+        const reservationRef = doc(collection(db, "reservations"));
+        transaction.set(reservationRef, reservationData);
+
+        // Update slot status atomically
+        transaction.update(slotRef, {
+          status: "booked",
+        });
+
+        return { reservationId: reservationRef.id };
       });
 
-      // Create admin notification
+      // Create admin notification (outside transaction for performance)
       await createNotification({
         userId: "admin",
         type: "admin_reservation_new",
@@ -529,7 +548,7 @@ export default function UserReservePage() {
 
       // Immediately update the reservation state with the new reservation
       const newReservation: ReservationData = {
-        id: docRef.id,
+        id: result.reservationId,
         ...reservationData,
       };
       setReservation(newReservation);
@@ -544,8 +563,18 @@ export default function UserReservePage() {
 
       setShowReserveBtn(null);
     } catch (error) {
-      console.error("예약 실패:", error);
-      alert("예약에 실패했습니다. 다시 시도해주세요.");
+      console.error("Reservation error:", error);
+      if (error instanceof Error) {
+        if (error.message === "이미 예약된 슬롯입니다.") {
+          alert(
+            "죄송합니다. 다른 사용자가 이미 이 시간을 예약했습니다. 다른 시간을 선택해 주세요."
+          );
+        } else {
+          alert(`예약 중 오류가 발생했습니다: ${error.message}`);
+        }
+      } else {
+        alert("예약 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      }
     } finally {
       setReserving(false);
     }

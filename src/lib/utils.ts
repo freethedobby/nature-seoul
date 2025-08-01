@@ -19,5 +19,14 @@ export function isDevelopment(): boolean {
 
 // 테스트 모드 체크 (개발 환경에서 모든 제한 우회)
 export function isTestMode(): boolean {
-  return isDevelopment();
+  if (!isDevelopment()) return false;
+  
+  // 브라우저 환경에서만 추가 체크
+  if (typeof window !== 'undefined') {
+    const hasTestParam = window.location.search.includes('test=true');
+    const hasTestFlag = localStorage.getItem('enableTestMode') === 'true';
+    return hasTestParam || hasTestFlag;
+  }
+  
+  return true; // 서버 사이드에서는 개발 환경이면 테스트 모드
 }

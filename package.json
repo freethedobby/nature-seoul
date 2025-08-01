@@ -11,7 +11,11 @@
     "add-test-data": "node add-test-reservation.js",
     "add-test-kyc": "node add-test-kyc.js",
     "update-address-data": "node scripts/update-address-data.js",
-    "check-missing-dongs": "node scripts/check-missing-dongs.js"
+    "check-missing-dongs": "node scripts/check-missing-dongs.js",
+    "test:emulator": "firebase emulators:start --project=test-time-scheduling",
+    "test:emulator:ui": "firebase emulators:start --project=test-time-scheduling",
+    "test:seed": "node scripts/seed-test-data.js",
+    "test:clear": "node scripts/clear-test-data.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

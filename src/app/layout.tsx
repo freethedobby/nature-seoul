@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Script from "next/script";
 import { GA_TRACKING_ID } from "@/lib/gtag";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import TestModeToggle from "@/components/TestModeToggle";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -90,6 +91,7 @@ export default function RootLayout({
         <AuthProvider>
           <GoogleAnalytics />
           {children}
+          <TestModeToggle />
         </AuthProvider>
       </body>
     </html>
