@@ -821,9 +821,29 @@ export default function SlotManagement() {
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
-      await deleteDoc(doc(db, "slots", slotId));
+      // First, find and delete any reservations for this slot
+      const reservationQuery = query(
+        collection(db, "reservations"),
+        where("slotId", "==", slotId)
+      );
+      const reservationSnapshot = await getDocs(reservationQuery);
+
+      // Delete all reservations for this slot
+      const deletePromises = reservationSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+
+      // Delete the slot and all its reservations
+      await Promise.all([
+        deleteDoc(doc(db, "slots", slotId)),
+        ...deletePromises,
+      ]);
+
+      console.log(
+        `Deleted slot ${slotId} and ${deletePromises.length} associated reservations`
+      );
     } catch (error) {
-      console.error("Error deleting slot:", error);
+      console.error("Error deleting slot and reservations:", error);
     }
   };
 
