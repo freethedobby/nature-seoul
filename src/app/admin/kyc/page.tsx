@@ -3116,13 +3116,13 @@ export default function AdminKYCPage() {
         >
           <DialogContent
             className={`
-              h-full max-h-[90vh] w-full
-              max-w-4xl overflow-y-auto rounded-lg
-              !bg-white p-0
-              sm:max-h-[85vh]
-              sm:max-w-2xl
-              sm:p-6
-            `}
+            h-full max-h-[90vh] w-full
+            max-w-4xl overflow-y-auto rounded-lg
+            !bg-white p-0
+            sm:max-h-[85vh]
+            sm:max-w-2xl
+            sm:p-6
+          `}
             style={{
               // 모바일에서 적당한 크기로 조정
               ...(typeof window !== "undefined" && window.innerWidth < 640
