@@ -84,6 +84,8 @@ interface ReservationData {
   userId: string;
   userEmail: string;
   userName?: string;
+  date?: string;
+  time?: string;
   status:
     | "pending"
     | "payment_required"
@@ -496,28 +498,41 @@ export default function SlotManagement() {
       );
     });
 
-    if (!selectedDate || slotsForSelectedDayLocal.length === 0) {
+    if (!selectedDate) {
       setReservations([]);
       setKycNames({});
       setKycContacts({});
       return;
     }
-    const slotIds = slotsForSelectedDayLocal.map((slot) => slot.id);
-    if (slotIds.length === 0) {
-      setReservations([]);
-      setKycNames({});
-      setKycContacts({});
-      return;
-    }
+
+    // 날짜 기반으로 예약 조회 (슬롯이 없어도 표시)
+    const dateString = `${selectedDate.getFullYear()}. ${
+      selectedDate.getMonth() + 1
+    }. ${selectedDate.getDate()}.`;
+    console.log("🔍 Searching reservations for date:", dateString);
+
     const q = query(
       collection(db, "reservations"),
-      where("slotId", "in", slotIds)
+      where("date", "==", dateString)
     );
+
     getDocs(q).then(async (snap) => {
       const resList: ReservationData[] = [];
       const userIds = new Set<string>();
+
+      console.log(`Found ${snap.size} reservations for ${dateString}`);
+
       snap.forEach((docData) => {
         const data = docData.data();
+        console.log("Reservation data:", {
+          id: docData.id,
+          date: data.date,
+          time: data.time,
+          status: data.status,
+          slotId: data.slotId,
+          userName: data.userName,
+        });
+
         // Only include approved reservations
         if (data.status === "approved") {
           resList.push({
@@ -526,12 +541,16 @@ export default function SlotManagement() {
             userId: data.userId,
             userEmail: data.userEmail,
             userName: data.userName,
+            date: data.date,
+            time: data.time,
             status: data.status,
             createdAt: data.createdAt?.toDate?.() || new Date(),
           });
           if (data.userId) userIds.add(data.userId);
         }
       });
+
+      console.log(`Approved reservations: ${resList.length}`);
       setReservations(resList);
       // Fetch full user data for all userIds
       const kycNameMap: Record<string, string> = {};
@@ -602,6 +621,8 @@ export default function SlotManagement() {
             userId: data.userId,
             userEmail: data.userEmail,
             userName: data.userName,
+            date: data.date,
+            time: data.time,
             status: data.status,
             createdAt: data.createdAt?.toDate?.() || new Date(),
           });
@@ -1007,6 +1028,33 @@ export default function SlotManagement() {
     }
   };
 
+  // Fix slot-reservation synchronization
+  const fixSlotReservationSync = async () => {
+    try {
+      const slotsToUpdate = slotsForSelectedDay.filter((slot) => {
+        const reservation = reservations.find((r) => r.slotId === slot.id);
+        return slot.status === "available" && reservation !== undefined;
+      });
+
+      if (slotsToUpdate.length > 0) {
+        console.log(`Fixing ${slotsToUpdate.length} slots with sync issues...`);
+
+        for (const slot of slotsToUpdate) {
+          await setDoc(
+            doc(db, "slots", slot.id),
+            { status: "booked" },
+            { merge: true }
+          );
+        }
+
+        alert(`${slotsToUpdate.length}개 슬롯의 동기화 문제를 해결했습니다.`);
+      }
+    } catch (error) {
+      console.error("Error fixing slot synchronization:", error);
+      alert("동기화 문제 해결 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleAssignUserToSlot = async () => {
     if (!selectedSlotForAssignment || !selectedUser) {
       alert("슬롯과 사용자를 선택해주세요.");
@@ -1362,47 +1410,58 @@ export default function SlotManagement() {
                   )}
                 </div>
               </div>
-              {/* Time slots for selected day */}
+              {/* Time slots and reservations for selected day */}
               <div className="mt-6 w-full">
                 <div className="text-gray-700 mb-2 text-sm font-semibold">
-                  예약 슬롯
+                  예약 슬롯 및 예약
                 </div>
                 <div className="text-gray-500 mb-3 text-xs">
                   슬롯을 더블클릭하면 삭제할 수 있습니다.
                 </div>
-                {slotsForSelectedDay.length === 0 ? (
-                  <div className="text-gray-400 py-4 text-center">
-                    이 날에는 예약 슬롯이 없습니다.
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {slotsForSelectedDay.map((slot) => {
-                      const reservation = reservations.find(
-                        (r) => r.slotId === slot.id
-                      );
-                      return (
-                        <div
-                          key={slot.id}
-                          className="relative flex min-w-[110px] flex-col items-center"
+
+                {/* Display slots */}
+                {slotsForSelectedDay.length > 0 && (
+                  <div className="mb-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-gray-600 text-xs font-medium">
+                        생성된 슬롯
+                      </h4>
+                      {slotsForSelectedDay.some((slot) => {
+                        const reservation = reservations.find(
+                          (r) => r.slotId === slot.id
+                        );
+                        return (
+                          slot.status === "available" &&
+                          reservation !== undefined
+                        );
+                      }) && (
+                        <button
+                          onClick={fixSlotReservationSync}
+                          className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 rounded border px-2 py-1 text-xs font-medium transition"
                         >
-                          <button
-                            className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
-                            onClick={(event) => {
-                              handleSingleClickSlot(slot, event);
-                            }}
-                            onDoubleClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              if (
-                                window.confirm("이 슬롯을 삭제하시겠습니까?")
-                              ) {
-                                handleDeleteSlot(slot.id);
-                              }
-                            }}
-                            onTouchStart={(event) => {
-                              const now = Date.now();
-                              const lastTouch = slotTouchRef.current[slot.id];
-                              if (lastTouch && now - lastTouch < 300) {
+                          동기화 수정
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {slotsForSelectedDay.map((slot) => {
+                        const reservation = reservations.find(
+                          (r) => r.slotId === slot.id
+                        );
+                        // Check if slot status needs to be synchronized
+                        const hasReservation = reservation !== undefined;
+                        const isSlotAvailable = slot.status === "available";
+                        return (
+                          <div
+                            key={slot.id}
+                            className="relative flex min-w-[110px] flex-col items-center"
+                          >
+                            <button
+                              className="border-gray-300 shadow-sm hover:bg-green-50 focus:ring-green-400 rounded-full border bg-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2"
+                              onClick={(event) => {
+                                handleSingleClickSlot(slot, event);
+                              }}
+                              onDoubleClick={(event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
                                 if (
@@ -1410,62 +1469,175 @@ export default function SlotManagement() {
                                 ) {
                                   handleDeleteSlot(slot.id);
                                 }
-                                slotTouchRef.current[slot.id] = 0;
-                              } else {
-                                slotTouchRef.current[slot.id] = now;
-                              }
-                            }}
-                            title="더블클릭/더블탭하여 삭제"
-                          >
-                            {new Date(slot.start).toLocaleTimeString("ko-KR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </button>
-                          {/* 예약자 이름 badge below the button */}
-                          {slot.status === "booked" && reservation && (
-                            <span
-                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
-                              onClick={() => {
-                                setSelectedReservationDetail(reservation);
-                                setIsReservationDetailDialogOpen(true);
                               }}
-                              tabIndex={0}
-                              role="button"
-                              onKeyDown={(event) => {
-                                if (
-                                  event.key === "Enter" ||
-                                  event.key === " "
-                                ) {
-                                  setSelectedReservationDetail(reservation);
-                                  setIsReservationDetailDialogOpen(true);
+                              onTouchStart={(event) => {
+                                const now = Date.now();
+                                const lastTouch = slotTouchRef.current[slot.id];
+                                if (lastTouch && now - lastTouch < 300) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  if (
+                                    window.confirm(
+                                      "이 슬롯을 삭제하시겠습니까?"
+                                    )
+                                  ) {
+                                    handleDeleteSlot(slot.id);
+                                  }
+                                  slotTouchRef.current[slot.id] = 0;
+                                } else {
+                                  slotTouchRef.current[slot.id] = now;
                                 }
                               }}
+                              title="더블클릭/더블탭하여 삭제"
                             >
-                              {kycNames[reservation.userId] ||
-                                reservation.userName ||
-                                "-"}
-                            </span>
-                          )}
-
-                          {/* Assign User button for available slots */}
-                          {slot.status === "available" && (
-                            <button
-                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenUserAssignDialog(slot);
-                              }}
-                              title="사용자 배정하기"
-                            >
-                              사용자 배정
+                              {new Date(slot.start).toLocaleTimeString(
+                                "ko-KR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {/* 예약자 이름 badge below the button */}
+                            {slot.status === "booked" && reservation && (
+                              <span
+                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                                onClick={() => {
+                                  setSelectedReservationDetail(reservation);
+                                  setIsReservationDetailDialogOpen(true);
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                  ) {
+                                    setSelectedReservationDetail(reservation);
+                                    setIsReservationDetailDialogOpen(true);
+                                  }
+                                }}
+                              >
+                                {kycNames[reservation.userId] ||
+                                  reservation.userName ||
+                                  "-"}
+                              </span>
+                            )}
+
+                            {/* Assign User button for available slots */}
+                            {isSlotAvailable && !hasReservation && (
+                              <button
+                                className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 mt-1 mb-1 inline-block cursor-pointer select-none rounded-full border px-3 py-1 text-center text-xs font-semibold transition"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenUserAssignDialog(slot);
+                                }}
+                                title="사용자 배정하기"
+                              >
+                                사용자 배정
+                              </button>
+                            )}
+
+                            {/* Show sync issue warning */}
+                            {isSlotAvailable && hasReservation && (
+                              <div className="bg-red-50 text-red-700 border-red-200 mt-1 mb-1 inline-block rounded-full border px-3 py-1 text-center text-xs font-semibold">
+                                ⚠️ 동기화 필요
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
+
+                {/* Display reservations (including orphaned ones) */}
+                {reservations.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-gray-600 mb-2 text-xs font-medium">
+                      모든 예약 ({reservations.length}개)
+                    </h4>
+                    <div className="space-y-2">
+                      {reservations.map((reservation) => {
+                        const matchingSlot = slotsForSelectedDay.find(
+                          (slot) => slot.id === reservation.slotId
+                        );
+                        return (
+                          <div
+                            key={reservation.id}
+                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                              matchingSlot
+                                ? "bg-green-50 border-green-200 hover:bg-green-100"
+                                : "bg-orange-50 border-orange-200 hover:bg-orange-100"
+                            }`}
+                            onClick={() => {
+                              setSelectedReservationDetail(reservation);
+                              setIsReservationDetailDialogOpen(true);
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-semibold">
+                                  {kycNames[reservation.userId] ||
+                                    reservation.userName ||
+                                    "Unknown"}
+                                </div>
+                                <div className="text-gray-600 text-xs">
+                                  {reservation.userEmail}
+                                </div>
+                                <div className="text-gray-500 text-xs">
+                                  시간: {reservation.time || "시간 정보 없음"}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div
+                                  className={`rounded px-2 py-1 text-xs ${
+                                    matchingSlot
+                                      ? "bg-green-200 text-green-800"
+                                      : "bg-orange-200 text-orange-800"
+                                  }`}
+                                >
+                                  {matchingSlot ? "슬롯 연결됨" : "슬롯 없음"}
+                                </div>
+                                {!matchingSlot && (
+                                  <div className="text-orange-600 mt-1 text-xs">
+                                    슬롯 ID: {reservation.slotId}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {slotsForSelectedDay.length === 0 &&
+                  reservations.length === 0 && (
+                    <div className="text-gray-400 py-4 text-center">
+                      <div className="mb-2">
+                        이 날에는 예약 슬롯과 예약이 없습니다.
+                      </div>
+                      <div className="text-xs">
+                        캘린더를 더블클릭하여 슬롯을 생성하세요.
+                      </div>
+                    </div>
+                  )}
+
+                {slotsForSelectedDay.length === 0 &&
+                  reservations.length > 0 && (
+                    <div className="bg-yellow-50 border-yellow-200 mb-4 rounded-lg border p-3">
+                      <div className="text-yellow-800 mb-2 text-sm font-medium">
+                        ⚠️ 슬롯 없이 예약만 존재합니다
+                      </div>
+                      <div className="text-yellow-700 text-xs">
+                        이 날짜에는 슬롯이 생성되지 않았지만 예약이 있습니다.
+                        슬롯을 생성하거나 예약을 다른 날로 이동해야 할 수
+                        있습니다.
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
 
