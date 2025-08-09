@@ -720,7 +720,8 @@ export default function SlotManagement() {
 
         const startDate = new Date(customSlot.start);
 
-        // Create multiple slots if numberOfSlots > 1
+        // Check for overlapping slots before creating
+        const slotsToCreate: { start: Date; end: Date }[] = [];
         for (let i = 0; i < customSlot.numberOfSlots; i++) {
           const slotStart = new Date(
             startDate.getTime() + i * customSlot.duration * 60 * 1000
@@ -728,10 +729,45 @@ export default function SlotManagement() {
           const slotEnd = new Date(
             slotStart.getTime() + customSlot.duration * 60 * 1000
           );
+          slotsToCreate.push({ start: slotStart, end: slotEnd });
+        }
 
+        // Check for existing overlapping slots
+        const existingSlots = slots.filter((existingSlot) => {
+          return slotsToCreate.some((newSlot) => {
+            const existingStart = new Date(existingSlot.start);
+            const existingEnd = new Date(existingSlot.end);
+            // Check if times overlap
+            return (
+              (newSlot.start >= existingStart && newSlot.start < existingEnd) ||
+              (newSlot.end > existingStart && newSlot.end <= existingEnd) ||
+              (newSlot.start <= existingStart && newSlot.end >= existingEnd)
+            );
+          });
+        });
+
+        if (existingSlots.length > 0) {
+          const conflictTimes = existingSlots
+            .map((slot) =>
+              new Date(slot.start).toLocaleString("ko-KR", {
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            )
+            .join(", ");
+          alert(
+            `이미 다음 시간대에 슬롯이 존재합니다:\n${conflictTimes}\n\n다른 시간을 선택해주세요.`
+          );
+          return;
+        }
+
+        // Create slots if no conflicts
+        for (const slotData of slotsToCreate) {
           await addDoc(collection(db, "slots"), {
-            start: Timestamp.fromDate(slotStart),
-            end: Timestamp.fromDate(slotEnd),
+            start: Timestamp.fromDate(slotData.start),
+            end: Timestamp.fromDate(slotData.end),
             type: "custom",
             status: "available",
             createdBy: user?.email,
@@ -774,6 +810,9 @@ export default function SlotManagement() {
         // Get current date for generating slots
         const currentDate = new Date();
 
+        // Collect all slots to be created first for overlap checking
+        const recurringeSlotsToCreate: { start: Date; end: Date }[] = [];
+
         // Generate slots for the next 4 weeks (28 days)
         for (let dayOffset = 0; dayOffset < 28; dayOffset++) {
           const targetDate = new Date(currentDate);
@@ -800,25 +839,69 @@ export default function SlotManagement() {
                 slotEnd.getMinutes() + recurringSlot.intervalMinutes
               );
 
-              // Only create slots that are in the future
+              // Only include slots that are in the future
               if (slotStart > new Date()) {
-                await addDoc(collection(db, "slots"), {
-                  start: Timestamp.fromDate(slotStart),
-                  end: Timestamp.fromDate(slotEnd),
-                  type: "recurring",
-                  recurrence: {
-                    daysOfWeek: recurringSlot.daysOfWeek,
-                    startTime: recurringSlot.startTime,
-                    endTime: recurringSlot.endTime,
-                    intervalMinutes: recurringSlot.intervalMinutes,
-                  },
-                  status: "available",
-                  createdBy: user?.email,
-                  createdAt: Timestamp.now(),
+                recurringeSlotsToCreate.push({
+                  start: slotStart,
+                  end: slotEnd,
                 });
               }
             }
           }
+        }
+
+        // Check for existing overlapping slots
+        const conflictingSlots = slots.filter((existingSlot) => {
+          return recurringeSlotsToCreate.some((newSlot) => {
+            const existingStart = new Date(existingSlot.start);
+            const existingEnd = new Date(existingSlot.end);
+            // Check if times overlap
+            return (
+              (newSlot.start >= existingStart && newSlot.start < existingEnd) ||
+              (newSlot.end > existingStart && newSlot.end <= existingEnd) ||
+              (newSlot.start <= existingStart && newSlot.end >= existingEnd)
+            );
+          });
+        });
+
+        if (conflictingSlots.length > 0) {
+          const conflictTimes = conflictingSlots
+            .slice(0, 5)
+            .map((slot) =>
+              new Date(slot.start).toLocaleString("ko-KR", {
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            )
+            .join(", ");
+          const moreConflicts =
+            conflictingSlots.length > 5
+              ? ` 외 ${conflictingSlots.length - 5}개`
+              : "";
+          alert(
+            `이미 다음 시간대에 슬롯이 존재합니다:\n${conflictTimes}${moreConflicts}\n\n다른 시간대나 요일을 선택해주세요.`
+          );
+          return;
+        }
+
+        // Create all slots if no conflicts
+        for (const slotData of recurringeSlotsToCreate) {
+          await addDoc(collection(db, "slots"), {
+            start: Timestamp.fromDate(slotData.start),
+            end: Timestamp.fromDate(slotData.end),
+            type: "recurring",
+            recurrence: {
+              daysOfWeek: recurringSlot.daysOfWeek,
+              startTime: recurringSlot.startTime,
+              endTime: recurringSlot.endTime,
+              intervalMinutes: recurringSlot.intervalMinutes,
+            },
+            status: "available",
+            createdBy: user?.email,
+            createdAt: Timestamp.now(),
+          });
         }
       }
 
