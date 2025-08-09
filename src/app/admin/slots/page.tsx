@@ -487,17 +487,6 @@ export default function SlotManagement() {
 
   // Fetch reservations for slots of the selected day
   useEffect(() => {
-    // Calculate slots for the selected day inside the effect
-    const slotsForSelectedDayLocal = slots.filter((slot) => {
-      if (!selectedDate) return false;
-      const slotDate = new Date(slot.start);
-      return (
-        slotDate.getFullYear() === selectedDate.getFullYear() &&
-        slotDate.getMonth() === selectedDate.getMonth() &&
-        slotDate.getDate() === selectedDate.getDate()
-      );
-    });
-
     if (!selectedDate) {
       setReservations([]);
       setKycNames({});
