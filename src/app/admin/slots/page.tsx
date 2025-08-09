@@ -73,9 +73,12 @@ interface SlotData {
     endTime: string;
     intervalMinutes: number;
   };
-  status: "available" | "booked";
+  status: "available" | "booked" | "deleted";
   createdBy: string;
   createdAt: Date;
+  deletedAt?: Date;
+  deletedBy?: string;
+  deletedReason?: string;
 }
 
 interface ReservationData {
@@ -94,6 +97,9 @@ interface ReservationData {
     | "rejected"
     | "cancelled";
   createdAt: Date;
+  cancelledAt?: Date;
+  cancelledBy?: string;
+  cancelReason?: string;
 }
 
 interface UserData {
@@ -298,6 +304,10 @@ export default function SlotManagement() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
+  // Add state for viewing deleted slots
+  const [showDeletedSlots, setShowDeletedSlots] = useState(false);
+  const [deletedSlots, setDeletedSlots] = useState<SlotData[]>([]);
+
   // 예약 오픈 기간 설정
   const [reservationOpenSettings, setReservationOpenSettings] = useState({
     startDate: "",
@@ -392,6 +402,9 @@ export default function SlotManagement() {
       const slotData: SlotData[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+        // Skip deleted slots
+        if (data.status === "deleted") return;
+
         const slot = {
           id: doc.id,
           start: data.start.toDate(), // Convert Firestore Timestamp to Date
@@ -401,6 +414,9 @@ export default function SlotManagement() {
           status: data.status,
           createdBy: data.createdBy,
           createdAt: data.createdAt.toDate(), // Convert Firestore Timestamp to Date
+          deletedAt: data.deletedAt?.toDate?.(),
+          deletedBy: data.deletedBy,
+          deletedReason: data.deletedReason,
         } as SlotData;
         slotData.push(slot);
       });
@@ -914,29 +930,50 @@ export default function SlotManagement() {
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
-      // First, find and delete any reservations for this slot
+      // Check if this slot has any reservations
       const reservationQuery = query(
         collection(db, "reservations"),
         where("slotId", "==", slotId)
       );
       const reservationSnapshot = await getDocs(reservationQuery);
+      const hasReservations = !reservationSnapshot.empty;
 
-      // Delete all reservations for this slot
-      const deletePromises = reservationSnapshot.docs.map((doc) =>
-        deleteDoc(doc.ref)
+      // Mark slot as deleted instead of actually deleting it
+      await setDoc(
+        doc(db, "slots", slotId),
+        {
+          status: "deleted",
+          deletedAt: Timestamp.now(),
+          deletedBy: user?.email,
+          deletedReason: hasReservations
+            ? `예약 ${reservationSnapshot.size}개와 함께 삭제됨`
+            : "관리자에 의해 삭제됨",
+        },
+        { merge: true }
       );
 
-      // Delete the slot and all its reservations
-      await Promise.all([
-        deleteDoc(doc(db, "slots", slotId)),
-        ...deletePromises,
-      ]);
+      // Mark associated reservations as cancelled
+      if (hasReservations) {
+        const updatePromises = reservationSnapshot.docs.map((doc) =>
+          setDoc(
+            doc.ref,
+            {
+              status: "cancelled",
+              cancelledAt: Timestamp.now(),
+              cancelledBy: user?.email,
+              cancelReason: "슬롯 삭제로 인한 자동 취소",
+            },
+            { merge: true }
+          )
+        );
+        await Promise.all(updatePromises);
+      }
 
       console.log(
-        `Deleted slot ${slotId} and ${deletePromises.length} associated reservations`
+        `Soft deleted slot ${slotId} and marked ${reservationSnapshot.size} reservations as cancelled`
       );
     } catch (error) {
-      console.error("Error deleting slot and reservations:", error);
+      console.error("Error soft deleting slot and reservations:", error);
     }
   };
 
@@ -1124,6 +1161,47 @@ export default function SlotManagement() {
     } catch (error) {
       console.error("Error fixing slot synchronization:", error);
       alert("동기화 문제 해결 중 오류가 발생했습니다.");
+    }
+  };
+
+  // Load deleted slots
+  const loadDeletedSlots = async () => {
+    try {
+      const deletedSlotsQuery = query(
+        collection(db, "slots"),
+        where("status", "==", "deleted")
+      );
+      const snapshot = await getDocs(deletedSlotsQuery);
+      const deletedSlotData: SlotData[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        deletedSlotData.push({
+          id: doc.id,
+          start: data.start.toDate(),
+          end: data.end.toDate(),
+          type: data.type,
+          recurrence: data.recurrence,
+          status: data.status,
+          createdBy: data.createdBy,
+          createdAt: data.createdAt.toDate(),
+          deletedAt: data.deletedAt?.toDate?.(),
+          deletedBy: data.deletedBy,
+          deletedReason: data.deletedReason,
+        } as SlotData);
+      });
+
+      deletedSlotData.sort(
+        (a, b) =>
+          new Date(b.deletedAt || 0).getTime() -
+          new Date(a.deletedAt || 0).getTime()
+      );
+
+      setDeletedSlots(deletedSlotData);
+      setShowDeletedSlots(true);
+    } catch (error) {
+      console.error("Error loading deleted slots:", error);
+      alert("삭제된 슬롯 조회 중 오류가 발생했습니다.");
     }
   };
 
@@ -1319,6 +1397,30 @@ export default function SlotManagement() {
                 className="text-xs"
               >
                 편집
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 추가 관리 기능 카드 */}
+        <div className="mb-6">
+          <div className="border-gray-200 shadow-sm hover:shadow-md rounded-xl border bg-white p-4 transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-gray-900 text-sm font-semibold">
+                  삭제된 슬롯 관리
+                </h3>
+                <p className="text-gray-500 mt-1 text-xs">
+                  삭제된 슬롯 이력을 확인하고 관리합니다
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadDeletedSlots}
+                className="text-xs"
+              >
+                삭제 이력 보기
               </Button>
             </div>
           </div>
@@ -3367,6 +3469,127 @@ export default function SlotManagement() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               배정하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deleted Slots Dialog */}
+      <Dialog open={showDeletedSlots} onOpenChange={setShowDeletedSlots}>
+        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              삭제된 슬롯 이력
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {deletedSlots.length === 0 ? (
+              <div className="text-gray-500 py-8 text-center">
+                삭제된 슬롯이 없습니다.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {deletedSlots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="bg-red-50 border-red-200 rounded-lg border p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="text-red-900 font-semibold">
+                          {format(
+                            new Date(slot.start),
+                            "yyyy년 M월 d일 (EEEE) HH:mm",
+                            { locale: ko }
+                          )}
+                        </div>
+                        <div className="text-red-700 mt-1 text-sm">
+                          기간: {format(new Date(slot.start), "HH:mm")} -{" "}
+                          {format(new Date(slot.end), "HH:mm")}
+                        </div>
+                        <div className="text-red-600 text-sm">
+                          유형:{" "}
+                          {slot.type === "custom" ? "맞춤 슬롯" : "반복 슬롯"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="bg-red-200 text-red-800 rounded px-2 py-1 text-xs font-medium">
+                          삭제됨
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-red-200 mt-3 border-t pt-3">
+                      <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+                        <div>
+                          <span className="text-red-700 font-medium">
+                            삭제일:
+                          </span>
+                          <div className="text-red-600">
+                            {slot.deletedAt
+                              ? slot.deletedAt.toLocaleString("ko-KR", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "정보 없음"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-red-700 font-medium">
+                            삭제자:
+                          </span>
+                          <div className="text-red-600">
+                            {slot.deletedBy || "정보 없음"}
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
+                          <span className="text-red-700 font-medium">
+                            삭제 사유:
+                          </span>
+                          <div className="text-red-600">
+                            {slot.deletedReason || "사유 없음"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-red-700 font-medium">
+                            생성자:
+                          </span>
+                          <div className="text-red-600">
+                            {slot.createdBy || "정보 없음"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-red-700 font-medium">
+                            생성일:
+                          </span>
+                          <div className="text-red-600">
+                            {slot.createdAt
+                              ? slot.createdAt.toLocaleString("ko-KR", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "정보 없음"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeletedSlots(false)}
+            >
+              닫기
             </Button>
           </DialogFooter>
         </DialogContent>
