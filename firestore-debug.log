@@ -21,3 +21,4 @@ INFO: Detected non-HTTP/2 connection.
 Multiple projectIds are not recommended in single project mode. Requested project ID nature-eyebrow, but the emulator is configured for test-time-scheduling. To opt-out of single project mode add/set the '"singleProjectMode": false' property in the firebase.json emulators config.
 Aug 01, 2025 11:38:34 AM com.google.cloud.datastore.emulator.impl.context.EmulatorAuthorization warnAboutSecuredJwt
 WARNING: expected an unsecured JWT, the emulator does not validate JWTs and IS NOT SECURE
+*** shutting down gRPC server since JVM is shutting down

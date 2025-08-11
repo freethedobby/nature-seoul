@@ -44,8 +44,35 @@ export const signInWithGoogle = async () => {
     const result = await Promise.race([signInPromise, timeoutPromise]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     console.log("Google sign in successful:", result.user.email);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Google sign in error:", error);
+    
+    // Handle specific Firebase auth errors
+    if (error?.code) {
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          // User closed the popup - this is not really an error, just a cancellation
+          throw new Error('POPUP_CLOSED');
+        case 'auth/popup-blocked':
+          throw new Error('팝업이 차단되었습니다. 브라우저 팝업 차단을 해제하고 다시 시도해주세요.');
+        case 'auth/cancelled-popup-request':
+          throw new Error('POPUP_CANCELLED');
+        case 'auth/network-request-failed':
+          throw new Error('네트워크 연결을 확인하고 다시 시도해주세요.');
+        case 'auth/too-many-requests':
+          throw new Error('너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.');
+        case 'auth/user-disabled':
+          throw new Error('비활성화된 계정입니다. 관리자에게 문의하세요.');
+        default:
+          throw error;
+      }
+    }
+    
+    // Handle timeout error
+    if (error?.message === "Login timeout") {
+      throw new Error('로그인 시간이 초과되었습니다. 다시 시도해주세요.');
+    }
+    
     throw error;
   }
 };

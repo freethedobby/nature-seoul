@@ -117,18 +117,17 @@ export default function NotificationCenter({
     });
 
     // Debug: Also listen to all notifications to see what's in the database
-    const debugQuery = query(
-      collection(db, "notifications"),
-      orderBy("createdAt", "desc")
-    );
+    // Simplified debug query without orderBy to avoid index requirement
+    const debugQuery = query(collection(db, "notifications"));
     const debugUnsubscribe = onSnapshot(debugQuery, (snapshot) => {
       console.log(
         "🔍 DEBUG: All notifications in database, count:",
         snapshot.size
       );
+      const allNotifications: any[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        console.log("🔍 DEBUG: All notification:", {
+        allNotifications.push({
           id: doc.id,
           userId: data.userId,
           type: data.type,
@@ -136,6 +135,13 @@ export default function NotificationCenter({
           createdAt: data.createdAt?.toDate(),
         });
       });
+      // Sort client-side instead of using orderBy
+      allNotifications.sort((a, b) => {
+        const aTime = a.createdAt ? a.createdAt.getTime() : 0;
+        const bTime = b.createdAt ? b.createdAt.getTime() : 0;
+        return bTime - aTime;
+      });
+      console.log("🔍 DEBUG: All notifications (sorted):", allNotifications);
     });
 
     return () => {

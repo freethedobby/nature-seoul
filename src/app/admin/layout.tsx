@@ -141,7 +141,7 @@ export default function AdminLayout({
                   className="flex items-center justify-start space-x-2"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span>예약관리</span>
+                  <span>예약ㅇ관리</span>
                 </Button>
 
                 <div className="mt-2 border-t pt-2">

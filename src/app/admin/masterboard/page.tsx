@@ -41,6 +41,9 @@ import {
   User,
   Phone,
   Mail,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -54,6 +57,12 @@ import {
   serverTimestamp,
   where,
   getDocs,
+  orderBy,
+  limit,
+  startAfter,
+  Timestamp,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from "firebase/firestore";
 
 interface UserData {
@@ -71,8 +80,8 @@ interface UserData {
   };
   eyebrowProcedure: "not_started" | "in_progress" | "completed";
   adminComments: string;
-  createdAt: unknown;
-  updatedAt: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Comment {
@@ -80,7 +89,25 @@ interface Comment {
   userId: string;
   adminEmail: string;
   comment: string;
-  createdAt: unknown;
+  createdAt: Date;
+}
+
+interface SearchFilters {
+  name: string;
+  startDate: string;
+  endDate: string;
+  kycStatus: string;
+  reservationStatus: string;
+  eyebrowProcedure: string;
+}
+
+interface PaginationState {
+  currentPage: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  firstDoc: QueryDocumentSnapshot<DocumentData> | null;
 }
 
 export default function Masterboard() {
@@ -89,11 +116,36 @@ export default function Masterboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [users, setUsers] = useState<UserData[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Search filters with default 2-week range
+  const [filters, setFilters] = useState<SearchFilters>(() => {
+    const today = new Date();
+    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    return {
+      name: "",
+      startDate: twoWeeksAgo.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+      kycStatus: "",
+      reservationStatus: "",
+      eyebrowProcedure: "",
+    };
+  });
+
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+    lastDoc: null,
+    firstDoc: null,
+  });
+
+  const ITEMS_PER_PAGE = 20;
 
   // Check admin authorization
   useEffect(() => {
@@ -131,31 +183,33 @@ export default function Masterboard() {
     checkAdminStatus();
   }, [user, loading, router]);
 
-  // Fetch users data
-  useEffect(() => {
-    if (!isAuthorized) return;
+  // Fetch users data with pagination and filtering
+  const fetchUsers = async (
+    page: number = 1,
+    searchFilters: SearchFilters,
+    lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+  ) => {
+    try {
+      setIsLoading(true);
 
-    const usersQuery = query(collection(db, "users"));
-    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+      // Build query with basic ordering and limit
+      let baseQuery = query(
+        collection(db, "users"),
+        orderBy("createdAt", "desc"),
+        limit(ITEMS_PER_PAGE * 3) // Fetch more to account for client-side filtering
+      );
+
+      // Add pagination cursor
+      if (page > 1 && lastDoc) {
+        baseQuery = query(baseQuery, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(baseQuery);
       const userData: UserData[] = [];
+
       snapshot.forEach((doc) => {
         const data = doc.data();
-        // Debug: Log available contact fields for troubleshooting
-        if (
-          data.name &&
-          !data.contact &&
-          !data.phone &&
-          !data.phoneNumber &&
-          !data.mobile
-        ) {
-          console.log("⚠️ User without contact info:", doc.id, {
-            name: data.name,
-            email: data.email,
-            availableFields: Object.keys(data),
-          });
-        }
-
-        userData.push({
+        const user = {
           id: doc.id,
           name: data.name || "N/A",
           email: data.email || "N/A",
@@ -164,26 +218,122 @@ export default function Masterboard() {
             data.phone ||
             data.phoneNumber ||
             data.mobile ||
-            "N/A", // 모든 가능한 연락처 필드 확인
+            "N/A",
           phone:
             data.phone ||
             data.contact ||
             data.phoneNumber ||
             data.mobile ||
-            "N/A", // 기존 호환성 유지
+            "N/A",
           kycStatus: data.kycStatus || "pending",
           reservationStatus: data.reservationStatus || "none",
           latestReservation: data.latestReservation,
           eyebrowProcedure: data.eyebrowProcedure || "not_started",
           adminComments: data.adminComments || "",
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-        });
-      });
-      setUsers(userData);
-    });
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as UserData;
 
-    return () => unsubUsers();
+        // Apply all filters client-side
+        let includeUser = true;
+
+        // Apply date filters based on createdAt
+        if (searchFilters.startDate) {
+          const startDate = new Date(searchFilters.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          if (user.createdAt < startDate) {
+            includeUser = false;
+          }
+        }
+
+        if (searchFilters.endDate && includeUser) {
+          const endDate = new Date(searchFilters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          if (user.createdAt > endDate) {
+            includeUser = false;
+          }
+        }
+
+        // Apply name/email/contact filter
+        if (includeUser && searchFilters.name) {
+          const searchTerm = searchFilters.name.toLowerCase();
+          const matchesSearch =
+            user.name.toLowerCase().includes(searchTerm) ||
+            user.email.toLowerCase().includes(searchTerm) ||
+            (user.contact &&
+              user.contact !== "N/A" &&
+              user.contact.includes(searchTerm));
+          if (!matchesSearch) {
+            includeUser = false;
+          }
+        }
+
+        // Apply status filters
+        if (includeUser && searchFilters.kycStatus) {
+          if (user.kycStatus !== searchFilters.kycStatus) {
+            includeUser = false;
+          }
+        }
+
+        if (includeUser && searchFilters.reservationStatus) {
+          if (user.reservationStatus !== searchFilters.reservationStatus) {
+            includeUser = false;
+          }
+        }
+
+        if (includeUser && searchFilters.eyebrowProcedure) {
+          if (user.eyebrowProcedure !== searchFilters.eyebrowProcedure) {
+            includeUser = false;
+          }
+        }
+
+        if (includeUser) {
+          userData.push(user);
+        }
+      });
+
+      // Sort client-side by createdAt desc and limit results
+      userData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const limitedUsers = userData.slice(0, ITEMS_PER_PAGE);
+
+      // Check if there are more documents
+      let hasNext = false;
+      if (snapshot.docs.length > 0) {
+        try {
+          const nextQuery = query(
+            collection(db, "users"),
+            orderBy("createdAt", "desc"),
+            startAfter(snapshot.docs[snapshot.docs.length - 1]),
+            limit(1)
+          );
+          const nextSnapshot = await getDocs(nextQuery);
+          hasNext = !nextSnapshot.empty;
+        } catch (error) {
+          console.error("Error checking for next page:", error);
+          hasNext = false;
+        }
+      }
+
+      setUsers(limitedUsers);
+      setPagination({
+        currentPage: page,
+        totalPages: Math.ceil(snapshot.size / ITEMS_PER_PAGE),
+        hasNext,
+        hasPrev: page > 1,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+        firstDoc: snapshot.docs[0] || null,
+      });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load initial data when authorized
+  useEffect(() => {
+    if (!isAuthorized) return;
+    fetchUsers(1, filters);
   }, [isAuthorized]);
 
   // Fetch comments
@@ -194,7 +344,12 @@ export default function Masterboard() {
     const unsubComments = onSnapshot(commentsQuery, (snapshot) => {
       const commentData: Comment[] = [];
       snapshot.forEach((doc) => {
-        commentData.push({ id: doc.id, ...doc.data() } as Comment);
+        const data = doc.data();
+        commentData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        } as Comment);
       });
       setComments(commentData);
     });
@@ -202,38 +357,39 @@ export default function Masterboard() {
     return () => unsubComments();
   }, [isAuthorized]);
 
-  // Filter and search users
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.contact &&
-        user.contact !== "N/A" &&
-        user.contact.includes(searchTerm)) ||
-      (user.phone && user.phone !== "N/A" && user.phone.includes(searchTerm));
+  // Search and pagination handlers
+  const handleSearch = () => {
+    fetchUsers(1, filters);
+  };
 
-    const matchesFilter =
-      filterStatus === "all" ||
-      user.kycStatus === filterStatus ||
-      user.reservationStatus === filterStatus ||
-      user.eyebrowProcedure === filterStatus;
+  const handlePageChange = (page: number) => {
+    fetchUsers(
+      page,
+      filters,
+      page > pagination.currentPage ? pagination.lastDoc : null
+    );
+  };
 
-    return matchesSearch && matchesFilter;
-  });
+  const handleReset = () => {
+    const today = new Date();
+    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const defaultFilters = {
+      name: "",
+      startDate: twoWeeksAgo.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+      kycStatus: "",
+      reservationStatus: "",
+      eyebrowProcedure: "",
+    };
+    setFilters(defaultFilters);
+    fetchUsers(1, defaultFilters);
+  };
 
   // Get user comments
   const getUserComments = (userId: string) => {
     return comments
       .filter((comment) => comment.userId === userId)
-      .sort((a, b) => {
-        const dateA =
-          (a.createdAt as { toDate?: () => Date })?.toDate?.() ||
-          new Date(a.createdAt as string | number | Date);
-        const dateB =
-          (b.createdAt as { toDate?: () => Date })?.toDate?.() ||
-          new Date(b.createdAt as string | number | Date);
-        return dateB.getTime() - dateA.getTime();
-      });
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   };
 
   // Get user comments count
@@ -527,31 +683,114 @@ export default function Masterboard() {
         {/* Search and Filter */}
         <Card className="mb-4 sm:mb-6">
           <CardContent className="pt-4 sm:pt-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex flex-1 items-center gap-2">
-                <Search className="text-gray-400 h-4 w-4" />
+            <div className="bg-blue-50 border-blue-200 mb-4 rounded-md border px-3 py-2">
+              <p className="text-blue-600 text-sm">
+                💡 빠른 로딩을 위해 기본적으로 최근 2주간 데이터를 표시합니다.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+              <div className="md:col-span-2">
+                <label className="text-gray-700 mb-1 block text-sm font-medium">
+                  이름/이메일/연락처 검색
+                </label>
+                <div className="relative">
+                  <Search className="text-gray-400 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                  <Input
+                    type="text"
+                    placeholder="검색어 입력..."
+                    value={filters.name}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-gray-700 mb-1 block text-sm font-medium">
+                  시작 날짜
+                </label>
                 <Input
-                  placeholder="이름, 이메일, 전화번호로 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full sm:max-w-sm"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Filter className="text-gray-400 h-4 w-4" />
+
+              <div>
+                <label className="text-gray-700 mb-1 block text-sm font-medium">
+                  종료 날짜
+                </label>
+                <Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, endDate: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-700 mb-1 block text-sm font-medium">
+                  KYC 상태
+                </label>
                 <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border-gray-300 w-full rounded-md border px-3 py-2 text-sm sm:w-auto"
+                  value={filters.kycStatus}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      kycStatus: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
                 >
-                  <option value="all">모든 상태</option>
-                  <option value="pending">KYC 대기중</option>
-                  <option value="approved">KYC 승인됨</option>
-                  <option value="rejected">KYC 거부됨</option>
-                  <option value="scheduled">예약됨</option>
-                  <option value="completed">완료됨</option>
+                  <option value="">전체</option>
+                  <option value="pending">대기중</option>
+                  <option value="approved">승인됨</option>
+                  <option value="rejected">거부됨</option>
                 </select>
               </div>
+
+              <div>
+                <label className="text-gray-700 mb-1 block text-sm font-medium">
+                  시술 상태
+                </label>
+                <select
+                  value={filters.eyebrowProcedure}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      eyebrowProcedure: e.target.value,
+                    }))
+                  }
+                  className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+                >
+                  <option value="">전체</option>
+                  <option value="not_started">미시작</option>
+                  <option value="in_progress">진행중</option>
+                  <option value="completed">완료</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={handleSearch}
+                className="flex items-center gap-2"
+              >
+                <Search className="h-4 w-4" />
+                검색
+              </Button>
+              <Button variant="outline" onClick={handleReset}>
+                초기화 (2주)
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -559,22 +798,31 @@ export default function Masterboard() {
         {/* Users Table */}
         <Card>
           <CardHeader>
-            <CardTitle>사용자 목록 ({filteredUsers.length}명)</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>사용자 목록 ({users.length}명)</span>
+              {isLoading && (
+                <div className="text-gray-500 flex items-center gap-2 text-sm">
+                  <div className="animate-spin border-blue-500 h-4 w-4 rounded-full border-2 border-t-transparent"></div>
+                  로딩중...
+                </div>
+              )}
+            </CardTitle>
             <CardDescription>
-              모든 사용자의 정보와 상태를 확인하고 관리할 수 있습니다
+              사용자의 정보와 상태를 확인하고 관리할 수 있습니다 (페이지{" "}
+              {pagination.currentPage})
             </CardDescription>
           </CardHeader>
           <CardContent>
             {/* Mobile Card View */}
             <div className="space-y-4 md:hidden">
-              {filteredUsers.length === 0 ? (
+              {users.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-gray-500">
                     조건에 맞는 사용자가 없습니다.
                   </p>
                 </div>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <Card key={user.id} className="border-gray-200 border p-4">
                     <div className="space-y-3">
                       {/* User Basic Info */}
@@ -933,7 +1181,7 @@ export default function Masterboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <TableRow key={user.id}>
                       {/* Basic Information */}
                       <TableCell>
@@ -1289,6 +1537,37 @@ export default function Masterboard() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {users.length > 0 && (
+              <div className="mt-6 flex items-center justify-between border-t pt-4">
+                <div className="text-gray-600 text-sm">
+                  페이지 {pagination.currentPage}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrev || isLoading}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    이전
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNext || isLoading}
+                    className="flex items-center gap-1"
+                  >
+                    다음
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

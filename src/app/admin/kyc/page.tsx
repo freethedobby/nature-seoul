@@ -22,12 +22,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   ClipboardList,
   CheckCircle,
   XCircle,
   Calendar,
   ArrowLeft,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -42,6 +47,14 @@ import {
   addDoc,
   serverTimestamp,
   setDoc,
+  orderBy,
+  limit,
+  startAfter,
+  getDocs,
+  QueryDocumentSnapshot,
+  DocumentData,
+  startAt,
+  endAt,
 } from "firebase/firestore";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
@@ -135,6 +148,24 @@ interface ReservationData {
   createdAt: Date;
 }
 
+// Pagination interface
+interface PaginationState {
+  currentPage: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  firstDoc: QueryDocumentSnapshot<DocumentData> | null;
+}
+
+// Search filters interface
+interface SearchFilters {
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
 // 주소 변환 함수 (강화된 버전)
 const getAddressLabel = (
   type: "province" | "district" | "dong",
@@ -212,10 +243,86 @@ export default function AdminKYCPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Paginated user data
   const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<UserData[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<UserData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
+
+  // Pagination states
+  const [pendingPagination, setPendingPagination] = useState<PaginationState>({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+    lastDoc: null,
+    firstDoc: null,
+  });
+  const [approvedPagination, setApprovedPagination] = useState<PaginationState>(
+    {
+      currentPage: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      lastDoc: null,
+      firstDoc: null,
+    }
+  );
+  const [rejectedPagination, setRejectedPagination] = useState<PaginationState>(
+    {
+      currentPage: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      lastDoc: null,
+      firstDoc: null,
+    }
+  );
+  const [reservationsPagination, setReservationsPagination] =
+    useState<PaginationState>({
+      currentPage: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      lastDoc: null,
+      firstDoc: null,
+    });
+
+  // Search filters with default 2-week range
+  const [kycFilters, setKycFilters] = useState<SearchFilters>(() => {
+    const today = new Date();
+    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    return {
+      name: "",
+      startDate: twoWeeksAgo.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+      status: "",
+    };
+  });
+  const [reservationFilters, setReservationFilters] = useState<SearchFilters>(
+    () => {
+      const today = new Date();
+      const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+      return {
+        name: "",
+        startDate: twoWeeksAgo.toISOString().split("T")[0],
+        endDate: today.toISOString().split("T")[0],
+        status: "",
+      };
+    }
+  );
+
+  // Loading states
+  const [isLoadingPending, setIsLoadingPending] = useState(false);
+  const [isLoadingApproved, setIsLoadingApproved] = useState(false);
+  const [isLoadingRejected, setIsLoadingRejected] = useState(false);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(false);
+
+  // Constants
+  const ITEMS_PER_PAGE = 10;
+
+  // ... existing state variables ...
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
@@ -284,6 +391,344 @@ export default function AdminKYCPage() {
   const [selectedReservation, setSelectedReservation] =
     useState<ReservationData | null>(null);
 
+  // Optimized data fetching functions
+  const fetchKYCUsers = async (
+    status: "pending" | "approved" | "rejected",
+    page: number = 1,
+    filters: SearchFilters,
+    lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+  ) => {
+    const setLoading =
+      status === "pending"
+        ? setIsLoadingPending
+        : status === "approved"
+        ? setIsLoadingApproved
+        : setIsLoadingRejected;
+    const setUsers =
+      status === "pending"
+        ? setPendingUsers
+        : status === "approved"
+        ? setApprovedUsers
+        : setRejectedUsers;
+    const setPagination =
+      status === "pending"
+        ? setPendingPagination
+        : status === "approved"
+        ? setApprovedPagination
+        : setRejectedPagination;
+
+    try {
+      setLoading(true);
+
+      // Simplified query to avoid composite index requirement
+      // Remove orderBy to avoid any index issues - sort client-side instead
+      let baseQuery = query(
+        collection(db, "users"),
+        where("kycStatus", "==", status),
+        limit(ITEMS_PER_PAGE * 3) // Fetch more to account for client-side filtering
+      );
+
+      // Add pagination cursor
+      if (page > 1 && lastDoc) {
+        baseQuery = query(baseQuery, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(baseQuery);
+      const users: UserData[] = [];
+
+      // Apply all filters client-side to avoid composite index issues
+      snapshot.forEach((doc) => {
+        try {
+          const data = doc.data();
+          const user = {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            approvedAt: data.approvedAt?.toDate() || null,
+            rejectedAt: data.rejectedAt?.toDate() || null,
+          } as UserData;
+
+          // Apply date filters client-side
+          let includeUser = true;
+
+          if (filters.startDate) {
+            const startDate = new Date(filters.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            if (user.createdAt < startDate) {
+              includeUser = false;
+            }
+          }
+
+          if (filters.endDate && includeUser) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            if (user.createdAt > endDate) {
+              includeUser = false;
+            }
+          }
+
+          // Apply name filter client-side
+          if (includeUser && filters.name) {
+            if (!user.name.toLowerCase().includes(filters.name.toLowerCase())) {
+              includeUser = false;
+            }
+          }
+
+          if (includeUser) {
+            users.push(user);
+          }
+        } catch (error) {
+          console.error("Error processing user document:", doc.id, error);
+        }
+      });
+
+      // Sort client-side by createdAt desc and limit results
+      users.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const limitedUsers = users.slice(0, ITEMS_PER_PAGE);
+
+      // Check if there are more documents by trying to fetch one more
+      let hasNext = false;
+      if (snapshot.docs.length > 0) {
+        try {
+          const nextQuery = query(
+            collection(db, "users"),
+            where("kycStatus", "==", status),
+            startAfter(snapshot.docs[snapshot.docs.length - 1]),
+            limit(1)
+          );
+          const nextSnapshot = await getDocs(nextQuery);
+          hasNext = !nextSnapshot.empty;
+        } catch (error) {
+          console.error("Error checking for next page:", error);
+          hasNext = false;
+        }
+      }
+
+      setUsers(limitedUsers);
+      setPagination({
+        currentPage: page,
+        totalPages: Math.ceil(snapshot.size / ITEMS_PER_PAGE), // This is approximate
+        hasNext,
+        hasPrev: page > 1,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+        firstDoc: snapshot.docs[0] || null,
+      });
+    } catch (error) {
+      console.error(`Error fetching ${status} users:`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReservations = async (
+    page: number = 1,
+    filters: SearchFilters,
+    lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+  ) => {
+    try {
+      setIsLoadingReservations(true);
+
+      // Simplified query to avoid composite index requirement
+      // Remove orderBy to avoid any index issues - sort client-side instead
+      let baseQuery = query(
+        collection(db, "reservations"),
+        limit(ITEMS_PER_PAGE * 3) // Fetch more to account for client-side filtering
+      );
+
+      // Add pagination cursor
+      if (page > 1 && lastDoc) {
+        baseQuery = query(baseQuery, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(baseQuery);
+      const reservs: ReservationData[] = [];
+      const userIds = new Set<string>();
+
+      snapshot.forEach((doc) => {
+        try {
+          const data = doc.data();
+          const reservation = {
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt?.toDate() ||
+              new Date(data.createdAt || Date.now()),
+          } as ReservationData;
+
+          // Apply all filters client-side to avoid composite index issues
+          let includeReservation = true;
+
+          // Filter out cancelled reservations
+          if (reservation.status === "cancelled") {
+            includeReservation = false;
+          }
+
+          // Apply status filter
+          if (
+            includeReservation &&
+            filters.status &&
+            filters.status !== "all"
+          ) {
+            if (reservation.status !== filters.status) {
+              includeReservation = false;
+            }
+          }
+
+          // Apply date filters client-side
+          if (includeReservation && filters.startDate) {
+            const startDate = new Date(filters.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            if (reservation.createdAt < startDate) {
+              includeReservation = false;
+            }
+          }
+
+          if (includeReservation && filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            if (reservation.createdAt > endDate) {
+              includeReservation = false;
+            }
+          }
+
+          // Apply name filter client-side
+          if (includeReservation && filters.name) {
+            if (
+              !reservation.userName
+                .toLowerCase()
+                .includes(filters.name.toLowerCase())
+            ) {
+              includeReservation = false;
+            }
+          }
+
+          if (includeReservation) {
+            reservs.push(reservation);
+            if (data.userId) userIds.add(data.userId);
+          }
+        } catch (error) {
+          console.error(
+            "Error processing reservation document:",
+            doc.id,
+            error
+          );
+        }
+      });
+
+      // Sort client-side by createdAt desc and limit results
+      reservs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const limitedReservations = reservs.slice(0, ITEMS_PER_PAGE);
+
+      // Check if there are more documents by trying to fetch one more
+      let hasNext = false;
+      if (snapshot.docs.length > 0) {
+        try {
+          const nextQuery = query(
+            collection(db, "reservations"),
+            startAfter(snapshot.docs[snapshot.docs.length - 1]),
+            limit(1)
+          );
+          const nextSnapshot = await getDocs(nextQuery);
+          hasNext = !nextSnapshot.empty;
+        } catch (error) {
+          console.error("Error checking for next page:", error);
+          hasNext = false;
+        }
+      }
+
+      setReservations(limitedReservations);
+      setReservationsPagination({
+        currentPage: page,
+        totalPages: Math.ceil(snapshot.size / ITEMS_PER_PAGE), // This is approximate
+        hasNext,
+        hasPrev: page > 1,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+        firstDoc: snapshot.docs[0] || null,
+      });
+
+      // Fetch user data for reservations (optimized - only fetch once per user)
+      // Update userIds based on limited reservations
+      const limitedUserIds = new Set<string>();
+      limitedReservations.forEach((reservation) => {
+        if (reservation.userId) limitedUserIds.add(reservation.userId);
+      });
+
+      const userDataMapTemp: Record<string, UserData> = {};
+      await Promise.all(
+        Array.from(limitedUserIds).map(async (uid) => {
+          try {
+            const userDoc = await getDoc(doc(db, "users", uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              userDataMapTemp[uid] = {
+                id: userDoc.id,
+                userId: data.userId || uid,
+                email: data.email || "",
+                name: data.name || "",
+                gender: data.gender,
+                birthYear: data.birthYear,
+                contact: data.contact || "",
+                district: data.district,
+                detailedAddress: data.detailedAddress,
+                skinType: data.skinType,
+                photoURLs: data.photoURLs,
+                photoURL: data.photoURL,
+                photoType: data.photoType,
+                kycStatus: data.kycStatus || "pending",
+                hasPreviousTreatment: data.hasPreviousTreatment,
+                rejectReason: data.rejectReason,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                approvedAt: data.approvedAt?.toDate?.() || undefined,
+                rejectedAt: data.rejectedAt?.toDate?.() || undefined,
+              };
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+      setUserDataMap(userDataMapTemp);
+    } catch (error) {
+      console.error("Error fetching reservations:", error);
+    } finally {
+      setIsLoadingReservations(false);
+    }
+  };
+
+  // Search and pagination handlers
+  const handleKYCSearch = () => {
+    fetchKYCUsers(kycTab, 1, kycFilters);
+  };
+
+  const handleReservationSearch = () => {
+    fetchReservations(1, reservationFilters);
+  };
+
+  const handleKYCPageChange = (page: number) => {
+    const currentPagination =
+      kycTab === "pending"
+        ? pendingPagination
+        : kycTab === "approved"
+        ? approvedPagination
+        : rejectedPagination;
+    fetchKYCUsers(
+      kycTab,
+      page,
+      kycFilters,
+      page > currentPagination.currentPage ? currentPagination.lastDoc : null
+    );
+  };
+
+  const handleReservationPageChange = (page: number) => {
+    fetchReservations(
+      page,
+      reservationFilters,
+      page > reservationsPagination.currentPage
+        ? reservationsPagination.lastDoc
+        : null
+    );
+  };
+
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!loading && user?.email) {
@@ -343,245 +788,27 @@ export default function AdminKYCPage() {
     loadKycOpenSettings();
   }, []);
 
+  // Load initial data when authorized
   useEffect(() => {
     if (!user || !isAuthorized) return;
 
-    // Subscribe to pending users
-    const pendingQuery = query(
-      collection(db, "users"),
-      where("kycStatus", "==", "pending")
-    );
-
-    const unsubPending = onSnapshot(pendingQuery, (snapshot) => {
-      console.log("🔄 Pending users snapshot received, count:", snapshot.size);
-      const users: UserData[] = [];
-      snapshot.forEach((doc) => {
-        try {
-          const data = doc.data();
-          console.log("📄 User document:", doc.id, data);
-          users.push({
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt && data.createdAt.toDate
-                ? data.createdAt.toDate()
-                : new Date(),
-            approvedAt:
-              data.approvedAt && data.approvedAt.toDate
-                ? data.approvedAt.toDate()
-                : null,
-            rejectedAt:
-              data.rejectedAt && data.rejectedAt.toDate
-                ? data.rejectedAt.toDate()
-                : null,
-          } as UserData);
-        } catch (error) {
-          console.error("Error processing user document:", doc.id, error);
-        }
-      });
-      users.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      console.log("✅ Setting pending users:", users.length);
-      setPendingUsers(users);
-    });
-
-    // Subscribe to approved users
-    const approvedQuery = query(
-      collection(db, "users"),
-      where("kycStatus", "==", "approved")
-    );
-
-    const unsubApproved = onSnapshot(approvedQuery, (snapshot) => {
-      const users: UserData[] = [];
-      snapshot.forEach((doc) => {
-        try {
-          const data = doc.data();
-          users.push({
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt && data.createdAt.toDate
-                ? data.createdAt.toDate()
-                : new Date(),
-            approvedAt:
-              data.approvedAt && data.approvedAt.toDate
-                ? data.approvedAt.toDate()
-                : null,
-            rejectedAt:
-              data.rejectedAt && data.rejectedAt.toDate
-                ? data.rejectedAt.toDate()
-                : null,
-          } as UserData);
-        } catch (error) {
-          console.error(
-            "Error processing approved user document:",
-            doc.id,
-            error
-          );
-        }
-      });
-      users.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setApprovedUsers(users);
-    });
-
-    // Subscribe to rejected users
-    const rejectedQuery = query(
-      collection(db, "users"),
-      where("kycStatus", "==", "rejected")
-    );
-
-    const unsubRejected = onSnapshot(rejectedQuery, (snapshot) => {
-      const users: UserData[] = [];
-      snapshot.forEach((doc) => {
-        try {
-          const data = doc.data();
-          users.push({
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt && data.createdAt.toDate
-                ? data.createdAt.toDate()
-                : new Date(),
-            approvedAt:
-              data.approvedAt && data.approvedAt.toDate
-                ? data.approvedAt.toDate()
-                : null,
-            rejectedAt:
-              data.rejectedAt && data.rejectedAt.toDate
-                ? data.rejectedAt.toDate()
-                : null,
-          } as UserData);
-        } catch (error) {
-          console.error(
-            "Error processing rejected user document:",
-            doc.id,
-            error
-          );
-        }
-      });
-      users.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setRejectedUsers(users);
-    });
-
-    // Subscribe to reservations (excluding cancelled ones)
-    const reservationsQuery = query(
-      collection(db, "reservations"),
-      where("status", "!=", "cancelled")
-    );
-
-    const unsubReservations = onSnapshot(
-      reservationsQuery,
-      async (snapshot) => {
-        const reservs: ReservationData[] = [];
-        const userIds = new Set<string>();
-
-        snapshot.forEach((doc) => {
-          try {
-            const data = doc.data();
-            reservs.push({
-              id: doc.id,
-              ...data,
-              createdAt:
-                data.createdAt && data.createdAt.toDate
-                  ? data.createdAt.toDate()
-                  : new Date(data.createdAt || Date.now()),
-            } as ReservationData);
-            if (data.userId) userIds.add(data.userId);
-          } catch (error) {
-            console.error(
-              "Error processing reservation document:",
-              doc.id,
-              error
-            );
-          }
-        });
-
-        // admin 페이지에서는 모든 예약 표시 (cancelled 포함하여 관리자가 모든 상태 확인 가능)
-        const filteredReservs = reservs;
-
-        filteredReservs.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-
-        console.log(
-          "🔄 Reservations snapshot received, count:",
-          filteredReservs.length
-        );
-        if (filteredReservs.length > 0) {
-          console.log("📋 Sample reservation data:", {
-            userName: filteredReservs[0].userName,
-            date: filteredReservs[0].date,
-            status: filteredReservs[0].status,
-            createdAt: filteredReservs[0].createdAt,
-            id: filteredReservs[0].id,
-          });
-          console.log(
-            "📋 All reservations:",
-            filteredReservs.map((r) => ({
-              userName: r.userName,
-              date: r.date,
-              status: r.status,
-            }))
-          );
-        }
-
-        setReservations(filteredReservs);
-
-        // Fetch user data for all userIds
-        const userDataMapTemp: Record<string, UserData> = {};
-        await Promise.all(
-          Array.from(userIds).map(async (uid) => {
-            try {
-              const userDoc = await getDoc(doc(db, "users", uid));
-              if (userDoc.exists()) {
-                const data = userDoc.data();
-                userDataMapTemp[uid] = {
-                  id: userDoc.id,
-                  userId: data.userId || uid,
-                  email: data.email || "",
-                  name: data.name || "",
-                  gender: data.gender,
-                  birthYear: data.birthYear,
-                  contact: data.contact || "",
-                  district: data.district,
-                  detailedAddress: data.detailedAddress,
-                  skinType: data.skinType,
-                  photoURLs: data.photoURLs,
-                  photoURL: data.photoURL,
-                  photoType: data.photoType,
-                  kycStatus: data.kycStatus || "pending",
-                  hasPreviousTreatment: data.hasPreviousTreatment,
-                  rejectReason: data.rejectReason,
-                  createdAt: data.createdAt?.toDate?.() || new Date(),
-                  approvedAt: data.approvedAt?.toDate?.() || undefined,
-                  rejectedAt: data.rejectedAt?.toDate?.() || undefined,
-                };
-              }
-            } catch {
-              // ignore
-            }
-          })
-        );
-        setUserDataMap(userDataMapTemp);
-      }
-    );
-
-    return () => {
-      unsubPending();
-      unsubApproved();
-      unsubRejected();
-      unsubReservations();
-    };
+    // Load initial data for the current tab
+    fetchKYCUsers(kycTab, 1, kycFilters);
   }, [user, isAuthorized]);
+
+  // Load data when KYC tab changes
+  useEffect(() => {
+    if (!user || !isAuthorized) return;
+    fetchKYCUsers(kycTab, 1, kycFilters);
+  }, [kycTab]);
+
+  // Load reservations when main tab changes
+  useEffect(() => {
+    if (!user || !isAuthorized) return;
+    if (mainTab === "reservations") {
+      fetchReservations(1, reservationFilters);
+    }
+  }, [mainTab]);
 
   const handleApprove = async (userId: string) => {
     try {
@@ -1071,6 +1298,9 @@ export default function AdminKYCPage() {
                 ? `${kycOpenSettings.startDate} ${kycOpenSettings.startTime} ~ ${kycOpenSettings.endDate} ${kycOpenSettings.endTime}`
                 : "설정되지 않음"}
             </div>
+            <div className="text-blue-600 bg-blue-50 border-blue-200 rounded-md border px-3 py-1 text-xs sm:text-sm">
+              💡 빠른 로딩을 위해 기본적으로 최근 2주간 데이터를 표시합니다.
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -1137,7 +1367,102 @@ export default function AdminKYCPage() {
               </TabsList>
 
               <TabsContent value="pending" className="space-y-4">
-                {pendingUsers.length === 0 ? (
+                {/* Search and Filter Controls */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          이름 검색
+                        </label>
+                        <div className="relative">
+                          <Search className="text-gray-400 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          <Input
+                            type="text"
+                            placeholder="이름으로 검색..."
+                            value={kycFilters.name}
+                            onChange={(e) =>
+                              setKycFilters((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          시작 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.startDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          종료 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.endDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              endDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleKYCSearch}
+                          className="flex items-center gap-2"
+                        >
+                          <Search className="h-4 w-4" />
+                          검색
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const today = new Date();
+                            const twoWeeksAgo = new Date(
+                              today.getTime() - 14 * 24 * 60 * 60 * 1000
+                            );
+                            const defaultFilters = {
+                              name: "",
+                              startDate: twoWeeksAgo
+                                .toISOString()
+                                .split("T")[0],
+                              endDate: today.toISOString().split("T")[0],
+                              status: "",
+                            };
+                            setKycFilters(defaultFilters);
+                            fetchKYCUsers(kycTab, 1, defaultFilters);
+                          }}
+                        >
+                          초기화 (2주)
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Loading Indicator */}
+                {isLoadingPending && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6" />
+                  </div>
+                )}
+
+                {!isLoadingPending && pendingUsers.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
                       <p className="text-gray-500">
@@ -1501,10 +1826,140 @@ export default function AdminKYCPage() {
                     </Card>
                   ))
                 )}
+
+                {/* Pagination Controls for Pending Users */}
+                {!isLoadingPending && pendingUsers.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-600 text-sm">
+                      페이지 {pendingPagination.currentPage}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(pendingPagination.currentPage - 1)
+                        }
+                        disabled={!pendingPagination.hasPrev}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(pendingPagination.currentPage + 1)
+                        }
+                        disabled={!pendingPagination.hasNext}
+                        className="flex items-center gap-1"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="approved" className="space-y-4">
-                {approvedUsers.length === 0 ? (
+                {/* Search and Filter Controls */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          이름 검색
+                        </label>
+                        <div className="relative">
+                          <Search className="text-gray-400 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          <Input
+                            type="text"
+                            placeholder="이름으로 검색..."
+                            value={kycFilters.name}
+                            onChange={(e) =>
+                              setKycFilters((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          시작 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.startDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          종료 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.endDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              endDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleKYCSearch}
+                          className="flex items-center gap-2"
+                        >
+                          <Search className="h-4 w-4" />
+                          검색
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const today = new Date();
+                            const twoWeeksAgo = new Date(
+                              today.getTime() - 14 * 24 * 60 * 60 * 1000
+                            );
+                            const defaultFilters = {
+                              name: "",
+                              startDate: twoWeeksAgo
+                                .toISOString()
+                                .split("T")[0],
+                              endDate: today.toISOString().split("T")[0],
+                              status: "",
+                            };
+                            setKycFilters(defaultFilters);
+                            fetchKYCUsers(kycTab, 1, defaultFilters);
+                          }}
+                        >
+                          초기화 (2주)
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Loading Indicator */}
+                {isLoadingApproved && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6" />
+                  </div>
+                )}
+
+                {!isLoadingApproved && approvedUsers.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
                       <p className="text-gray-500">승인된 사용자가 없습니다.</p>
@@ -1869,10 +2324,144 @@ export default function AdminKYCPage() {
                     </Card>
                   ))
                 )}
+
+                {/* Pagination Controls for Approved Users */}
+                {!isLoadingApproved && approvedUsers.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-600 text-sm">
+                      페이지 {approvedPagination.currentPage}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(
+                            approvedPagination.currentPage - 1
+                          )
+                        }
+                        disabled={!approvedPagination.hasPrev}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(
+                            approvedPagination.currentPage + 1
+                          )
+                        }
+                        disabled={!approvedPagination.hasNext}
+                        className="flex items-center gap-1"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="rejected" className="space-y-4">
-                {rejectedUsers.length === 0 ? (
+                {/* Search and Filter Controls */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          이름 검색
+                        </label>
+                        <div className="relative">
+                          <Search className="text-gray-400 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          <Input
+                            type="text"
+                            placeholder="이름으로 검색..."
+                            value={kycFilters.name}
+                            onChange={(e) =>
+                              setKycFilters((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          시작 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.startDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          종료 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={kycFilters.endDate}
+                          onChange={(e) =>
+                            setKycFilters((prev) => ({
+                              ...prev,
+                              endDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleKYCSearch}
+                          className="flex items-center gap-2"
+                        >
+                          <Search className="h-4 w-4" />
+                          검색
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const today = new Date();
+                            const twoWeeksAgo = new Date(
+                              today.getTime() - 14 * 24 * 60 * 60 * 1000
+                            );
+                            const defaultFilters = {
+                              name: "",
+                              startDate: twoWeeksAgo
+                                .toISOString()
+                                .split("T")[0],
+                              endDate: today.toISOString().split("T")[0],
+                              status: "",
+                            };
+                            setKycFilters(defaultFilters);
+                            fetchKYCUsers(kycTab, 1, defaultFilters);
+                          }}
+                        >
+                          초기화 (2주)
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Loading Indicator */}
+                {isLoadingRejected && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6" />
+                  </div>
+                )}
+
+                {!isLoadingRejected && rejectedUsers.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
                       <p className="text-gray-500">반려된 사용자가 없습니다.</p>
@@ -2258,6 +2847,45 @@ export default function AdminKYCPage() {
                     </Card>
                   ))
                 )}
+
+                {/* Pagination Controls for Rejected Users */}
+                {!isLoadingRejected && rejectedUsers.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-600 text-sm">
+                      페이지 {rejectedPagination.currentPage}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(
+                            rejectedPagination.currentPage - 1
+                          )
+                        }
+                        disabled={!rejectedPagination.hasPrev}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleKYCPageChange(
+                            rejectedPagination.currentPage + 1
+                          )
+                        }
+                        disabled={!rejectedPagination.hasNext}
+                        className="flex items-center gap-1"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -2275,7 +2903,124 @@ export default function AdminKYCPage() {
               </TabsList>
 
               <TabsContent value="upcoming" className="space-y-4">
-                {/* Filters */}
+                {/* Search and Filter Controls */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          이름 검색
+                        </label>
+                        <div className="relative">
+                          <Search className="text-gray-400 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          <Input
+                            type="text"
+                            placeholder="예약자 이름으로 검색..."
+                            value={reservationFilters.name}
+                            onChange={(e) =>
+                              setReservationFilters((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          시작 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={reservationFilters.startDate}
+                          onChange={(e) =>
+                            setReservationFilters((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          종료 날짜
+                        </label>
+                        <Input
+                          type="date"
+                          value={reservationFilters.endDate}
+                          onChange={(e) =>
+                            setReservationFilters((prev) => ({
+                              ...prev,
+                              endDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-gray-700 mb-1 block text-sm font-medium">
+                          예약 상태
+                        </label>
+                        <select
+                          value={reservationFilters.status}
+                          onChange={(e) =>
+                            setReservationFilters((prev) => ({
+                              ...prev,
+                              status: e.target.value,
+                            }))
+                          }
+                          className="border-gray-300 focus:border-blue-500 w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+                        >
+                          <option value="">전체</option>
+                          <option value="pending">대기중</option>
+                          <option value="approved">승인됨</option>
+                          <option value="rejected">거절됨</option>
+                          <option value="payment_required">결제 필요</option>
+                          <option value="payment_confirmed">결제 완료</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleReservationSearch}
+                          className="flex items-center gap-2"
+                        >
+                          <Search className="h-4 w-4" />
+                          검색
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const today = new Date();
+                            const twoWeeksAgo = new Date(
+                              today.getTime() - 14 * 24 * 60 * 60 * 1000
+                            );
+                            const defaultFilters = {
+                              name: "",
+                              startDate: twoWeeksAgo
+                                .toISOString()
+                                .split("T")[0],
+                              endDate: today.toISOString().split("T")[0],
+                              status: "",
+                            };
+                            setReservationFilters(defaultFilters);
+                            fetchReservations(1, defaultFilters);
+                          }}
+                        >
+                          초기화 (2주)
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Loading Indicator */}
+                {isLoadingReservations && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6" />
+                  </div>
+                )}
+
+                {/* Legacy Filters (keeping for compatibility) */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                     <input
@@ -2885,6 +3630,45 @@ export default function AdminKYCPage() {
                     );
                   });
                 })()}
+
+                {/* Pagination Controls for Reservations */}
+                {!isLoadingReservations && reservations.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-600 text-sm">
+                      페이지 {reservationsPagination.currentPage}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleReservationPageChange(
+                            reservationsPagination.currentPage - 1
+                          )
+                        }
+                        disabled={!reservationsPagination.hasPrev}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleReservationPageChange(
+                            reservationsPagination.currentPage + 1
+                          )
+                        }
+                        disabled={!reservationsPagination.hasNext}
+                        className="flex items-center gap-1"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="procedure" className="space-y-4">

@@ -77,9 +77,25 @@ export default function AdminLoginPage() {
     try {
       await signInWithGoogle();
       // The useEffect will handle the redirect after successful login
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Google login error:", err);
-      setError("Google 로그인에 실패했습니다. 다시 시도해주세요.");
+
+      // Handle specific error cases
+      if (err?.message === "POPUP_CLOSED") {
+        // User closed popup - don't show error, just reset loading state
+        console.log("User closed login popup");
+        return;
+      } else if (err?.message === "POPUP_CANCELLED") {
+        // Popup was cancelled - don't show error
+        console.log("Login popup was cancelled");
+        return;
+      } else if (err?.message && err.message !== err?.code) {
+        // Use the custom error message we set in firebase.ts
+        setError(err.message);
+      } else {
+        // Fallback for unknown errors
+        setError("Google 로그인에 실패했습니다. 다시 시도해주세요.");
+      }
     } finally {
       setLoading(false);
     }
@@ -254,6 +270,10 @@ export default function AdminLoginPage() {
                   </Button>
                 </form>
               )}
+
+              <p className="text-gray-400 text-center text-xs">
+                💡 팝업이 차단되는 경우 브라우저 설정에서 팝업을 허용해주세요
+              </p>
 
               <div className="text-center">
                 <Link

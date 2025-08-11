@@ -65,9 +65,25 @@ export default function LoginPage() {
       const redirectPath = getRedirectPath();
       console.log("Redirecting to", redirectPath, "after successful login");
       router.push(redirectPath);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login error:", err);
-      setError("로그인에 실패했습니다. 다시 시도해주세요.");
+
+      // Handle specific error cases
+      if (err?.message === "POPUP_CLOSED") {
+        // User closed popup - don't show error, just reset loading state
+        console.log("User closed login popup");
+        return;
+      } else if (err?.message === "POPUP_CANCELLED") {
+        // Popup was cancelled - don't show error
+        console.log("Login popup was cancelled");
+        return;
+      } else if (err?.message && err.message !== err?.code) {
+        // Use the custom error message we set in firebase.ts
+        setError(err.message);
+      } else {
+        // Fallback for unknown errors
+        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+      }
     } finally {
       setLoading(false);
     }
@@ -127,6 +143,10 @@ export default function LoginPage() {
                 </div>
                 {loading ? "로그인 중..." : "Google로 로그인"}
               </Button>
+
+              <p className="text-gray-400 text-center text-xs">
+                💡 팝업이 차단되는 경우 브라우저 설정에서 팝업을 허용해주세요
+              </p>
 
               <p className="text-gray-500 text-center text-sm">
                 로그인 시 개인정보처리방침 및 서비스 약관에 동의하는 것으로
