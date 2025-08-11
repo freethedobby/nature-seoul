@@ -35,7 +35,6 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter,
   MessageSquare,
   Calendar,
   User,
@@ -43,7 +42,6 @@ import {
   Mail,
   ChevronLeft,
   ChevronRight,
-  Loader2,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -60,7 +58,6 @@ import {
   orderBy,
   limit,
   startAfter,
-  Timestamp,
   QueryDocumentSnapshot,
   DocumentData,
 } from "firebase/firestore";
@@ -334,7 +331,7 @@ export default function Masterboard() {
   useEffect(() => {
     if (!isAuthorized) return;
     fetchUsers(1, filters);
-  }, [isAuthorized]);
+  }, [isAuthorized, filters]);
 
   // Fetch comments
   useEffect(() => {

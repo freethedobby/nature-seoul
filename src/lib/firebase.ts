@@ -44,12 +44,13 @@ export const signInWithGoogle = async () => {
     const result = await Promise.race([signInPromise, timeoutPromise]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     console.log("Google sign in successful:", result.user.email);
     return result.user;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Google sign in error:", error);
     
     // Handle specific Firebase auth errors
-    if (error?.code) {
-      switch (error.code) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError?.code) {
+      switch (firebaseError.code) {
         case 'auth/popup-closed-by-user':
           // User closed the popup - this is not really an error, just a cancellation
           throw new Error('POPUP_CLOSED');
@@ -69,7 +70,7 @@ export const signInWithGoogle = async () => {
     }
     
     // Handle timeout error
-    if (error?.message === "Login timeout") {
+    if (firebaseError?.message === "Login timeout") {
       throw new Error('로그인 시간이 초과되었습니다. 다시 시도해주세요.');
     }
     

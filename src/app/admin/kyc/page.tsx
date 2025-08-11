@@ -41,20 +41,16 @@ import {
   where,
   updateDoc,
   doc,
-  onSnapshot,
   Timestamp,
   getDoc,
   addDoc,
   serverTimestamp,
   setDoc,
-  orderBy,
   limit,
   startAfter,
   getDocs,
   QueryDocumentSnapshot,
   DocumentData,
-  startAt,
-  endAt,
 } from "firebase/firestore";
 import { createNotification, notificationTemplates } from "@/lib/notifications";
 import Image from "next/image";
@@ -800,7 +796,7 @@ export default function AdminKYCPage() {
   useEffect(() => {
     if (!user || !isAuthorized) return;
     fetchKYCUsers(kycTab, 1, kycFilters);
-  }, [kycTab]);
+  }, [kycTab, user, isAuthorized, kycFilters]);
 
   // Load reservations when main tab changes
   useEffect(() => {
@@ -808,7 +804,7 @@ export default function AdminKYCPage() {
     if (mainTab === "reservations") {
       fetchReservations(1, reservationFilters);
     }
-  }, [mainTab]);
+  }, [mainTab, user, isAuthorized, reservationFilters]);
 
   const handleApprove = async (userId: string) => {
     try {

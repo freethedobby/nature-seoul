@@ -77,21 +77,22 @@ export default function AdminLoginPage() {
     try {
       await signInWithGoogle();
       // The useEffect will handle the redirect after successful login
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Google login error:", err);
 
       // Handle specific error cases
-      if (err?.message === "POPUP_CLOSED") {
+      const error = err as { message?: string; code?: string };
+      if (error?.message === "POPUP_CLOSED") {
         // User closed popup - don't show error, just reset loading state
         console.log("User closed login popup");
         return;
-      } else if (err?.message === "POPUP_CANCELLED") {
+      } else if (error?.message === "POPUP_CANCELLED") {
         // Popup was cancelled - don't show error
         console.log("Login popup was cancelled");
         return;
-      } else if (err?.message && err.message !== err?.code) {
+      } else if (error?.message && error.message !== error?.code) {
         // Use the custom error message we set in firebase.ts
-        setError(err.message);
+        setError(error.message);
       } else {
         // Fallback for unknown errors
         setError("Google 로그인에 실패했습니다. 다시 시도해주세요.");

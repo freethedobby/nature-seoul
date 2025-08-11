@@ -9,7 +9,6 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy,
   doc,
   updateDoc,
   deleteDoc,
@@ -124,7 +123,13 @@ export default function NotificationCenter({
         "🔍 DEBUG: All notifications in database, count:",
         snapshot.size
       );
-      const allNotifications: any[] = [];
+      const allNotifications: {
+        id: string;
+        userId: string;
+        type: string;
+        title: string;
+        createdAt: Date | null;
+      }[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
         allNotifications.push({
