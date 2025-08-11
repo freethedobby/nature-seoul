@@ -680,12 +680,6 @@ export default function Masterboard() {
         {/* Search and Filter */}
         <Card className="mb-4 sm:mb-6">
           <CardContent className="pt-4 sm:pt-6">
-            <div className="bg-blue-50 border-blue-200 mb-4 rounded-md border px-3 py-2">
-              <p className="text-blue-600 text-sm">
-                💡 빠른 로딩을 위해 기본적으로 최근 2주간 데이터를 표시합니다.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
               <div className="md:col-span-2">
                 <label className="text-gray-700 mb-1 block text-sm font-medium">

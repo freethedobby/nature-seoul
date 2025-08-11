@@ -1294,9 +1294,6 @@ export default function AdminKYCPage() {
                 ? `${kycOpenSettings.startDate} ${kycOpenSettings.startTime} ~ ${kycOpenSettings.endDate} ${kycOpenSettings.endTime}`
                 : "설정되지 않음"}
             </div>
-            <div className="text-blue-600 bg-blue-50 border-blue-200 rounded-md border px-3 py-1 text-xs sm:text-sm">
-              💡 빠른 로딩을 위해 기본적으로 최근 2주간 데이터를 표시합니다.
-            </div>
           </div>
           <div className="flex gap-2">
             <Button
